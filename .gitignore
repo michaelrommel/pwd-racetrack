@@ -30,3 +30,8 @@
 *.exe
 *.out
 *.app
+
+# Eagle Backup Files
+*.b#?
+*.s#?
+*_[0-9][0-9].pro
