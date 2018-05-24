@@ -1,5 +1,5 @@
 # pwd-racetrack
-A Pinewood Derby racetrack timer and start gate electronics firmware.
+A Pinewood Derby racetrack timer and start gate electronics circuits + firmware.
 
 This software implements the firmware for a Pinewood Derby race track
 electronics. The race track receives commands, like the setup or start commands
@@ -9,9 +9,9 @@ The subdirectory platformio contains a PlatformIO project (https://platformio.or
 You should install the PlatformIO IDE based on the Atom Editor to work with this
 repo.
 
-The racetrack electronics consists of three main parts:
+The racetrack electronics in the subdirectory circuits consists of three main parts:
 - the main controller based on an Arduino Due with a protoype extension board.
-  The extension board implements the connections to the finish gate display
+  The extension board implements the connections to the finish line display
   modules and to the start gate.
 - the display modules (one per lane) implement the main display of the achieved
   place in the heat and the display of the time in milliseconds. Also the LDR
