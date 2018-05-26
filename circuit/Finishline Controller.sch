@@ -12249,6 +12249,11 @@ GND</text>
 <label x="393.7" y="241.3" size="1.778" layer="95"/>
 <pinref part="ADCL" gate="A" pin="8"/>
 </segment>
+<segment>
+<pinref part="JP1" gate="A" pin="8"/>
+<wire x1="353.06" y1="208.28" x2="335.28" y2="208.28" width="0.1524" layer="91"/>
+<label x="335.28" y="208.28" size="1.778" layer="95"/>
+</segment>
 </net>
 <net name="SCL0" class="0">
 <segment>
@@ -12425,11 +12430,6 @@ GND</text>
 <label x="393.7" y="223.52" size="1.778" layer="95"/>
 <pinref part="ADCL" gate="A" pin="1"/>
 </segment>
-<segment>
-<pinref part="JP1" gate="A" pin="8"/>
-<wire x1="353.06" y1="208.28" x2="335.28" y2="208.28" width="0.1524" layer="91"/>
-<label x="335.28" y="208.28" size="1.778" layer="95"/>
-</segment>
 </net>
 <net name="AD8" class="0">
 <segment>
@@ -12561,6 +12561,11 @@ GND</text>
 <label x="421.64" y="304.8" size="1.778" layer="95"/>
 <pinref part="XIO" gate="A" pin="9"/>
 </segment>
+<segment>
+<pinref part="IC1" gate="A" pin="A1"/>
+<wire x1="243.84" y1="248.92" x2="226.06" y2="248.92" width="0.1524" layer="91"/>
+<label x="233.68" y="248.92" size="1.778" layer="95"/>
+</segment>
 </net>
 <net name="PIN26" class="0">
 <segment>
@@ -12579,11 +12584,6 @@ GND</text>
 <wire x1="436.88" y1="297.18" x2="414.02" y2="297.18" width="0.1524" layer="91"/>
 <label x="421.64" y="297.18" size="1.778" layer="95"/>
 <pinref part="XIO" gate="A" pin="3"/>
-</segment>
-<segment>
-<pinref part="IC1" gate="A" pin="A1"/>
-<wire x1="243.84" y1="248.92" x2="226.06" y2="248.92" width="0.1524" layer="91"/>
-<label x="233.68" y="248.92" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="PIN31" class="0">
