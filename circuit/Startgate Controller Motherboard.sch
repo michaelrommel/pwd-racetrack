@@ -5311,6 +5311,17 @@ Source: http://www.mouser.com/ds/2/392/products_18-2245.pdf</description>
 <wire x1="160.02" y1="129.54" x2="160.02" y2="106.68" width="0.1524" layer="91"/>
 <junction x="144.78" y="129.54"/>
 <junction x="160.02" y="106.68"/>
+<pinref part="IC2" gate="G$1" pin="VCC1"/>
+<wire x1="160.02" y1="220.98" x2="160.02" y2="215.9" width="0.1524" layer="91"/>
+<wire x1="149.86" y1="220.98" x2="160.02" y2="220.98" width="0.1524" layer="91"/>
+<pinref part="IC2" gate="G$1" pin="1-2EN"/>
+<wire x1="160.02" y1="185.42" x2="160.02" y2="180.34" width="0.1524" layer="91"/>
+<wire x1="160.02" y1="180.34" x2="149.86" y2="180.34" width="0.1524" layer="91"/>
+<wire x1="149.86" y1="180.34" x2="149.86" y2="185.42" width="0.1524" layer="91"/>
+<wire x1="149.86" y1="185.42" x2="149.86" y2="220.98" width="0.1524" layer="91"/>
+<wire x1="40.64" y1="106.68" x2="40.64" y2="185.42" width="0.1524" layer="91"/>
+<wire x1="40.64" y1="185.42" x2="149.86" y2="185.42" width="0.1524" layer="91"/>
+<junction x="149.86" y="185.42"/>
 </segment>
 </net>
 <net name="GND" class="0">
@@ -5588,19 +5599,8 @@ Source: http://www.mouser.com/ds/2/392/products_18-2245.pdf</description>
 <wire x1="210.82" y1="124.46" x2="210.82" y2="114.3" width="0.1524" layer="91"/>
 <wire x1="210.82" y1="114.3" x2="111.76" y2="114.3" width="0.1524" layer="91"/>
 <wire x1="111.76" y1="114.3" x2="111.76" y2="127" width="0.1524" layer="91"/>
-<wire x1="210.82" y1="139.7" x2="210.82" y2="223.52" width="0.1524" layer="91"/>
-<pinref part="IC2" gate="G$1" pin="VCC1"/>
-<wire x1="210.82" y1="223.52" x2="160.02" y2="223.52" width="0.1524" layer="91"/>
-<wire x1="160.02" y1="223.52" x2="160.02" y2="215.9" width="0.1524" layer="91"/>
-<junction x="210.82" y="139.7"/>
 <wire x1="238.76" y1="124.46" x2="210.82" y2="124.46" width="0.1524" layer="91"/>
 <junction x="210.82" y="124.46"/>
-<pinref part="IC2" gate="G$1" pin="1-2EN"/>
-<wire x1="160.02" y1="185.42" x2="160.02" y2="180.34" width="0.1524" layer="91"/>
-<wire x1="160.02" y1="180.34" x2="149.86" y2="180.34" width="0.1524" layer="91"/>
-<wire x1="149.86" y1="180.34" x2="149.86" y2="223.52" width="0.1524" layer="91"/>
-<wire x1="149.86" y1="223.52" x2="160.02" y2="223.52" width="0.1524" layer="91"/>
-<junction x="160.02" y="223.52"/>
 </segment>
 </net>
 <net name="N$3" class="0">

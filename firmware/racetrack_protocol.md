@@ -17,7 +17,7 @@ Pinewood Derby Racetrack Communication Protocol
 - message ids are simple integer numbers and should be unique only from the
   perspective of the message creator
 - Race track acknowledges commands as well
-- RFIDs are normally between 4 bytes and 8 bytes long
+- RFIDs are normally between 4 bytes and 8 bytes long (Example UID: 04 57 57 A2 2D 4D 81 or UID: 7A 23 08 85)
 - headlines indicate communication direction
   - C: Android / Raspberry / Operator PC as a Controller
   - R: Racetrack electronics
@@ -70,3 +70,6 @@ Pinewood Derby Racetrack Communication Protocol
 | c    | R -> C    | Completed the setup of a heat, all cars in place   | required: s; optional: l.id, l.mn, l.sn      |
 | s    | C -> R    | Set up the racetrack to adjust the lasers          | required: s                                  |
 | l    | R -> C    | Laser measurement report for setup                 | required: s, l.ll                            |
+
+
+
