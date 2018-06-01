@@ -39,7 +39,7 @@
 #define RST_PIN         9          // Configurable, see typical pin layout above
 #define SS_PIN          10         // Configurable, see typical pin layout above
 
-MFRC522 mfrc522(SS_PIN, RST_PIN);  // Create MFRC522 instance
+MFRC522 mfrc522(SS_PIN, UINT8_MAX);  // Create MFRC522 instance
 
 void setup() {
 	Serial.begin(57600);		// Initialize serial communications with the PC
@@ -62,5 +62,17 @@ void loop() {
 	}
 
 	// Dump debug info about the card; PICC_HaltA() is automatically called
-	mfrc522.PICC_DumpToSerial(&(mfrc522.uid));
+	// mfrc522.PICC_DumpToSerial(&(mfrc522.uid));
+  // mfrc522.PICC_DumpDetailsToSerial(&(mfrc522.uid));
+
+  Serial.print( "RFID: " );
+  for (byte i = 0; i < mfrc522.uid.size; i++) {
+    if(mfrc522.uid.uidByte[i] < 0x10)
+      Serial.print(F(" 0"));
+    else
+      Serial.print(F(" "));
+    Serial.print(mfrc522.uid.uidByte[i], HEX);
+  } 
+  Serial.println();
+  mfrc522.PICC_HaltA();
 }
