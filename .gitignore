@@ -35,3 +35,10 @@
 *.b#?
 *.s#?
 *_[0-9][0-9].pro
+
+#arduino-makefile build directories
+*build-pro-*
+
+# VIM swapfiles
+.*.swp
+
