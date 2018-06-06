@@ -1,5 +1,5 @@
 #include "PWDLane.h"
-#include <wire.h>
+#include <Wire.h>
 
 PWDLane::PWDLane( const uint8_t deviceAddress)
 {

@@ -1,8 +1,24 @@
+# Generic Project details
+ARCHITECTURE = avr
 BOARD_TAG = pro
 BOARD_SUB = 8MHzatmega328
-ARCHITECTURE = avr
 
-#SERIALDEV = /dev/tty.usbserial-A50285BI
+ifeq ($(OS), Windows_NT)
+
+# Windows peculiarities
+ARDUINO_DIR = D:/Arduino
+ARDMK_DIR = D:/MichaelRommel/Software/Arduino-Makefile
+MONITOR_PORT = com3
+MONITOR_CMD = putty
+MONITOR_PARAMS = 8,1,n,N
+MONITOR_BAUDRATE = -b 57600
+
+ARDUINO_PACKAGE_DIR := C:/Users/$(USER)/AppData/Local/Arduino15/packages
+USER_LIB_PATH := D:/syncplicity/rommminw/Documents/Arduino/libraries
+
+include D:/MichaelRommel/Software/Arduino-Makefile/Arduino.mk
+
+else
 
 # using screen
 #MONITOR_PORT = /dev/tty.usbserial-A50285BI
@@ -19,16 +35,6 @@ MONITOR_BAUDRATE = -b 57600
 #MONITOR_PORT = -D /dev/tty.usbserial-A50285BI
 #MONITOR_BAUDRATE = -b 57600
 
-# AVRDUDECONF := "/Applications/Arduino.app/Contents/Java/hardware/tools/avr/etc/avrdude.conf"
-
-# Define Arduino support package installation path where SAM device support has been installed
-# # Linux
-# #ARDUINO_PACKAGE_DIR := $(HOME)/.arduino15/packages
-# # macOS
-# #ARDUINO_PACKAGE_DIR := $(HOME)/Library/Arduino15/packages
-# # Windows
-# #ARDUINO_PACKAGE_DIR := "C:/Users/$(USER)/AppData/Local/Arduino15/packages"
-#
-# include ../../Sam.mk
-
 include /usr/local/opt/arduino-mk/Arduino.mk
+
+endif
