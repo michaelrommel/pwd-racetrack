@@ -2,7 +2,7 @@
 ARCHITECTURE = sam
 BOARD_TAG = arduino_due_x
 
-ifeq ($(OS), Windows_NT)
+ifeq ($(CURRENT_OS), Windows)
 
 # Windows peculiarities
 ARDUINO_DIR = D:/Arduino
@@ -32,8 +32,10 @@ else
 
 # using picocom
 MONITOR_CMD = PICOCOM
-MONITOR_PORT = /dev/tty.usbmodemFA2311
+MONITOR_PORT = /dev/cu.usbmodemFA2311
+#MONITOR_PORT = /dev/cu.usbmodem5D11
 MONITOR_BAUDRATE = -b 57600
+#MONITOR_BAUDRATE = -b 9600
 
 # using minicom
 #MONITOR_CMD = minicom 
@@ -43,6 +45,7 @@ MONITOR_BAUDRATE = -b 57600
 
 ARDUINO_PACKAGE_DIR := $(HOME)/Library/Arduino15/packages
 
-include /usr/local/opt/arduino-mk/Sam.mk
+#include /usr/local/opt/arduino-mk/Sam.mk
+include ../../../Arduino-Makefile-tuna-f1sh/Sam.mk
 
 endif
