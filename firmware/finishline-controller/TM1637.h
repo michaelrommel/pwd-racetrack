@@ -64,9 +64,9 @@ public:     // api for graphical programming project - loovee@2015-8-4
     {
         if(num>9999 || num<0)return;
         
-        static int num_buf = 0;
-        if(num == num_buf)return;
-        num_buf = num;
+        //static int num_buf = 0;
+        //if(num == num_buf)return;
+        //num_buf = num;
 
         // init io
         Clkpin  = pinClk;
