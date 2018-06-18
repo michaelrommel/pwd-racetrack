@@ -1,0 +1,150 @@
+// ArduinoJson - arduinojson.org
+// Copyright Benoit Blanchon 2014-2018
+// MIT License
+//
+// This example shows how to generate a JSON document with ArduinoJson.
+
+#include <ArduinoJson.h>
+#include <malloc.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+extern char _end;
+extern "C" char *sbrk(int i);
+char *ramstart=(char *)0x20070000;
+char *ramend=(char *)0x20088000;
+
+void ShowMemory(void)
+{
+
+  struct mallinfo mi=mallinfo();
+
+  char *heapend=sbrk(0);
+  register char * stack_ptr asm("sp");
+
+  //("    arena=%d\n",mi.arena);
+  //("  ordblks=%d\n",mi.ordblks);
+  //(" uordblks=%d\n",mi.uordblks);
+  //(" fordblks=%d\n",mi.fordblks);
+  //(" keepcost=%d\n",mi.keepcost);
+  
+  Serial.print("RAM Start ");
+  Serial.println((unsigned long)ramstart);
+  Serial.print("Data/Bss end ");
+  Serial.println((unsigned long)&_end);
+  Serial.print("Heap End ");
+  Serial.println((unsigned long)heapend);
+  Serial.print("Stack Ptr ");
+  Serial.println((unsigned long)stack_ptr);
+  Serial.print("RAM End ");
+  Serial.println((unsigned long)ramend);
+
+  Serial.print("Heap RAM Used: ");
+  Serial.println(mi.uordblks);
+  Serial.print("Program RAM Used ");
+  Serial.println(&_end - ramstart);
+  Serial.print("Stack RAM Used ");
+  Serial.println(ramend - stack_ptr);
+
+  Serial.print("Estimated Free RAM: ");
+  Serial.println(stack_ptr - heapend + mi.fordblks);
+}
+
+
+void setup() {
+
+  StaticJsonBuffer<600> jsonBuffer;
+
+  // Initialize Serial port
+  Serial.begin(57600);
+  while (!Serial) continue;
+
+
+  JsonObject& root = jsonBuffer.createObject();
+  root["id"] = 13;
+  root["c"] = "i";
+  root["h"] = 7;
+  
+  JsonArray& l = root.createNestedArray("l");
+  
+  JsonObject& l_0 = l.createNestedObject();
+  //l_0["t"] = 15000;
+  //l_0["rf"] = "045F57A22D4D81";
+  //l_0["ow"] = "Kara Thrace";
+  //l_0["mn"] = 1234567;
+  //l_0["sn"] = 42;
+  
+  JsonObject& l_1 = l.createNestedObject();
+  l_1["t"] = 15000;
+  l_1["rf"] = "03857FAD2D4D74";
+  l_1["ow"] = "Lee Adama";
+  l_1["mn"] = 1234567;
+  l_1["sn"] = 35;
+  
+  JsonObject& l_2 = l.createNestedObject();
+  //l_2["t"] = 15000;
+  //l_2["rf"] = "156F78DA2D6582";
+  //l_2["ow"] = "Sharon Valerii";
+  //l_2["mn"] = 1234567;
+  //l_2["sn"] = 24;
+  
+  JsonObject& l_3 = l.createNestedObject();
+  //l_3["t"] = 15000;
+  //l_3["rf"] = "669EBCC390DA03";
+  //l_3["ow"] = "Karl Agathon";
+  //l_3["mn"] = 1234567;
+  //l_3["sn"] = 45;
+
+  root.printTo(Serial);
+  Serial.println();
+  root.prettyPrintTo(Serial);
+  Serial.println( "\n" );
+
+  const char* json = "{\"id\":13,\"c\":\"i\",\"h\":7,\"l\":[{},{},{\"t\":15000,\"rf\":\"045F57A22D4D81\",\"ow\":\"Kara Thrace\",\"mn\":1234567,\"sn\":42},{}]}";
+  JsonObject* lane[4];
+  JsonObject& root2 = jsonBuffer.parseObject(json);
+
+  int id = root2["id"]; // 13
+  const char* c = root2["c"]; // "i"
+  int h = root2["h"]; // 7
+  
+  JsonArray& lanes = root2["l"];
+
+  for( int i=0; i<4; i++ ) {
+  
+    JsonObject& lx = lanes[i];
+
+    int racetime = lx["t"];
+    const char* rfid = lx["rf"];
+    const char* shortname = lx["ow"];
+    long modno = lx["mn"];
+    int serno = lx["sn"];
+   
+    if( racetime ) {
+      Serial.print( F("Car in lane ") );
+      Serial.println( i );
+      Serial.print( F("Racetime: ") );
+      Serial.println( racetime );
+      Serial.print( F("RFID: ") );
+      Serial.println( rfid );
+      Serial.print( F("Short Name: ") );
+      Serial.println( shortname );
+      Serial.print( F("Model: ") );
+      Serial.println( modno );
+      Serial.print( F("Serial No: ") );
+      Serial.println( serno );
+    } else {  
+      Serial.print( F("No car in lane ") );
+      Serial.println( i );
+    }
+  }
+
+  ShowMemory();
+  
+}
+
+void loop() {
+  // not used in this example
+}
+
+
