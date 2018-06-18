@@ -1,29 +1,32 @@
 //
-// Speedtester
-//
-// Tests how fast the loop can iterate while updating all displays
+// Racetrack Firmware
 //
 
+#include "PWDLane.h"
 #include "FastLED.h"
-#include "PCF8574.h"
-#include "TM1637.h"
 
-#define NEOPIXEL_PIN 28
-#define TM1637_CLOCK 26
 #define TM1637_DATA 24
+#define TM1637_CLOCK 26
+#define NEOPIXEL_PIN 28
+#define DEMO_PIN 30
+#define LASER_PIN 32
 
-#define LANES 4
+#define LDR_PIN A7
 #define LDR_THRESHOLD 400
 
-PCF8574 PCF[LANES] = {
-  PCF8574(0),  
-  PCF8574(1),  
-  PCF8574(2),  
-  PCF8574(3),  
+#define LANES 4
+
+// needs to be global here, as it is shared across all lane objects
+CRGB leds[LANES*7];
+
+// instantiate the <n> lanes
+PWDLane lane[LANES] = {
+  PWDLane( 0, TM1637_CLOCK, TM1637_DATA, leds ),  
+  PWDLane( 1, TM1637_CLOCK, TM1637_DATA, leds ),  
+  PWDLane( 2, TM1637_CLOCK, TM1637_DATA, leds ),  
+  PWDLane( 3, TM1637_CLOCK, TM1637_DATA, leds ),  
 };
 
-TM1637 LED_small;
-CRGB leds[LANES*7];
 
 // counter for loop stats
 unsigned long c = 0;
@@ -35,36 +38,25 @@ unsigned long start;
 
 bool race_on = false;
 int ldr;
-int lane = 0;
+int lane_status = 0;
 int finishers = 0;
 bool update_rank = false;
 // rank contains the lane numbers in the order they finish
 int rank[LANES] = {0, 0, 0, 0};
 // place contains the finishing place in lane order
 int place[LANES] = {0, 0, 0, 0};
+// helper array for bit positions
 byte pow2[8] = { 1, 2, 4, 8, 16, 32, 64, 128 };
 
-const byte digit[10][7] = {
-	{1, 1, 1, 1, 1, 1, 0}, //0
-	{0, 1, 1, 0, 0, 0, 0}, //1
-	{1, 1, 0, 1, 1, 0, 1}, //2
-	{1, 1, 1, 1, 0, 0, 1}, //3
-	{0, 1, 1, 0, 0, 1, 1}, //4
-	{1, 0, 1, 1, 0, 1, 1}, //5
-	{1, 0, 1, 1, 1, 1, 1}, //6
-	{1, 1, 1, 0, 0, 0, 0}, //7
-	{1, 1, 1, 1, 1, 1, 1}, //8
-	{1, 1, 1, 1, 0, 1, 1}  //9
-};
 
-
-void select_lane(int l ) {
+// we have to unselect all lanes first, otherwise two lanes might 
+// temporarily end up both selected. Shouldn't be a big deal, but still...
+// n == l equals false for all lanes other than the desired one
+void select_lane( int l ) {
   for( int n=0; n<LANES; n++ ) {
-    if( n!=l ) {
-      PCF[n].write8(0);
-    }
+    lane[n].select( n == l );
   }
-  PCF[l].write8(7);
+  lane[l].select( true );
 }
 
 
@@ -72,12 +64,20 @@ void setup() {
   Serial.begin( 57600 );
   //while ( ! Serial );
   Serial.println( "Racetrack starting." );
-  pinMode(28, OUTPUT);
-  pinMode(A7, INPUT);
+
+  // set all pin modes
+  pinMode( DEMO_PIN, INPUT_PULLUP );
+  pinMode( LASER_PIN, OUTPUT );
+  pinMode( LDR_PIN, INPUT );
+  pinMode( NEOPIXEL_PIN, OUTPUT );
   FastLED.addLeds<NEOPIXEL, NEOPIXEL_PIN>(leds, LANES * 7);
 
+  // clear display
   for( int n=0; n<LANES; n++ ) {
-    PCF[n].begin(0);
+    lane[n].begin();
+    select_lane( n );
+    lane[n].showNumber( n );
+    lane[n].setBigDigit( PWDLane::DIGIT_OFF );
   }
   
   // start stats
@@ -85,8 +85,6 @@ void setup() {
   start = millis();
   race_on = true;
   
-  Serial.println( "Entering loop." );
-
 }
 
 void loop() {
@@ -108,11 +106,11 @@ void loop() {
           race_on = true;
           start = millis();
           elapsed = 0;
-          lane = 0;
+          lane_status = 0;
           finishers = 0;
           // blank the big displays
-          for( int i=0; i<LANES*7; i++ ) {
-            leds[i] = CRGB::Black;
+          for( int n=0; n<LANES; n++ ) {
+            lane[n].setBigDigit( PWDLane::DIGIT_OFF );
           }
           update_rank = true;
           break;
@@ -120,7 +118,7 @@ void loop() {
         // no checks if the lane already finished...
         case '0':
           Serial.println( "Got 0" );
-          lane = lane | 1;
+          lane_status = lane_status | 1;
           finishers++;
           rank[finishers-1] = 0;
           place[0] = finishers;
@@ -128,7 +126,7 @@ void loop() {
           break;
         case '1':
           Serial.println( "Got 1" );
-          lane = lane | 2;
+          lane_status = lane_status | 2;
           finishers++;
           rank[finishers-1] = 1;
           place[1] = finishers;
@@ -136,7 +134,7 @@ void loop() {
           break;
         case '2':
           Serial.println( "Got 2" );
-          lane = lane | 4;
+          lane_status = lane_status | 4;
           finishers++;
           rank[finishers-1] = 2;
           place[2] = finishers;
@@ -144,7 +142,7 @@ void loop() {
           break;
         case '3':
           Serial.println( "Got 3" );
-          lane = lane | 8;
+          lane_status = lane_status | 8;
           finishers++;
           rank[finishers-1] = 3;
           place[3] = finishers;
@@ -158,10 +156,10 @@ void loop() {
   for( int n=0; n<4; n++) {
     // if the lane has not finished or is the one that finished in this 
     // loop iteration, then update the millis display
-    if( ( ! (lane & pow2[n]) ) || ( (n==rank[finishers-1]) && update_rank ) ) {
+    if( ( ! (lane_status & pow2[n]) ) || ( (n==rank[finishers-1]) && update_rank ) ) {
       // select lane chip
       select_lane( n );
-      LED_small.DigitDisplayWrite( TM1637_CLOCK, TM1637_DATA, elapsed );
+      lane[n].showNumber( elapsed );
       // normally we would do that also continuously, so simulate this here
       ldr = analogRead( A7 );
       //Serial.print( "LDR: " );
@@ -171,7 +169,7 @@ void loop() {
         // TODO: add array for multiple consecutive breaks from original sketch.
         //       may actually not be needed as the loop is around 18ms
         // set bit for this lane
-        lane = lane | pow2[n];
+        lane_status = lane_status | pow2[n];
         // increase number of finishers (1-4)
         finishers++;
         // remember the lane for the n-th finisher
@@ -186,9 +184,7 @@ void loop() {
     if( ( n==rank[finishers-1]) && update_rank ) {
       Serial.print( "update milli displays for lane " );
       Serial.println( n );
-      for( int i=0; i<7; i++ ) {
-        leds[i+n*7] = ( digit[place[n]][i] ? CRGB( 20, 20, 20) : CRGB::Black );
-      }
+      lane[n].setBigDigit( place[n] );
     }
   }
 
@@ -216,3 +212,5 @@ void loop() {
   }
 
 }
+
+// vim:si:sw=2

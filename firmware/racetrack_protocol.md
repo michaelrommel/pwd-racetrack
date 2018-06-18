@@ -8,16 +8,18 @@ Pinewood Derby Racetrack Communication Protocol
 
 ## Overview ##
 
-- strings may be at most 254 bytes long
+- strings may be at most 384 bytes long, that means, that JsonBuffer needs to
+  be at least 601 bytes long, this is too large for the Pro mini, need to exchange
+  only basic information between the controllers
 - strings can be sent with a terminating linefeed \n, it will be ignored
   while parsing the JSON
-- strings are sent repeatedly every second until acknowledged without error
+- strings are sent repeatedly every 2 seconds until acknowledged without error
 - strings are re-sent when acknowledged with error
 - error messages are not acknowledged and not re-sent
 - message ids are simple integer numbers and should be unique only from the
   perspective of the message creator
 - Race track acknowledges commands as well
-- RFIDs are normally between 4 bytes and 8 bytes long (Example UID: 04 57 57 A2 2D 4D 81 or UID: 7A 23 08 85)
+- RFIDs are normally between 4 bytes and 7 bytes long (Example UID: 04 57 57 A2 2D 4D 81 or UID: 7A 23 08 85)
 - headlines indicate communication direction
   - C: Android / Raspberry / Operator PC as a Controller
   - R: Racetrack electronics
@@ -41,9 +43,9 @@ Pinewood Derby Racetrack Communication Protocol
 |------------|-----------|--------|----------|-------------------------------------------------------------------------------|
 | time       | t         | number |          | Elapsed time of the car in this lane                                          |
 | rfid       | rf        | string |          | RFID of the car in this lane                                                  |
-| owner      | ow        | string |          | Full name of the car owner                                                    |
-| model      | mn        | string |          | Model identifier of the car                                                   |
-| serial     | sn        | number |          | Serial number of the car within the model line                                |
+| owner      | ow        | string |          | Full name of the car owner (max. 15 characters)                               |
+| model      | mn        | number |          | Model identifier of the car (max. 8 digits, <100.000.000)                     |
+| serial     | sn        | number |          | Serial number of the car within the model line (max. 6 digits, <1.000.000)    |
 | laser      | ll        | number |          | Laser light level as detected by the LDR sensor, helps setting up the track   |
 
 ### Table of Status Codes ###

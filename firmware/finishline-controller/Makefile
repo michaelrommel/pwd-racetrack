@@ -19,8 +19,8 @@ MONITOR_BAUDRATE = -b 57600
 # #ARDUINO_PACKAGE_DIR := $(HOME)/Library/Arduino15/packages
 # # Windows
 ARDUINO_PACKAGE_DIR := C:/Users/$(USER)/AppData/Local/Arduino15/packages
-USER_LIB_PATH := C:/Users/rommminw/AppData/Local/Arduino15/packages/arduino/hardware/sam/1.6.11/system/libsam
-USER_INCLUDES := C:/Users/rommminw/AppData/Local/Arduino15/packages/arduino/hardware/sam/1.6.11/system/libsam
+#USER_LIB_PATH := C:/Users/rommminw/AppData/Local/Arduino15/packages/arduino/hardware/sam/1.6.11/system/libsam
+#USER_INCLUDES := C:/Users/rommminw/AppData/Local/Arduino15/packages/arduino/hardware/sam/1.6.11/system/libsam
 
 include D:/MichaelRommel/Software/Arduino-Makefile/Sam.mk
 
@@ -44,6 +44,7 @@ MONITOR_BAUDRATE = -b 57600
 #MONITOR_BAUDRATE = -b 57600
 
 ARDUINO_PACKAGE_DIR := $(HOME)/Library/Arduino15/packages
+USER_LIB_PATH := $(realpath /Volumes/Data/Software/michael/arduino/libraries/)
 
 #include /usr/local/opt/arduino-mk/Sam.mk
 include ../../../Arduino-Makefile-tuna-f1sh/Sam.mk
