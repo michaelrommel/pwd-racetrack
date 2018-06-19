@@ -29,24 +29,22 @@ PWDLane lane[LANES] = {
 
 
 // counter for loop stats
-unsigned long c = 0;
+unsigned long c;
 unsigned long last_elapsed;
 unsigned long last_millis;
 
 unsigned long elapsed;
 unsigned long start;
 
-bool race_on = false;
 int ldr;
-int lane_status = 0;
-int finishers = 0;
-bool update_rank = false;
+int lane_status;
+int finishers;
+bool race_on;
+bool update_rank;
 // rank contains the lane numbers in the order they finish
 int rank[LANES] = {0, 0, 0, 0};
 // place contains the finishing place in lane order
 int place[LANES] = {0, 0, 0, 0};
-// helper array for bit positions
-byte pow2[8] = { 1, 2, 4, 8, 16, 32, 64, 128 };
 
 
 // we have to unselect all lanes first, otherwise two lanes might 
@@ -61,6 +59,7 @@ void select_lane( int l ) {
 
 
 void setup() {
+
   Serial.begin( 57600 );
   //while ( ! Serial );
   Serial.println( "Racetrack starting." );
@@ -70,21 +69,25 @@ void setup() {
   pinMode( LASER_PIN, OUTPUT );
   pinMode( LDR_PIN, INPUT );
   pinMode( NEOPIXEL_PIN, OUTPUT );
+
+  // initialize the LED library (strip type, pin number, variable,
+  // number of LEDs
   FastLED.addLeds<NEOPIXEL, NEOPIXEL_PIN>(leds, LANES * 7);
 
-  // clear display
+  // clear displays
   for( int n=0; n<LANES; n++ ) {
-    lane[n].begin();
     select_lane( n );
-    lane[n].showNumber( n );
+    lane[n].begin();
+    lane[n].showNumber( 0 );
     lane[n].setBigDigit( PWDLane::DIGIT_OFF );
   }
+  FastLED.show();
   
-  // start stats
+  // start statistics
   last_millis = millis();
   start = millis();
   race_on = true;
-  
+
 }
 
 void loop() {
@@ -156,7 +159,7 @@ void loop() {
   for( int n=0; n<4; n++) {
     // if the lane has not finished or is the one that finished in this 
     // loop iteration, then update the millis display
-    if( ( ! (lane_status & pow2[n]) ) || ( (n==rank[finishers-1]) && update_rank ) ) {
+    if( ( ! (lane_status & (1 << n)) ) || ( (n==rank[finishers-1]) && update_rank ) ) {
       // select lane chip
       select_lane( n );
       lane[n].showNumber( elapsed );
@@ -169,7 +172,7 @@ void loop() {
         // TODO: add array for multiple consecutive breaks from original sketch.
         //       may actually not be needed as the loop is around 18ms
         // set bit for this lane
-        lane_status = lane_status | pow2[n];
+        lane_status = lane_status | (1 << n);
         // increase number of finishers (1-4)
         finishers++;
         // remember the lane for the n-th finisher
