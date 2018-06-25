@@ -4,9 +4,9 @@
  *
  * Copyright (c) 2012 seeed technology inc.
  * Website    : www.seeed.cc
- * Author     : Frankie.Chu, Michael Rommel
- * Create Time: 9 April 2012
- * Change Log : Extended for Pinewood Derby Project by Michael Rommel
+ * Author     : Frankie.Chu
+ * Create Time: 9 April,2012
+ * Change Log :
  *
  * The MIT License (MIT)
  *
@@ -31,118 +31,26 @@
 
 #include "TM1637.h"
 #include <Arduino.h>
-
-static const byte digit[30] = {
-  // bitfield with LSB = first segment and MSB = last segment
-  // 0x0 up to 0xf = hexadecimal characters
-  // Special characters, see constants in .h file
-  0x3f, 0x06, 0x5b, 0x4f, 0x66, 0x6d, 0x7d, 0x07, 0x7f, 0x6f, // 0-9
-  0x77, 0x7c, 0x39, 0x5e, 0x79, 0x71, 0x74, 0x76, 0x0e, 0x38, // A-L
-  0x54, 0x5c, 0x73, 0x50, 0x78, 0x1c, 0x3e, 0x6e, 0x40, 0x0   // n-OFF
-};
-
-
+static int8_t TubeTab[] = {0x3f,0x06,0x5b,0x4f,
+    0x66,0x6d,0x7d,0x07,
+    0x7f,0x6f,0x77,0x7c,
+0x39,0x5e,0x79,0x71};//0~9,A,b,C,d,E,F
 TM1637::TM1637(uint8_t Clk, uint8_t Data)
 {
     Clkpin = Clk;
     Datapin = Data;
     pinMode(Clkpin,OUTPUT);
     pinMode(Datapin,OUTPUT);
-
-    set( BRIGHTEST ); 
-
 }
 
-
-TM1637::TM1637()
+void TM1637::init(void)
 {
-    set( BRIGHTEST ); 
+    clearDisplay();
 }
-
-
-void TM1637::printpins()
-{
-    Serial.print( "Initialized with " );
-    Serial.print( Clkpin );
-    Serial.print( " " );
-    Serial.println( Datapin );
-}
-
-
-// Shows a time provided in millis
-// formatted as seconds with decimal points
-// Takes numbers up to 999999 millis
-void TM1637::DigitDisplayWrite( uint32_t num )
-{
-
-    if( num < 0 || num > 1000000 ) return;
-
-    // init io
-    //Clkpin  = pinClk;
-    //Datapin = pinDta;
-    //pinMode(Clkpin, OUTPUT);
-    //pinMode(Datapin, OUTPUT);
-  
-    if( num<10 )
-    {
-    	display(3, num);
-    	display(2, 0);
-    	display(1, 0);
-    	point( POINT_ON );
-    	display(0, 0);
-    	point( POINT_OFF );
-    }
-    else if( num<100 )
-    {
-    	display(3, num%10);
-    	display(2, (num/10)%10);
-    	display(1, 0);
-    	point( POINT_ON );
-    	display(0, 0);
-    	point( POINT_OFF );
-    }
-    else if( num<1000 )
-    {
-    	display(3, num%10);
-    	display(2, (num/10)%10);
-    	display(1, (num/100)%10);
-    	point( POINT_ON );
-    	display(0, 0);
-    	point( POINT_OFF );
-    }
-    else if( num<10000 )
-    {
-    	display(3, num%10);
-    	display(2, (num/10)%10);
-    	display(1, (num/100)%10);
-    	point( POINT_ON );
-    	display(0, (num/1000)%10);
-    	point( POINT_OFF );
-    }
-    else if(num<100000)
-    {
-    	display(3, (num/10)%10);
-    	display(2, (num/100)%10);
-    	point( POINT_ON );
-    	display(1, (num/1000)%10);
-    	point( POINT_OFF );
-    	display(0, (num/10000)%10);
-    }
-    else
-    {
-    	display(3, (num/100)%10);
-    	point( POINT_ON );
-    	display(2, (num/1000)%10);
-    	point( POINT_OFF );
-    	display(1, (num/10000)%10);
-    	display(0, (num/100000)%10);
-    }
-}
-
 
 int TM1637::writeByte(int8_t wr_data)
 {
-    uint8_t i;
+    uint8_t i,count1;
     for(i=0;i<8;i++)        //sent 8bit data
     {
         digitalWrite(Clkpin,LOW);
@@ -170,8 +78,6 @@ int TM1637::writeByte(int8_t wr_data)
 
     return ack;
 }
-
-
 //send start signal to TM1637
 void TM1637::start(void)
 {
@@ -180,8 +86,6 @@ void TM1637::start(void)
     digitalWrite(Datapin,LOW);
     digitalWrite(Clkpin,LOW);
 }
-
-
 //End of transmission
 void TM1637::stop(void)
 {
@@ -190,8 +94,6 @@ void TM1637::stop(void)
     digitalWrite(Clkpin,HIGH);
     digitalWrite(Datapin,HIGH);
 }
-
-
 //display function.Write to full-screen.
 void TM1637::display(int8_t DispData[])
 {
@@ -216,8 +118,7 @@ void TM1637::display(int8_t DispData[])
     writeByte(Cmd_DispCtrl);//
     stop();           //
 }
-
-
+//******************************************
 void TM1637::display(uint8_t BitAddr,int8_t DispData)
 {
     int8_t SegData;
@@ -241,7 +142,6 @@ void TM1637::clearDisplay(void)
     display(0x02,0x7f);
     display(0x03,0x7f);
 }
-
 //To take effect the next time it displays.
 void TM1637::set(uint8_t brightness,uint8_t SetData,uint8_t SetAddr)
 {
@@ -250,7 +150,7 @@ void TM1637::set(uint8_t brightness,uint8_t SetData,uint8_t SetAddr)
     Cmd_DispCtrl = 0x88 + brightness;//Set the brightness and it takes effect the next time it displays.
 }
 
-//Whether to light the decimal point
+//Whether to light the clock point ":".
 //To take effect the next time it displays.
 void TM1637::point(boolean PointFlag)
 {
@@ -260,39 +160,24 @@ void TM1637::point(boolean PointFlag)
 void TM1637::coding(int8_t DispData[])
 {
     uint8_t PointData;
-    if( _PointFlag == POINT_ON ) {
-	PointData = 0x80;
-    } else {
-	PointData = 0;
-    }
-    for(uint8_t i = 0;i < 4;i ++) {
-        if( DispData[i] == 0x7f ) {
-	    DispData[i] = 0x00;
-	} else {
-	    DispData[i] = digit[DispData[i]] + PointData;
-	}
+    if(_PointFlag == POINT_ON)PointData = 0x80;
+    else PointData = 0;
+    for(uint8_t i = 0;i < 4;i ++)
+    {
+        if(DispData[i] == 0x7f)DispData[i] = 0x00;
+        else DispData[i] = TubeTab[DispData[i]] + PointData;
     }
 }
-
 int8_t TM1637::coding(int8_t DispData)
 {
     uint8_t PointData;
-    if( _PointFlag == POINT_ON ) {
-	PointData = 0x80;
-    } else {
-	PointData = 0;
-    }
-    if( DispData == 0x7f ) {
-	DispData = 0x00;
-    } else {
-	DispData = digit[DispData] + PointData;
-    }
+    if(_PointFlag == POINT_ON)PointData = 0x80;
+    else PointData = 0;
+    if(DispData == 0x7f) DispData = 0x00 + PointData;//The bit digital tube off
+    else DispData = TubeTab[DispData] + PointData;
     return DispData;
 }
-
 void TM1637::bitDelay(void)
 {
     delayMicroseconds(50);
 }
-
-// vim:si:sw=4

@@ -12,7 +12,7 @@
 class PWDLane {
 
   public:
-    explicit PWDLane( const uint8_t deviceAddress, const uint8_t clockpin, const uint8_t datapin, CRGB *leds );
+    explicit PWDLane( const uint8_t deviceAddress, const uint8_t clockpin, const uint8_t datapin, CRGB *leds, CRGB color );
     void begin();
     void select( bool on );
     uint8_t getAddress();
@@ -50,6 +50,7 @@ class PWDLane {
     CRGB * _leds;
     PCF8574 _pcf;
     TM1637  _tm;
+    CRGB _color;
 
     uint8_t _avgScanInterval;
     bool _triggerActive;

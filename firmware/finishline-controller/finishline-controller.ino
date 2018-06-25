@@ -21,10 +21,10 @@ CRGB leds[LANES*7];
 
 // instantiate the <n> lanes
 PWDLane lane[LANES] = {
-  PWDLane( 0, TM1637_CLOCK, TM1637_DATA, leds ),  
-  PWDLane( 1, TM1637_CLOCK, TM1637_DATA, leds ),  
-  PWDLane( 2, TM1637_CLOCK, TM1637_DATA, leds ),  
-  PWDLane( 3, TM1637_CLOCK, TM1637_DATA, leds ),  
+  PWDLane( 0, TM1637_CLOCK, TM1637_DATA, leds, CRGB( 255, 255, 255) ),  
+  PWDLane( 1, TM1637_CLOCK, TM1637_DATA, leds, CRGB(  30, 220, 255) ),  
+  PWDLane( 2, TM1637_CLOCK, TM1637_DATA, leds, CRGB( 255,  70,   0) ),  
+  PWDLane( 3, TM1637_CLOCK, TM1637_DATA, leds, CRGB( 180,  50, 100) ),  
 };
 
 
@@ -78,15 +78,23 @@ void setup() {
   for( int n=0; n<LANES; n++ ) {
     select_lane( n );
     lane[n].begin();
-    lane[n].showNumber( 0 );
+    lane[n].showNumber( n );
     lane[n].setBigDigit( PWDLane::DIGIT_OFF );
   }
   FastLED.show();
-  
+
+  delay( 5000 );
+
   // start statistics
   last_millis = millis();
+  
   start = millis();
   race_on = true;
+  lane_status = 0;
+  finishers = 0;
+  digitalWrite( LASER_PIN, HIGH );
+
+  Serial.println( "Entering loop." );
 
 }
 
@@ -105,10 +113,10 @@ void loop() {
     if( Serial.available() ) {
       switch( Serial.read() ) {
         case 'g':
-          Serial.println( "Got g" );
+          Serial.println( "Got g, starting race" );
+          digitalWrite( LASER_PIN, HIGH );
           race_on = true;
           start = millis();
-          elapsed = 0;
           lane_status = 0;
           finishers = 0;
           // blank the big displays
@@ -153,44 +161,79 @@ void loop() {
           break;
       }
     }
+
+    Serial.println( "Reading demo pin" );
+    int demo = digitalRead( DEMO_PIN );
+    Serial.print( "Pin is: " );
+    Serial.println( demo );
+    if( ! demo && ! race_on ) {
+      Serial.println( "Starting race." );
+      digitalWrite( LASER_PIN, HIGH );
+      race_on = true;
+      start = millis();
+      lane_status = 0;
+      finishers = 0;
+      // blank the big displays
+      for( int n=0; n<LANES; n++ ) {
+        lane[n].setBigDigit( PWDLane::DIGIT_OFF );
+      }
+      update_rank = true;
+    }
   }
   
   // display times on all counters, which have not finished
   for( int n=0; n<4; n++) {
-    // if the lane has not finished or is the one that finished in this 
-    // loop iteration, then update the millis display
-    if( ( ! (lane_status & (1 << n)) ) || ( (n==rank[finishers-1]) && update_rank ) ) {
+    if( race_on ) {
+      // if the lane has not finished or is the one that finished in this 
+      // loop iteration, then update the millis display
+      if( ( ! (lane_status & (1 << n)) ) || ( (n==rank[finishers-1]) && update_rank ) ) {
+        // select lane chip
+        select_lane( n );
+        lane[n].showNumber( elapsed );
+        // normally we would do that also continuously, so simulate this here
+        ldr = analogRead( A7 );
+        //Serial.print( "LDR: " );
+        //Serial.println( ldr );
+        if( ldr > LDR_THRESHOLD ) {
+          // detected laser beam break
+          // TODO: add array for multiple consecutive breaks from original sketch.
+          //       may actually not be needed as the loop is around 18ms
+          // set bit for this lane
+          lane_status = lane_status | (1 << n);
+          // increase number of finishers (1-4)
+          finishers++;
+          // remember the lane for the n-th finisher
+          rank[finishers-1] = n;
+          // remember the place for this lane
+          place[n] = finishers;
+          update_rank = true; 
+        }
+      }
+      
+      // if we have to update the rank display and this is the lane we have to update
+      if( ( n==rank[finishers-1]) && update_rank ) {
+        Serial.print( "update milli displays for lane " );
+        Serial.println( n );
+        lane[n].setBigDigit( place[n] );
+      }
+      
+    } else {
+      
+      // test for setup
+      Serial.println( "Race is off." );
       // select lane chip
       select_lane( n );
-      lane[n].showNumber( elapsed );
-      // normally we would do that also continuously, so simulate this here
-      ldr = analogRead( A7 );
-      //Serial.print( "LDR: " );
-      //Serial.println( ldr );
-      if( ldr > LDR_THRESHOLD ) {
-        // detected laser beam break
-        // TODO: add array for multiple consecutive breaks from original sketch.
-        //       may actually not be needed as the loop is around 18ms
-        // set bit for this lane
-        lane_status = lane_status | (1 << n);
-        // increase number of finishers (1-4)
-        finishers++;
-        // remember the lane for the n-th finisher
-        rank[finishers-1] = n;
-        // remember the place for this lane
-        place[n] = finishers;
-        update_rank = true; 
-      }
+      ldr = analogRead( A7 ) / 10;
+      lane[n].showNumber( ldr );
+      delay(50);
+
     }
-    
-    // if we have to update the rank display and this is the lane we have to update
-    if( ( n==rank[finishers-1]) && update_rank ) {
-      Serial.print( "update milli displays for lane " );
-      Serial.println( n );
-      lane[n].setBigDigit( place[n] );
-    }
+
   }
 
+  // unselect last lane to achieve a stable state for the LDR line
+  lane[3].select( false );
+  
   // only push updates to the LEDs, if necessary, as it blocks serial interrupts
   if( update_rank ) {
     FastLED.show();
@@ -211,7 +254,7 @@ void loop() {
     // this enables reading serial again, to re-start a race
     race_on = false;
     // no need to be so responsive now
-    delay( 100 );
+    delay( 200 );
   }
 
 }

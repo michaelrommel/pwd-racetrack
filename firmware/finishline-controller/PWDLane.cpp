@@ -11,14 +11,17 @@ static const byte digit[32] = {
   0x49, 0x0
 };
 
-PWDLane::PWDLane( const uint8_t deviceAddress, const uint8_t clockpin, 
-    const uint8_t datapin, CRGB * leds ) : _pcf( deviceAddress ), _tm( clockpin, datapin )
+PWDLane::PWDLane( const uint8_t deviceaddress, const uint8_t clockpin, 
+    const uint8_t datapin, CRGB * leds, CRGB color ) : _pcf( deviceaddress ), _tm( clockpin, datapin)
 {
-  _address = deviceAddress;
+  _address = deviceaddress;
   _avgScanInterval = 0;
   _triggerActive = false;
   _triggered = false;
   _leds = leds;
+  _clockpin = clockpin;
+  _datapin = datapin;
+  _color = color;
 }
 
 
@@ -31,7 +34,7 @@ void PWDLane::select( bool on )
 {
   Serial.print( F("Lane ") );
   Serial.print( _address );
-  Serial.println( on ? F("selected") : F("unselected") );
+  Serial.println( on ? F(" selected") : F(" unselected") );
   _pcf.write8( on ? 7 : 0 );
 }
 
@@ -46,7 +49,7 @@ void PWDLane::setBigDigit( uint8_t rank )
   // because someone could set up the lanes starting not from zero...
   // we are modifying the global array of LEDs here!
   for( int i=0; i<7; i++ ) {
-    _leds[i+_address*7] = ( ( digit[rank] & (1 << i) ) ? CRGB( 20, 20, 20) : CRGB::Black );
+    _leds[i+_address*7] = ( ( digit[rank] & (1 << i) ) ? _color : CRGB::Black );
   }
 }
 
