@@ -1,0 +1,50 @@
+{
+  "name": "node-restify-jwt-sample",
+  "version": "1.1.1",
+  "description": "A sample restify api service with JWT authentication",
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "eslint .",
+    "test": "cross-env LOG_LEVEL=error mocha --recursive --reporter spec --exit ./test/specs/",
+    "debug": "cross-env LOG_LEVEL=debug node index.js",
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/supermamon/node-restify-jwt-sample"
+  },
+  "keywords": [
+    "node",
+    "api",
+    "restify",
+    "jwt",
+    "authentication"
+  ],
+  "author": "Raymond Velasquez <at.supermamon@gmail.com> (https://supermamon.com)",
+  "license": "MIT",
+  "dependencies": {
+    "jsonwebtoken": "^8.3.0",
+    "level": "^4.0.0",
+    "random-number-csprng": "^1.0.2",
+    "restify": "^7.2.1",
+    "restify-errors": "^6.1.1",
+    "restify-jwt-community": "^1.0.7",
+    "serialport": "^6.2.1",
+    "uuid": "^3.3.2",
+    "winston": "^3.0.0"
+  },
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "cross-env": "^5.2.0",
+    "eslint": "^5.0.1",
+    "eslint-config-standard": "^12.0.0-alpha.0",
+    "eslint-plugin-chai-friendly": "^0.4.1",
+    "eslint-plugin-import": "^2.13.0",
+    "eslint-plugin-node": "^6.0.1",
+    "eslint-plugin-promise": "^3.8.0",
+    "eslint-plugin-standard": "^3.1.0",
+    "mocha": "^5.2.0",
+    "supertest": "^3.1.0"
+  }
+}

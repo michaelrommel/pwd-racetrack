@@ -43,3 +43,5 @@
 # VIM swapfiles
 .*.swp
 
+# Node module directory
+node_modules/
