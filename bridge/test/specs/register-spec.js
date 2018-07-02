@@ -1,12 +1,17 @@
 'use strict'
 
 const apiserver = require('../../test/server')
-const expect = require('chai').expect
 
-describe('ROUTE: /api/register', () => {
+var chai = require('chai')
+var dirtyChai = require('dirty-chai')
+var expect = chai.expect
+
+chai.use(dirtyChai)
+
+describe('ROUTE: /register', () => {
   it('should be a bad request without name', (done) => {
     apiserver
-      .post('/api/register')
+      .post('/register')
       .send({ role: 'test' })
       .expect('Content-type', /json/)
       .end((err, res) => {
@@ -24,7 +29,7 @@ describe('ROUTE: /api/register', () => {
   })
   it('should be a bad request without role', (done) => {
     apiserver
-      .post('/api/register')
+      .post('/register')
       .send({ name: 'ci-test-account' })
       .expect('Content-type', /json/)
       .end((err, res) => {
@@ -42,7 +47,7 @@ describe('ROUTE: /api/register', () => {
   })
   it('should be a bad request without a password', (done) => {
     apiserver
-      .post('/api/register')
+      .post('/register')
       .send({
         name: 'ci-test-account',
         role: 'test'
@@ -63,7 +68,7 @@ describe('ROUTE: /api/register', () => {
   })
   it('should only return usename and role with token', (done) => {
     apiserver
-      .post('/api/register')
+      .post('/register')
       .send({
         name: 'ci-test-account',
         role: 'test',
@@ -78,17 +83,17 @@ describe('ROUTE: /api/register', () => {
 
         // no errors
         expect(res.status).to.equal(200)
-        expect(res.body.error).to.be.undefined
+        expect(res.body.error).to.be.undefined()
 
         // matches input
         expect(res.body.name).to.equal('ci-test-account')
         expect(res.body.role).to.equal('test')
-        expect(res.body.password).to.be.undefined
+        expect(res.body.password).to.be.undefined()
 
         // has output
-        expect(res.body.token).to.not.be.undefined
-        expect(res.body.token).to.not.be.empty
-        expect(res.body.token).to.be.a('string').that.is.not.empty
+        expect(res.body.token).to.not.be.undefined()
+        expect(res.body.token).to.not.be.empty()
+        expect(res.body.token).to.be.a('string').that.is.not.empty()
 
         done()
       })

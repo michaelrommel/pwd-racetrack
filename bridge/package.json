@@ -1,18 +1,18 @@
 {
-  "name": "node-restify-jwt-sample",
-  "version": "1.1.1",
-  "description": "A sample restify api service with JWT authentication",
+  "name": "pwd-bridge",
+  "version": "0.0.1",
+  "description": "A small REST server communicating with the Pinewood Derby racetrac",
   "main": "index.js",
   "scripts": {
-    "lint": "eslint .",
-    "pretest": "eslint .",
+    "lint": "standard",
+    "pretest": "/usr/bin/true",
     "test": "cross-env LOG_LEVEL=error mocha --recursive --reporter spec --exit ./test/specs/",
     "debug": "cross-env LOG_LEVEL=debug node index.js",
     "start": "node index.js"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/supermamon/node-restify-jwt-sample"
+    "url": "https://github.com/michaelrommel/pwd-racetrack"
   },
   "keywords": [
     "node",
@@ -21,7 +21,7 @@
     "jwt",
     "authentication"
   ],
-  "author": "Raymond Velasquez <at.supermamon@gmail.com> (https://supermamon.com)",
+  "author": "Michael Rommel <rommel@layer-7.net>",
   "license": "MIT",
   "dependencies": {
     "jsonwebtoken": "^8.3.0",
@@ -37,14 +37,24 @@
   "devDependencies": {
     "chai": "^4.1.2",
     "cross-env": "^5.2.0",
-    "eslint": "^5.0.1",
-    "eslint-config-standard": "^12.0.0-alpha.0",
-    "eslint-plugin-chai-friendly": "^0.4.1",
-    "eslint-plugin-import": "^2.13.0",
-    "eslint-plugin-node": "^6.0.1",
-    "eslint-plugin-promise": "^3.8.0",
-    "eslint-plugin-standard": "^3.1.0",
+    "dirty-chai": "^2.0.1",
     "mocha": "^5.2.0",
+    "standard": "^11.0.1",
     "supertest": "^3.1.0"
+  },
+  "standard": {
+    "env": [
+      "mocha"
+    ],
+    "globals": [
+      "describe",
+      "context",
+      "before",
+      "beforeEach",
+      "after",
+      "afterEach",
+      "it",
+      "expect"
+    ]
   }
 }

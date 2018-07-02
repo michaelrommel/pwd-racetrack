@@ -33,7 +33,7 @@ require('./routes')(server, plugins)
 server.listen(config.PORT)
 logger.info('%s: ready. listening on port %d', MODULE_ID, config.PORT)
 
-var heatdb = level('./heatdb')
+var heatdb = level('./db/heatdb')
 
 var port1 = new SerialPort('COM7',
   { 'baudRate': 57600,

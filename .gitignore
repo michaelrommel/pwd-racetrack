@@ -45,3 +45,4 @@
 
 # Node module directory
 node_modules/
+bridge/db/
