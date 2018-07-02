@@ -2,8 +2,14 @@
 // Racetrack Firmware
 //
 
-#include "PWDLane.h"
 #include "FastLED.h"
+#include "PWDLane.h"
+#include "PWDCar.h"
+#include "PWDProtocol.h"
+
+#define LED_PIN 13
+#define FAST true
+#define SLOW false
 
 #define TM1637_DATA 24
 #define TM1637_CLOCK 26
@@ -27,6 +33,8 @@ PWDLane lane[LANES] = {
   PWDLane( 3, TM1637_CLOCK, TM1637_DATA, leds, CRGB( 180,  50, 100) ),  
 };
 
+// instantiate three serial communication channels
+PWDProtocol combr( Serial );
 
 // counter for loop stats
 unsigned long c;
@@ -58,11 +66,52 @@ void select_lane( int l ) {
 }
 
 
+void blink( bool fast )
+{
+  for( int i=0; i<3; i++ ) {
+    digitalWrite( LED_PIN, HIGH );
+    delay( fast ? 500 : 1000 );
+    digitalWrite( LED_PIN, LOW );
+    delay( fast ? 500 : 1000 );
+  }
+}
+
+
 void setup() {
 
-  Serial.begin( 57600 );
+  pinMode( LED_PIN, OUTPUT );
+  blink( FAST );
+
+  //Serial.begin( 57600 );
   //while ( ! Serial );
-  Serial.println( "Racetrack starting." );
+  //Serial.println( "Racetrack starting." );
+
+
+// testing
+
+  combr.begin();
+  combr.sendAck( 13, 51 );
+
+  combr.sendCarDetection( 0, "156F78DA2D6582" );
+  combr.sendCarDetection( 1, "156F78DA2D6582" );
+  combr.sendCarDetection( 2, "156F78DA2D6582" );
+  combr.sendCarDetection( 3, "156F78DA2D6582" );
+
+  PWDCar mycar;
+  const char* myrfid = "DEADFOODBADBAD";
+  const char* myowner = "Michael Rommel";
+  mycar.rfid = myrfid;
+  mycar.owner = myowner;
+  mycar.matno = 1234567;
+  mycar.serno = 113;
+
+  combr.sendCarDetection( 3, &mycar, true );
+  combr.sendCarDetection( 0, &mycar, false );
+
+  blink( SLOW );
+  delay( 5000 );
+
+// testing
 
   // set all pin modes
   pinMode( DEMO_PIN, INPUT_PULLUP );
