@@ -1,4 +1,4 @@
-#include "PWDLane.h"
+#include "PWDLaneDisplay.h"
 #include <Arduino.h>
 
 static const byte digit[32] = {
@@ -11,7 +11,7 @@ static const byte digit[32] = {
   0x49, 0x0
 };
 
-PWDLane::PWDLane( const uint8_t deviceaddress, const uint8_t clockpin, 
+PWDLaneDisplay::PWDLaneDisplay( const uint8_t deviceaddress, const uint8_t clockpin, 
     const uint8_t datapin, CRGB * leds, CRGB color ) : _pcf( deviceaddress ), _tm( clockpin, datapin)
 {
   _address = deviceaddress;
@@ -25,25 +25,25 @@ PWDLane::PWDLane( const uint8_t deviceaddress, const uint8_t clockpin,
 }
 
 
-void PWDLane::begin()
+void PWDLaneDisplay::begin()
 {
   _pcf.begin();
 }
 
-void PWDLane::select( bool on )
+void PWDLaneDisplay::select( bool on )
 {
-  Serial.print( F("Lane ") );
-  Serial.print( _address );
-  Serial.println( on ? F(" selected") : F(" unselected") );
+  //Serial.print( F("Lane ") );
+  //Serial.print( _address );
+  //Serial.println( on ? F(" selected") : F(" unselected") );
   _pcf.write8( on ? 7 : 0 );
 }
 
-void PWDLane::showNumber( uint32_t number )
+void PWDLaneDisplay::showNumber( uint32_t number )
 {
   _tm.DigitDisplayWrite( number );
 }
 
-void PWDLane::setBigDigit( uint8_t rank )
+void PWDLaneDisplay::setBigDigit( uint8_t rank )
 {
   // we can use the _address variable here, it is not entirely correct,
   // because someone could set up the lanes starting not from zero...
@@ -53,12 +53,12 @@ void PWDLane::setBigDigit( uint8_t rank )
   }
 }
 
-uint8_t PWDLane::getAddress()
+uint8_t PWDLaneDisplay::getAddress()
 {
   return _address;
 }
 
-bool PWDLane::hasTriggered()
+bool PWDLaneDisplay::hasTriggered()
 {
   return _triggered;
 }

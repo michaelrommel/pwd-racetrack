@@ -1,0 +1,64 @@
+# ToDos for Bridge #
+
+## Data Structures / DB ##
+
+### User ###
+
+### Race ###
+- how many cars
+- how many lanes
+- how many heats
+- heat configuration
+
+{ "2018-Qualification" : {
+  "no_of_cars": 36,
+  "no_of_heats": 36,
+  "no_of_lanes": 4,
+  "this_heat": "2018-Quali-015",
+  "next heat": "2018-Quali-016",
+ }
+}
+
+
+
+"heat_config": {
+    "01": [ "1", "3", "5", "8"],
+    "02": .....
+
+  }
+
+                         }
+### Heat ###
+- heat status: started, finished ...
+- race results
+
+{ "2018-Quali-015": [
+  {"rfid":"DEADFOODBADBAD", "owner": "Tobias Hartmann", "matno": 1234567, "serno": 123 },
+  {"rfid":"DEADFOODBADBAD", "owner": "Tobias Hartmann", "matno": 1234567, "serno": 123 },
+  {"rfid":"DEADFOODBADBAD", "owner": "Tobias Hartmann", "matno": 1234567, "serno": 123 },
+  {"rfid":"DEADFOODBADBAD", "owner": "Tobias Hartmann", "matno": 1234567, "serno": 123 }
+]}
+
+
+### Cars ###
+- rfid
+- owner
+- materialnummer
+- serialnummer
+- racenumber
+
+
+### Highscore ###
+- rank 
+- fastest time
+- owner
+
+### Leaderboard ###
+- per car one entry, key is car racenumber
+- score (1st place = 8, 2nd place= 4, 3rd place = 2, 4th place = 1)
+- cumulated time
+
+
+## Websocket Verbindung ##
+watershed
+

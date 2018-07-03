@@ -3,8 +3,8 @@
 //
 
 #include "FastLED.h"
-#include "PWDLane.h"
-#include "PWDCar.h"
+#include "PWDLaneDisplay.h"
+#include "PWDData.h"
 #include "PWDProtocol.h"
 
 #define LED_PIN 13
@@ -26,15 +26,18 @@
 CRGB leds[LANES*7];
 
 // instantiate the <n> lanes
-PWDLane lane[LANES] = {
-  PWDLane( 0, TM1637_CLOCK, TM1637_DATA, leds, CRGB( 255, 255, 255) ),  
-  PWDLane( 1, TM1637_CLOCK, TM1637_DATA, leds, CRGB(  30, 220, 255) ),  
-  PWDLane( 2, TM1637_CLOCK, TM1637_DATA, leds, CRGB( 255,  70,   0) ),  
-  PWDLane( 3, TM1637_CLOCK, TM1637_DATA, leds, CRGB( 180,  50, 100) ),  
+PWDLaneDisplay lane[LANES] = {
+  PWDLaneDisplay( 0, TM1637_CLOCK, TM1637_DATA, leds, CRGB( 255, 255, 255) ),  
+  PWDLaneDisplay( 1, TM1637_CLOCK, TM1637_DATA, leds, CRGB(  30, 220, 255) ),  
+  PWDLaneDisplay( 2, TM1637_CLOCK, TM1637_DATA, leds, CRGB( 255,  70,   0) ),  
+  PWDLaneDisplay( 3, TM1637_CLOCK, TM1637_DATA, leds, CRGB( 180,  50, 100) ),  
 };
 
 // instantiate three serial communication channels
 PWDProtocol combr( Serial );
+
+// global data structures
+PWDHeat heat;
 
 // counter for loop stats
 unsigned long c;
@@ -70,9 +73,9 @@ void blink( bool fast )
 {
   for( int i=0; i<3; i++ ) {
     digitalWrite( LED_PIN, HIGH );
-    delay( fast ? 500 : 1000 );
+    delay( fast ? 250 : 750 );
     digitalWrite( LED_PIN, LOW );
-    delay( fast ? 500 : 1000 );
+    delay( fast ? 250 : 750 );
   }
 }
 
@@ -97,16 +100,57 @@ void setup() {
   combr.sendCarDetection( 2, "156F78DA2D6582" );
   combr.sendCarDetection( 3, "156F78DA2D6582" );
 
-  PWDCar mycar;
   const char* myrfid = "DEADFOODBADBAD";
   const char* myowner = "Michael Rommel";
-  mycar.rfid = myrfid;
-  mycar.owner = myowner;
-  mycar.matno = 1234567;
-  mycar.serno = 113;
 
-  combr.sendCarDetection( 3, &mycar, true );
-  combr.sendCarDetection( 0, &mycar, false );
+  PWDLane myLane0;
+  myLane0.rfid = myrfid;
+  myLane0.owner = myowner;
+  myLane0.matno = 1234567;
+  myLane0.serno = 113;
+  myLane0.time = 0;
+  PWDLane myLane1;
+  myLane1.rfid = myrfid;
+  myLane1.owner = myowner;
+  myLane1.matno = 12121212;
+  myLane1.serno = 2222;
+  myLane1.time = 0;
+  PWDLane myLane2;
+  myLane2.rfid = myrfid;
+  myLane2.owner = myowner;
+  myLane2.matno = 34343434;
+  myLane2.serno = 3333;
+  myLane2.time = 0;
+  PWDLane myLane3;
+  myLane3.rfid = myrfid;
+  myLane3.owner = myowner;
+  myLane3.matno = 56565656;
+  myLane3.serno = 4444;
+  myLane3.time = 0;
+
+  heat.status = 0;
+  heat.heatno = 15;
+  heat.lanes[0] = &myLane0;
+  heat.lanes[1] = &myLane1;
+  heat.lanes[2] = &myLane2;
+  heat.lanes[3] = &myLane3;
+
+  combr.sendCarDetection( 3, &myLane0, true );
+  combr.sendCarDetection( 0, &myLane0, false );
+
+  combr.sendCompleteOrProgress( MSG_COMPLETE, &heat );
+
+  heat.status = 2;
+  heat.lanes[2]->time = 3501;
+
+  combr.sendCompleteOrProgress( MSG_PROGRESS, &heat );
+
+  heat.status = 3;
+  heat.lanes[0]->time = 2001;
+  heat.lanes[1]->time = 3001;
+  heat.lanes[3]->time = 4001;
+
+  combr.sendCompleteOrProgress( MSG_PROGRESS, &heat );
 
   blink( SLOW );
   delay( 5000 );
@@ -128,7 +172,7 @@ void setup() {
     select_lane( n );
     lane[n].begin();
     lane[n].showNumber( n );
-    lane[n].setBigDigit( PWDLane::DIGIT_OFF );
+    lane[n].setBigDigit( PWDLaneDisplay::DIGIT_OFF );
   }
   FastLED.show();
 
@@ -170,7 +214,7 @@ void loop() {
           finishers = 0;
           // blank the big displays
           for( int n=0; n<LANES; n++ ) {
-            lane[n].setBigDigit( PWDLane::DIGIT_OFF );
+            lane[n].setBigDigit( PWDLaneDisplay::DIGIT_OFF );
           }
           update_rank = true;
           break;
@@ -224,7 +268,7 @@ void loop() {
       finishers = 0;
       // blank the big displays
       for( int n=0; n<LANES; n++ ) {
-        lane[n].setBigDigit( PWDLane::DIGIT_OFF );
+        lane[n].setBigDigit( PWDLaneDisplay::DIGIT_OFF );
       }
       update_rank = true;
     }
@@ -261,8 +305,8 @@ void loop() {
       
       // if we have to update the rank display and this is the lane we have to update
       if( ( n==rank[finishers-1]) && update_rank ) {
-        Serial.print( "update milli displays for lane " );
-        Serial.println( n );
+        //Serial.print( "update milli displays for lane " );
+        //Serial.println( n );
         lane[n].setBigDigit( place[n] );
       }
       

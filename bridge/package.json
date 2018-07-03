@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "lint": "standard",
-    "pretest": "/usr/bin/true",
+    "pretest": "standard",
     "test": "cross-env LOG_LEVEL=error mocha --recursive --reporter spec --exit ./test/specs/",
     "debug": "cross-env LOG_LEVEL=debug node index.js",
     "start": "node index.js"

@@ -2,7 +2,7 @@
 ARCHITECTURE = sam
 BOARD_TAG = arduino_due_x
 
-ifeq ($(CURRENT_OS), Windows)
+ifeq ($(OS), Windows_NT)
 
 # Windows peculiarities
 ARDUINO_DIR = D:/Arduino

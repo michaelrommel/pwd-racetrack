@@ -9,10 +9,10 @@
 
 #define PWDLANE_VERSION "0.0.1"
 
-class PWDLane {
+class PWDLaneDisplay {
 
   public:
-    explicit PWDLane( const uint8_t deviceAddress, const uint8_t clockpin, const uint8_t datapin, CRGB *leds, CRGB color );
+    explicit PWDLaneDisplay( const uint8_t deviceAddress, const uint8_t clockpin, const uint8_t datapin, CRGB *leds, CRGB color );
     void begin();
     void select( bool on );
     uint8_t getAddress();
