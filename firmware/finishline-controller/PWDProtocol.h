@@ -13,8 +13,10 @@ class PWDProtocol {
     void begin();
     void sendAck( const int id, const byte status );
     void sendCarDetection( const byte laneNumber, const char* rfid );
-    void sendCarDetection( const byte laneNumber, const PWDLane* lane, bool wrongLane );
+    void sendCarDetection( const uint8_t heatno, const byte laneNumber, const PWDLane* lane, const bool wrongLane );
     void sendCompleteOrProgress( const uint8_t messageType, const PWDHeat* heat );
+    void sendLaserLevel( const uint8_t messageType, const PWDHeat* heat );
+    bool checkMessage( StaticJsonBuffer* receiveBuffer );
 
   private:
     HardwareSerial& _hwser;

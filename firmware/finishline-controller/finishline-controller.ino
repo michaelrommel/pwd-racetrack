@@ -123,7 +123,7 @@ void setup() {
   myLane2.time = 0;
   PWDLane myLane3;
   myLane3.rfid = myrfid;
-  myLane3.owner = myowner;
+  myLane4.owner = myowner;
   myLane3.matno = 56565656;
   myLane3.serno = 4444;
   myLane3.time = 0;
@@ -135,8 +135,10 @@ void setup() {
   heat.lanes[2] = &myLane2;
   heat.lanes[3] = &myLane3;
 
-  combr.sendCarDetection( 3, &myLane0, true );
-  combr.sendCarDetection( 0, &myLane0, false );
+  combr.sendCarDetection( heat.heatno, 3, &myLane0, true );
+  combr.sendCarDetection( heat.heatno, 1, &myLane0, false );
+
+  heat.status = 2;
 
   combr.sendCompleteOrProgress( MSG_COMPLETE, &heat );
 
@@ -151,6 +153,14 @@ void setup() {
   heat.lanes[3]->time = 4001;
 
   combr.sendCompleteOrProgress( MSG_PROGRESS, &heat );
+
+  myLane0.laser = 25;
+  myLane1.laser = 27;
+  myLane2.laser = 29;
+  myLane3.laser = 23;
+
+  combr.sendLaserLevel( MSG_LASER, &heat );
+
 
   blink( SLOW );
   delay( 5000 );
