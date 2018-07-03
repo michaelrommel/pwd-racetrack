@@ -39,6 +39,9 @@
   {"rf":"DEADFOODBADBAD", "ow": "Tobias Hartmann", "mn": 1234567, "sn": 123, "t": 1234}
 ]}
 
+// heat id not reflected in data structure
+// time of individual race not reflected in data structure --> ranking?
+
 
 ### Cars ###
 - rfid
