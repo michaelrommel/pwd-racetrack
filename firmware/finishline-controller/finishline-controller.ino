@@ -100,7 +100,7 @@ void ShowMemory(void)
   char *heapend=sbrk(0);
   register char * stack_ptr asm("sp");
 
-  Serial.print("Heap RAM Used: ");
+  Serial.print("\n\nHeap RAM Used: ");
   Serial.println(mi.uordblks);
   Serial.print("Program RAM Used ");
   Serial.println(&_end - ramstart);
@@ -141,7 +141,10 @@ void setup() {
   pinMode( LED_PIN, OUTPUT );
   blink( FAST );
 
+  // initialize all communication channels
   combr.begin( combr_whitelist );
+  compi.begin( compi_whitelist );
+  comsg.begin( comsg_whitelist );
 
   // initialize the lane and heat structure
   // this should be now a fixed data structure in globals
@@ -153,12 +156,6 @@ void setup() {
   heat.state = PWDProtocol::STATE_IDLE;
   heat.status = PWDProtocol::STATUS_OK;
   heat.heatno = 0;
-
-// testing
-
-  ShowMemory();
-
-// testing
 
   // set all pin modes
   pinMode( DEMO_PIN, INPUT_PULLUP );
@@ -182,21 +179,19 @@ void setup() {
   // start statistics
   last_millis = millis();
   
+// testing
   start = millis();
   race_on = true;
   lane_status = 0;
   finishers = 0;
   digitalWrite( LASER_PIN, HIGH );
 
-  Serial.println( "Entering loop." );
-
+  ShowMemory();
+  Serial.println( "Finished Setup." );
 }
 
 void loop() {
   elapsed = (millis() - start);
-  // just for testing, skip numbers >10seconds
-  // TODO: need to add support for decimal points to the library
-  if ( elapsed > 9999 ) elapsed = elapsed % 10000;
   // loop counter
   c++;
   update_rank = false;
@@ -212,10 +207,10 @@ void loop() {
       }
     }
 
-    Serial.println( "Reading demo pin" );
+    //Serial.println( "Reading demo pin" );
     int demo = digitalRead( DEMO_PIN );
-    Serial.print( "Pin is: " );
-    Serial.println( demo );
+    //Serial.print( "Pin is: " );
+    //Serial.println( demo );
     if( ! demo && ! race_on ) {
       Serial.println( "Starting race." );
       digitalWrite( LASER_PIN, HIGH );
@@ -275,7 +270,7 @@ void loop() {
       select_laneDisplay( n );
       ldr = analogRead( A7 ) / 10;
       laneDisplay[n].showNumber( ldr );
-      delay(50);
+      //delay(50);
 
     }
 
@@ -304,7 +299,7 @@ void loop() {
     // this enables reading serial again, to re-start a race
     race_on = false;
     // no need to be so responsive now
-    delay( 1000 );
+    //delay( 1000 );
   }
 
 }

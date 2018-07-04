@@ -43,6 +43,7 @@ class PWDProtocol {
     static const uint8_t STATUS_CORRUPTEDJSON = 101;
     static const uint8_t STATUS_INVALIDSTATETRANSITION = 102;
     static const uint8_t STATUS_INVALIDCOMMAND = 103;
+    static const uint8_t STATUS_UNSUPPORTEDCOMMAND = 104;
     // definitions of states of the program
     static const uint8_t STATE_IDLE = 1;
     static const uint8_t STATE_HEATSETUP = 2;
