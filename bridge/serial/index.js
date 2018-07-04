@@ -249,7 +249,23 @@ port.on('readable', function () {
   logger.debug('JSON data (message ID): %i', message_id);
   message_cc = data.c;
 
-  if (message_cc == MSG_PROG_HEAT) { // we have received a progess update
+  if (message_cc == MSG_ACK) { // we have received a message acknowledge
+	  for (int i = 0; i < msg_queue_open.length; i++) {
+
+		  if (msg_queue_open[i].id == message_id) {
+
+			  if (data.s == ST_OK) {
+
+				  msg_queue_open[i].state = MSG_STATE_ACK;
+			  } else if (data.s == ST_ERROR) {
+
+				  sendMsg(msg_queue_open[i].msg, message_id);
+			  }
+		  }
+		  break;
+	  }
+
+  } else if (message_cc == MSG_PROG_HEAT) { // we have received a progess update
 	  message_heat = data.h;
 	  message_state = data.s;
 	  message_lanes = data.l;
