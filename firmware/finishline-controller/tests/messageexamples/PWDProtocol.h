@@ -11,7 +11,6 @@ class PWDProtocol {
   public:
     explicit PWDProtocol( HardwareSerial& serial );
     void begin( uint8_t whitelist[8]);
-    bool available();
     void sendAck( const uint16_t id, const uint8_t status );
     void sendCarDetection( const uint8_t laneNumber, const char* rfid );
     void sendCarDetection( const uint8_t heatno, const uint8_t laneNumber, const PWDLane* lane, const bool wrongLane );

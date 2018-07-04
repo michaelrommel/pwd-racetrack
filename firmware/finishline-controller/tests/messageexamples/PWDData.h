@@ -18,7 +18,7 @@ typedef struct {
   uint8_t state;
   uint8_t status;
   uint8_t heatno;
-  PWDLane* lane[4];
+  PWDLane* lanes[4];
 } PWDHeat;
 
 #endif

@@ -21,15 +21,10 @@ void PWDProtocol::begin( uint8_t whitelist[8])
   // should return immediately except for the Leonardo
   while ( ! _hwser );
   // the max time we wait for incoming data in millis
-  _hwser.setTimeout( 3000 );
+  _hwser.setTimeout( 400 );
   for( int i=0; i<8; i++ ) {
     _codeWhitelist[i] = whitelist[i];
   }
-}
-
-// checks for availablity of data on the serial line
-bool PWDProtocol::available() {
-  return _hwser.available();
 }
 
 // send acknowledge packets for the provided id
@@ -128,14 +123,14 @@ void PWDProtocol::sendCompleteOrProgress( const uint8_t messageType, const PWDHe
   for ( int i=0; i<=3; i++ ) {
     JsonObject& carobj = l.createNestedObject();
     if( messageType == CODE_COMPLETE ||
-        (messageType == CODE_PROGRESS && heat->lane[i]->time > 0) ) {
-      carobj["rf"] = heat->lane[i]->rfid;
-      carobj["ow"] = heat->lane[i]->owner;
-      carobj["mn"] = heat->lane[i]->matno;
-      carobj["sn"] = heat->lane[i]->serno;
+        (messageType == CODE_PROGRESS && heat->lanes[i]->time > 0) ) {
+      carobj["rf"] = heat->lanes[i]->rfid;
+      carobj["ow"] = heat->lanes[i]->owner;
+      carobj["mn"] = heat->lanes[i]->matno;
+      carobj["sn"] = heat->lanes[i]->serno;
     }
-    if( messageType == CODE_PROGRESS && heat->lane[i]->time > 0 ) {
-      carobj["t"] = heat->lane[i]->time;
+    if( messageType == CODE_PROGRESS && heat->lanes[i]->time > 0 ) {
+      carobj["t"] = heat->lanes[i]->time;
     }
   }
   root.printTo( _hwser );
@@ -166,7 +161,7 @@ void PWDProtocol::sendLaserLevel( const uint8_t messageType, const PWDHeat* heat
   JsonArray& l = root.createNestedArray( "l" );
   for ( int i=0; i<=3; i++ ) {
     JsonObject& carobj = l.createNestedObject();
-    carobj["ll"] = heat->lane[i]->laser;
+    carobj["ll"] = heat->lanes[i]->laser;
   }
   root.printTo( _hwser );
   _hwser.println();
@@ -196,41 +191,16 @@ bool PWDProtocol::receiveCommand( PWDHeat* heat )
   const uint16_t capacity = JSON_ARRAY_SIZE(4) + 4*JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(5);
   StaticJsonBuffer<capacity> jsonBuffer;
 
-  // countRead = _hwser.readBytesUntil('\n', incomingBytes, len);
-  // JsonObject& root = jsonBuffer.parse(_hwser);
-  bool end = false;
-  uint16_t index = 0;
-  int nextbyte;
-
-  while( ! end ) {
-    nextbyte = _hwser.read();
-    if( nextbyte == -1 ) {
-      // no data available
-    } else {
-      incomingBytes[index++] = nextbyte;
-      _hwser.print((char) nextbyte);
-      if( nextbyte == '\n' || index == len ) {
-        end = true;
-      }
-    }
-  }
-
-  countRead=index;
+  countRead = _hwser.readBytesUntil('\n', incomingBytes, len);
   if( countRead == 0 ) {
     // error, we did not find any usable data
-    _hwser.println("error!");
-    return false;
+    return 0;
   } else {
-    _hwser.print("got bytes: ");
-    _hwser.println( countRead );
     // decode data
     JsonObject& root = jsonBuffer.parse(incomingBytes);
     if( root.success() ) {
       // check valid commands
-      const char* _code = root["c"];
-      const char code = _code[0];
-      _hwser.print("Code was: ");
-      _hwser.println( code );
+      const char code = root["c"][0];
       if( checkWhitelist( code ) ) {
         // process command 
         switch( code ) {
@@ -243,29 +213,23 @@ bool PWDProtocol::receiveCommand( PWDHeat* heat )
             heat->state = STATE_HEATSETUP;
             heat->status = STATUS_OK;
             heat->heatno = root["h"];
-            JsonArray& _lanes = root["l"];
             for( int i=0; i<4; i++ ) {
-              JsonObject& l = _lanes[i];
-              strncpy(heat->lane[i]->rfid, l["rf"], 14);
-              strncpy(heat->lane[i]->owner, l["ow"], 15);
-              heat->lane[i]->matno = l["mn"];
-              heat->lane[i]->serno = l["sn"];
+              JsonObject& l = root["l"][i];
+              strncpy(heat->lanes[i]->rfid, l["rf"], 14);
             }
-            return true;
+            // ....
             break;
         }
         return STATE_IDLE;
       } else {
-        _hwser.println("invalid command");
         // send invalid command message
         sendAck( 0, STATUS_INVALIDCOMMAND );
-        return false;
+        return 0;
       }
     } else {
-      _hwser.println("error decoding json");
       // parsing JSON failed
       sendAck( 0, STATUS_CORRUPTEDJSON );
-      return false;
+      return 0;
     }
   }
 }

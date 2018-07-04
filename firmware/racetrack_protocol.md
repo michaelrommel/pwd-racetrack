@@ -3,16 +3,16 @@ Pinewood Derby Racetrack Communication Protocol
 
 | Key     | Value      |
 |---------|------------|
-| Version | 0.5        |
-| Date    | 2018-06-18 |
+| Version | 0.6        |
+| Date    | 2018-07-03 |
 
 ## Overview ##
 
 - strings may be at most 384 bytes long, that means, that JsonBuffer needs to
   be at least 601 bytes long, this is too large for the Pro mini, need to exchange
   only basic information between the controllers
-- strings can be sent with a terminating linefeed \n, it will be ignored
-  while parsing the JSON
+- strings must be sent with a terminating linefeed \n, this is needed to ensure
+  that only complete JSON messages are parsed.
 - strings are sent repeatedly every 2 seconds until acknowledged without error
 - strings are re-sent when acknowledged with error
 - error messages are not acknowledged and not re-sent
@@ -32,7 +32,7 @@ Pinewood Derby Racetrack Communication Protocol
 | Property   | Shortname | Type   | Required | Title                                                                         |
 |------------|-----------|--------|----------|-------------------------------------------------------------------------------|
 | identifier | id        | number | x        | Message identifier, sequentially increasing                                   |
-| command    | c         | string | x        | Command identifier, single character, unique across all defined message types |
+| command    | c         | string | x        | Command code, single character, unique across all defined message types       |
 | heat       | h         | number | x        | Heat identifier, can be 0 if the message is not related to a running heat     |
 | status     | s         | number |          | Status information, value depends on command                                  |
 | lanes      | l         | array  |          | Array of objects related to information about all lanes                       |
@@ -64,6 +64,8 @@ Pinewood Derby Racetrack Communication Protocol
 | 12         | Track Setup Stop                                   |
 | 1xx        | Error Codes                                        |
 | 101        | Malformed JSON string                              |
+| 102        | Invalid State transition                           |
+| 103        | Invalid Command (for this communication partner)   |
 
 ### Table of Command Codes ###
 
@@ -77,6 +79,16 @@ Pinewood Derby Racetrack Communication Protocol
 | c    | R -> C    | Completed the setup of a heat, all cars in place   | required: s; optional: l.id, l.mn, l.sn      |
 | s    | C -> R    | Set up the racetrack to adjust the lasers          | required: s                                  |
 | l    | R -> C    | Laser measurement report for setup                 | required: s, l.ll                            |
+
+### Table of Program States ###
+
+| State       | Description                                             | Possible Next States            | Accepts Messages         | Emits Messages   |
+|-------------|---------------------------------------------------------|---------------------------------|--------------------------|------------------|
+| Idle        | Track is waiting to receive next heat configuration     | Heat Setup, Track Setup         | INIT, SETUP (start)      | DETECT           |
+| Heat Setup  | Track is waiting for lanes to be populated              | Heat Setup, Track Setup, Racing | INIT, SETUP (start), GO  | DETECT, COMPLETE | 
+| Track Setup | Track is calibrating the lasers                         | Idle, Heat Setup                | SETUP (stop)             | LASER            |
+| Racing      | Heat is in progress                                     | Idle                            | -                        | PROGRESS         |
+
 
 ## Examples of messages ##
 
@@ -97,17 +109,32 @@ be retransmitted.
 ```
 
 
-### Error JSON message acknowledgments ###
+### Error JSON Malformed acknowledgments ###
 
-Transmission of the message with the mentioned `id` should initiated immediately,
+Retransmission of the message with the mentioned `id` should be initiated immediately,
 the sending side shall not wait for a timeout.
+
+
+```
+{
+  "id" : 0,       // Use 0 because of corrupted message
+  "c" : "a",
+  "s" : 101       // Maybe a character was dropped during transmission
+}
+```
+
+
+### Error Invalid State Transition acknowledgments ###
+
+No retransmission of the message with the mentioned `id` is needed, because the requested
+state transition is invalid. 
 
 
 ```
 {
   "id" : 11,      // This is the id of the received message
   "c" : "a",
-  "s" : 101       // Maybe a character was dropped during transmission
+  "s" : 102       // e.g. requesting a heat start, when there is still one running
 }
 ```
 

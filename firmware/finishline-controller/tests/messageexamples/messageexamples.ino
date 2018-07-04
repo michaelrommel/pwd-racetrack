@@ -30,7 +30,7 @@
 CRGB leds[LANES*7];
 
 // instantiate the <n> lanes
-PWDLaneDisplay laneDisplay[LANES] = {
+PWDLaneDisplay lane[LANES] = {
   PWDLaneDisplay( 0, TM1637_CLOCK, TM1637_DATA, leds, CRGB( 255,   0,   0) ),  
   PWDLaneDisplay( 1, TM1637_CLOCK, TM1637_DATA, leds, CRGB( 255,   0,   0) ),  
   PWDLaneDisplay( 2, TM1637_CLOCK, TM1637_DATA, leds, CRGB( 255,   0,   0) ),  
@@ -63,12 +63,6 @@ uint8_t comsg_whitelist[8] = {
 
 // global data structures
 PWDHeat heat;
-// 4 lanes
-PWDLane lane[LANES];
-// 4 character arrays, 14 characters plus \0
-char rfid[LANES][15];
-// 4 owners, 15 characters plus \0
-char owner[LANES][16];
 
 // counter for loop stats
 unsigned long c;
@@ -96,9 +90,28 @@ char *ramend=(char *)0x20088000;
 
 void ShowMemory(void)
 {
+
   struct mallinfo mi=mallinfo();
+
   char *heapend=sbrk(0);
   register char * stack_ptr asm("sp");
+
+  //("    arena=%d\n",mi.arena);
+  //("  ordblks=%d\n",mi.ordblks);
+  //(" uordblks=%d\n",mi.uordblks);
+  //(" fordblks=%d\n",mi.fordblks);
+  //(" keepcost=%d\n",mi.keepcost);
+  
+  Serial.print("RAM Start ");
+  Serial.println((unsigned long)ramstart);
+  Serial.print("Data/Bss end ");
+  Serial.println((unsigned long)&_end);
+  Serial.print("Heap End ");
+  Serial.println((unsigned long)heapend);
+  Serial.print("Stack Ptr ");
+  Serial.println((unsigned long)stack_ptr);
+  Serial.print("RAM End ");
+  Serial.println((unsigned long)ramend);
 
   Serial.print("Heap RAM Used: ");
   Serial.println(mi.uordblks);
@@ -106,22 +119,24 @@ void ShowMemory(void)
   Serial.println(&_end - ramstart);
   Serial.print("Stack RAM Used ");
   Serial.println(ramend - stack_ptr);
+
   Serial.print("Estimated Free RAM: ");
   Serial.println(stack_ptr - heapend + mi.fordblks);
 }
 
-// helper function for the lane displays
+
+
 // we have to unselect all lanes first, otherwise two lanes might 
 // temporarily end up both selected. Shouldn't be a big deal, but still...
 // n == l equals false for all lanes other than the desired one
-void select_laneDisplay( int l ) {
+void select_lane( int l ) {
   for( int n=0; n<LANES; n++ ) {
-    laneDisplay[n].select( n == l );
+    lane[n].select( n == l );
   }
-  laneDisplay[l].select( true );
+  lane[l].select( true );
 }
 
-// small indicator without messing up the serial comm
+
 void blink( bool fast )
 {
   for( int i=0; i<3; i++ ) {
@@ -132,31 +147,93 @@ void blink( bool fast )
   }
 }
 
-void dumpHeat() {
-  combr.sendCompleteOrProgress( PWDProtocol::CODE_COMPLETE, &heat );
-}
 
 void setup() {
 
   pinMode( LED_PIN, OUTPUT );
   blink( FAST );
 
-  combr.begin( combr_whitelist );
+  //Serial.begin( 57600 );
+  //while ( ! Serial );
+  //Serial.println( "Racetrack starting." );
 
-  // initialize the lane and heat structure
-  // this should be now a fixed data structure in globals
-  for( int i=0; i<4; i++ ) {
-    lane[i].rfid = &rfid[i][0];
-    lane[i].owner = &owner[i][0];
-    heat.lane[i] = &lane[i];
-  }
-  heat.state = PWDProtocol::STATE_IDLE;
-  heat.status = PWDProtocol::STATUS_OK;
-  heat.heatno = 0;
 
 // testing
 
+  combr.begin( combr_whitelist );
+  combr.sendAck( 13, 51 );
+
+  combr.sendCarDetection( 0, "156F78DA2D6582" );
+  combr.sendCarDetection( 1, "156F78DA2D6582" );
+  combr.sendCarDetection( 2, "156F78DA2D6582" );
+  combr.sendCarDetection( 3, "156F78DA2D6582" );
+
+  char* myrfid = "12345678901234";
+  char* myowner = "123456789012345";
+
+  PWDLane myLane0;
+  myLane0.rfid = myrfid;
+  myLane0.owner = myowner;
+  myLane0.matno = 1234567;
+  myLane0.serno = 113;
+  myLane0.time = 0;
+  PWDLane myLane1;
+  myLane1.rfid = myrfid;
+  myLane1.owner = myowner;
+  myLane1.matno = 12121212;
+  myLane1.serno = 2222;
+  myLane1.time = 0;
+  PWDLane myLane2;
+  myLane2.rfid = myrfid;
+  myLane2.owner = myowner;
+  myLane2.matno = 34343434;
+  myLane2.serno = 3333;
+  myLane2.time = 0;
+  PWDLane myLane3;
+  myLane3.rfid = myrfid;
+  myLane3.owner = myowner;
+  myLane3.matno = 56565656;
+  myLane3.serno = 4444;
+  myLane3.time = 0;
+
+  heat.state = PWDProtocol::STATE_IDLE;
+  heat.status = PWDProtocol::STATUS_OK;
+  heat.heatno = 15;
+  heat.lanes[0] = &myLane0;
+  heat.lanes[1] = &myLane1;
+  heat.lanes[2] = &myLane2;
+  heat.lanes[3] = &myLane3;
+
+  combr.sendCarDetection( heat.heatno, 3, &myLane0, true );
+  combr.sendCarDetection( heat.heatno, 1, &myLane0, false );
+
+  heat.status = PWDProtocol::STATUS_SETUPCOMPLETE;
+
+  combr.sendCompleteOrProgress( PWDProtocol::CODE_COMPLETE, &heat );
+
+  heat.status = PWDProtocol::STATUS_HEATINPROGRESS;
+  heat.lanes[2]->time = 3501;
+
+  combr.sendCompleteOrProgress( PWDProtocol::CODE_PROGRESS, &heat );
+
+  heat.status = PWDProtocol::STATUS_HEATFINISHED;
+  heat.lanes[0]->time = 2001;
+  heat.lanes[1]->time = 3001;
+  heat.lanes[3]->time = 4001;
+
+  combr.sendCompleteOrProgress( PWDProtocol::CODE_PROGRESS, &heat );
+
+  myLane0.laser = 25;
+  myLane1.laser = 27;
+  myLane2.laser = 29;
+  myLane3.laser = 23;
+
+  combr.sendLaserLevel( PWDProtocol::CODE_LASER, &heat );
+
   ShowMemory();
+
+  blink( SLOW );
+  delay( 5000 );
 
 // testing
 
@@ -172,12 +249,14 @@ void setup() {
 
   // clear displays
   for( int n=0; n<LANES; n++ ) {
-    select_laneDisplay( n );
-    laneDisplay[n].begin();
-    laneDisplay[n].showNumber( n );
-    laneDisplay[n].setBigDigit( PWDLaneDisplay::DIGIT_OFF );
+    select_lane( n );
+    lane[n].begin();
+    lane[n].showNumber( n );
+    lane[n].setBigDigit( PWDLaneDisplay::DIGIT_OFF );
   }
   FastLED.show();
+
+  delay( 5000 );
 
   // start statistics
   last_millis = millis();
@@ -204,11 +283,55 @@ void loop() {
 
   // check serial only if the race is off, to save loop cycle time
   if( ! race_on ) {
-    if( combr.available() ) {
-      bool res = combr.receiveCommand( &heat );
-      if( res ) {
-        // state changed
-        dumpHeat();
+    if( Serial.available() ) {
+      switch( Serial.read() ) {
+        case 'g':
+          Serial.println( "Got g, starting race" );
+          digitalWrite( LASER_PIN, HIGH );
+          race_on = true;
+          start = millis();
+          lane_status = 0;
+          finishers = 0;
+          // blank the big displays
+          for( int n=0; n<LANES; n++ ) {
+            lane[n].setBigDigit( PWDLaneDisplay::DIGIT_OFF );
+          }
+          update_rank = true;
+          break;
+        // for testing get the lane that finishes next from serial
+        // no checks if the lane already finished...
+        case '0':
+          Serial.println( "Got 0" );
+          lane_status = lane_status | 1;
+          finishers++;
+          rank[finishers-1] = 0;
+          place[0] = finishers;
+          update_rank = true; 
+          break;
+        case '1':
+          Serial.println( "Got 1" );
+          lane_status = lane_status | 2;
+          finishers++;
+          rank[finishers-1] = 1;
+          place[1] = finishers;
+          update_rank = true; 
+          break;
+        case '2':
+          Serial.println( "Got 2" );
+          lane_status = lane_status | 4;
+          finishers++;
+          rank[finishers-1] = 2;
+          place[2] = finishers;
+          update_rank = true; 
+          break;
+        case '3':
+          Serial.println( "Got 3" );
+          lane_status = lane_status | 8;
+          finishers++;
+          rank[finishers-1] = 3;
+          place[3] = finishers;
+          update_rank = true; 
+          break;
       }
     }
 
@@ -225,7 +348,7 @@ void loop() {
       finishers = 0;
       // blank the big displays
       for( int n=0; n<LANES; n++ ) {
-        laneDisplay[n].setBigDigit( PWDLaneDisplay::DIGIT_OFF );
+        lane[n].setBigDigit( PWDLaneDisplay::DIGIT_OFF );
       }
       update_rank = true;
     }
@@ -238,8 +361,8 @@ void loop() {
       // loop iteration, then update the millis display
       if( ( ! (lane_status & (1 << n)) ) || ( (n==rank[finishers-1]) && update_rank ) ) {
         // select lane chip
-        select_laneDisplay( n );
-        laneDisplay[n].showNumber( elapsed );
+        select_lane( n );
+        lane[n].showNumber( elapsed );
         // normally we would do that also continuously, so simulate this here
         ldr = analogRead( A7 );
         //Serial.print( "LDR: " );
@@ -264,17 +387,17 @@ void loop() {
       if( ( n==rank[finishers-1]) && update_rank ) {
         //Serial.print( "update milli displays for lane " );
         //Serial.println( n );
-        laneDisplay[n].setBigDigit( place[n] );
+        lane[n].setBigDigit( place[n] );
       }
       
     } else {
       
       // test for setup
-      //Serial.println( "Race is off." );
+      Serial.println( "Race is off." );
       // select lane chip
-      select_laneDisplay( n );
+      select_lane( n );
       ldr = analogRead( A7 ) / 10;
-      laneDisplay[n].showNumber( ldr );
+      lane[n].showNumber( ldr );
       delay(50);
 
     }
@@ -282,7 +405,7 @@ void loop() {
   }
 
   // unselect last lane to achieve a stable state for the LDR line
-  laneDisplay[3].select( false );
+  lane[3].select( false );
   
   // only push updates to the LEDs, if necessary, as it blocks serial interrupts
   if( update_rank ) {
@@ -304,7 +427,7 @@ void loop() {
     // this enables reading serial again, to re-start a race
     race_on = false;
     // no need to be so responsive now
-    delay( 1000 );
+    delay( 200 );
   }
 
 }
