@@ -10,7 +10,7 @@
 - how many heats
 - heat configuration
 
-{ "2018-Qualification" : {
+{ "2018-Race" : {
   "no_of_cars": 36,
   "no_of_heats": 36,
   "no_of_lanes": 4,
@@ -32,11 +32,11 @@
 - heat status: started, finished ...
 - race results
 
-{ "2018-Quali-015": [
-  {"rfid":"DEADFOODBADBAD", "owner": "Tobias Hartmann", "matno": 1234567, "serno": 123 },
-  {"rfid":"DEADFOODBADBAD", "owner": "Tobias Hartmann", "matno": 1234567, "serno": 123 },
-  {"rfid":"DEADFOODBADBAD", "owner": "Tobias Hartmann", "matno": 1234567, "serno": 123 },
-  {"rfid":"DEADFOODBADBAD", "owner": "Tobias Hartmann", "matno": 1234567, "serno": 123 }
+{ "2018-Race-015": [
+  {"rf":"DEADFOODBADBAD", "ow": "Tobias Hartmann", "mn": 1234567, "sn": 123, "t": 1234},
+  {"rf":"DEADFOODBADBAD", "ow": "Tobias Hartmann", "mn": 1234567, "sn": 123, "t": 1234},
+  {"rf":"DEADFOODBADBAD", "ow": "Tobias Hartmann", "mn": 1234567, "sn": 123, "t": 1234},
+  {"rf":"DEADFOODBADBAD", "ow": "Tobias Hartmann", "mn": 1234567, "sn": 123, "t": 1234}
 ]}
 
 
@@ -52,11 +52,14 @@
 - rank 
 - fastest time
 - owner
+- heat #
 
 ### Leaderboard ###
 - per car one entry, key is car racenumber
-- score (1st place = 8, 2nd place= 4, 3rd place = 2, 4th place = 1)
-- cumulated time
+- score qualifications (1st place = 8, 2nd place= 4, 3rd place = 2, 4th place = 1)
+- score finals
+- cumulated time qualifications
+- cumulated time finals
 
 
 ## Websocket Verbindung ##
