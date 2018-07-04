@@ -176,9 +176,27 @@ var startHeat = function (heat_id) {
 //
 var updateHeat = function (heat_id, heat_status, lanes) {
 
+	dto = {};
+	dto.heat = heat_id;
+	dto.lanes = lanes;
+
+	if (message_state == 2) { // we have received the progess for an ongoing heat
+		// simply update heat status	
+		dto.state = 'running';
+		
+	} else if (message_state == 3) { // we have received the progess for a finished heat
+
+		dto.state = 'finished';
+		// update highscore and leaderboard
+	}
+
+
 	let heatdb = level('../db/heatdb');
 
-	heatdb.get(heat_id, function(err, value) {
+	heatdb.put("2018-Race", dto);
+
+	/*
+	 heatdb.get(heat_id, function(err, value) {
 		if (err) { // some error occured
 			if (err.notFound) { // key not found, heat does not exist yet in db
 			
@@ -203,6 +221,7 @@ var updateHeat = function (heat_id, heat_status, lanes) {
 	  .on('end', function () {
 	    logger.info('Stream ended')
 	  })
+	  */
 }
 
 
@@ -327,12 +346,7 @@ port.on('readable', function () {
 	  message_state = data.s;
 	  message_lanes = data.l;
 
-	  if (message_state == 2) { // we have received the progess for an ongoing heat
-		  // do nothing ?
-	  } else if (message_state == 3) { // we have received the progess for a finished heat
-		  // update heat db with finished heat information ? 
-		  updateHeat(message_heat, messate_state, message_lanes);
-	  }
+	  updateHeat(message_heat, messate_state, message_lanes);
 
   } else if (message_cc == MSG_DET_CAR) {
 	  message_heat = data.h;
