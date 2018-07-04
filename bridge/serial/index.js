@@ -12,7 +12,9 @@ const MSG_REP_LASER = "l";
 
 const ST_OK = 0;
 const ST_HEAT_SETUP = 1;
-const ST_
+const ST_HEAT_UNKWN = 5;
+const ST_COR_LANE = 6;
+const ST_WRO_LANE = 7;
 const ST_TR_SET_START = 10;
 const ST_TR_SET_STOP = 12;
 const ST_ERROR = 101;
@@ -44,7 +46,7 @@ var port = new SerialPort('COM5',
 )
 
 
-// function for sending JSON objects over the line
+// function for sending message objects over the line
 // -----------------
 // params
 //
@@ -208,8 +210,33 @@ var updateHeat = function (heat_id, heat_status, lanes) {
 // ---------------
 // params
 //
-var carDetected = function () {
+var carDetected = function (heat_id, msg_state, lanes) {
+	
+	dto = {};
+	dto.status = "nok";
+	dto.heat = heat_id;
+	dto.lanes = []
+	
+	for (int i = 0; i < lanes.length; i++) {
+		lane = lanes[i];
+		lane.lane = i;
 
+		if (msg_state == ST_HEAT_UNKNWN) {
+
+			lane.state = "nok";
+			dto.lanes.push(lane);
+		} else if (msg_state == ST_COR_LANE) {
+
+			lane.state = "ok";
+			dto.lanes.push(lane);
+		} else if (msg_state == ST_WRO_LANE) {
+
+			lane.state = "nok";
+			dto.lanes.push(lane);
+		}
+	}
+
+	saveLaneStatus(dto);
 }
 
 
@@ -217,9 +244,34 @@ var carDetected = function () {
 // -----------
 // params
 //
-var heatSetupComplete = function(heat) {
-	// message completion of heat setup do db or somewhere else ??
+var heatSetupComplete = function(heatid, lanes) {
 
+	dto = {};
+	dto.status = "ok";
+	dto.heat = heat_id;
+	dto.lanes = [];
+
+	for (int i = 0; i < lanes.length; i++) {
+
+		lane = lanes[i];
+		lane.lane = i;
+		lane.state = "ok";
+		dto.lanes.push(lane);
+	}
+
+	saveLaneStatus(dto);
+}
+
+
+// function for pushin lane status to database
+// -----------
+// params
+//
+var saveLaneStatus = function(laneDto) {
+
+	let laneDB = level('../db/lanedb');
+
+	laneDB.put("2018-Race", laneDto)
 }
 
 
@@ -242,11 +294,16 @@ port.on('readable', function () {
     data = JSON.parse(newdata);
   } catch (err) {
     logger.error('Error parsing input data to JSON obj: %s', err.message);
-    // end ??
+    // error acknowledgement
+    // id cannot be transmitted if JSON obj is malformed and cannot be parsed
   }
 
   message_id = data.id;
   logger.debug('JSON data (message ID): %i', message_id);
+
+  // message received completely, acknowledge
+  ack(message_id, true);
+
   message_cc = data.c;
 
   if (message_cc == MSG_ACK) { // we have received a message acknowledge
@@ -285,10 +342,11 @@ port.on('readable', function () {
 	  carDetected(message_heat, message_state, message_lanes);
 
   } else if (message_cc == MSG_CPL_HEAT) {
-	  if (data.s == 1) { // everything is okay
+	  if (data.s == ST_HEAT_SETUP) { // everything is okay
 		  message_heat = data.h;
+		  message_lines = data.l;
 
-		  heatSetupComplete(message_heat);
+		  heatSetupComplete(message_heat, message_lines);
 
 	  }
   } else if (message_cc == MSG_REP_LASER) {

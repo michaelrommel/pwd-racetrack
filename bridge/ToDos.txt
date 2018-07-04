@@ -39,9 +39,6 @@
   {"rf":"DEADFOODBADBAD", "ow": "Tobias Hartmann", "mn": 1234567, "sn": 123, "t": 1234}
 ]}
 
-// heat id not reflected in data structure
-// time of individual race not reflected in data structure --> ranking?
-
 
 ### Cars ###
 - rfid
@@ -68,3 +65,16 @@
 ## Websocket Verbindung ##
 watershed
 
+
+### Lane status ###
+
+{ "2018-Race" : {
+  "status": "ok",
+  "heat": 1,
+  "lanes": [
+  {"lane": 1, status: "ok, "rf":"DEADFOODBADBAD", "ow": "Tobias Hartmann", "mn": 1234567, "sn": 123},
+  {"lane": 2, status: "ok, "rf":"DEADFOODBADBAD", "ow": "Tobias Hartmann", "mn": 1234567, "sn": 123},
+  {"lane": 3, status: "ok, "rf":"DEADFOODBADBAD", "ow": "Tobias Hartmann", "mn": 1234567, "sn": 123},
+  {"lane": 4, status: "ok, "rf":"DEADFOODBADBAD", "ow": "Tobias Hartmann", "mn": 1234567, "sn": 123}
+]}}
+   
