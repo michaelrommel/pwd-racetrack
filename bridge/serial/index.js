@@ -1,7 +1,34 @@
 const logger = require('../utils/logger')
 const level = require('level')
 
+const MSG_ACK = "a";
+const MSG_INIT_HEAT = "i";
+const MSG_START_HEAT = "g";
+const MSG_PROG_HEAT = "p";
+const MSG_DET_CAR = "d";
+const MSG_CPL_HEAT = "c";
+const MSG_SET_TRACK = "s";
+const MSG_REP_LASER = "l";
 
+const ST_OK = 0;
+const ST_HEAT_SETUP = 1;
+const ST_
+const ST_TR_SET_START = 10;
+const ST_TR_SET_STOP = 12;
+const ST_ERROR = 101;
+
+const MSG_STATE_PENDING = 0;
+const MSG_STATE_ACK = 1;
+
+const MSG_QUEUE_STOPPED = false;
+const MSG_QUEUE_RUNNING = true;
+
+
+var msg_id_counter = 0;
+var msg_queue_status = MSG_QUEUE_STOPPED;
+var msg_queue_timer = null;
+var msg_queue_open = [];
+var msg_queue_complete = [];
 
 var port = new SerialPort('COM5',
   { 'baudRate': 57600,
@@ -16,19 +43,57 @@ var port = new SerialPort('COM5',
   }
 )
 
+
 // function for sending JSON objects over the line
 // -----------------
 // params
 //
-var sendObj = function (obj) {
+var sendMsg = function (msg, msg_id) {
 
-	// to do: internal handling of message identifier
-	// something like "if !(obj.id) { obj.id = i++ }
-	// message queue required ??
-	//
-	// handling of ack returns ??
+	msg_id = msg_id || -1;
+	
+	if (msg_id == -1) { // new message that is not yet in queue
+		msg_id == msg_id_counter++; // generating new unique msg id
+		msg_queue_item = {};
+		msg_queue_item.id = msg_id;
+		msg_queue_item.msg = msg;
+		msg_queue_item.msg.id = msg_id;
+		msg_queue_item.state = MSG_STATE_PENDING;
+		msg_queue_open.push(msg_queue_item);
 
-	port.send(JSON.stringify(obj));
+		if (msg_queue_status == MSG_QUEUE_STOPPED) { // timer not running, start it
+
+			msg_queue_timer = setInterval(check_msg_queue, TIMER_DELAY);
+			msg_queue_status = MSG_QUEUE_RUNNING;
+		}
+	}
+
+	port.send(JSON.stringify(msg));
+}
+
+
+// function for checking message queue periodically and triggering resend
+// -----------------
+// params
+//
+var check_msg_queue = function () {
+
+	for (i = 0; i < msg_queue_open.length; i++) { // looping through open msg queue
+
+		if (msg_queue_open[i].state == MSG_STATE_PENDING) { // msg still unacknowledged, resend
+			sendMsg(msg_queue_open[i].msg, msg_queue_open[i].id);
+		} else { // msg already acknowledged, pop from open msg queue
+			msg_queue_complete.push(msg_queue_open[i]);
+			msg_queue_open.splice(i, 1);
+		}
+	}
+
+	if (msg_queue_open == 0) { // msg queue is empty, we can stop timer
+		
+		clearInterval(msg_queue_timer);
+		msg_queue_timer = null;
+		msg_queue_status = MSG_QUEUE_STOPPED;
+	}
 }
 
 
@@ -40,33 +105,34 @@ var ack = function (id, state) {
 
 	let msg = {};
 	msg.id = id;
-	msg.c = "a";
+	msg.c = MSG_ACK;
 	if (state == true) {
-		msg.s = 0;
+		msg.s = ST_OK;
 	} else if (state == false) {
-		msg.s = 101;
+		msg.s = ST_ERROR;
 	}
 	
-	sendObj(msg);
+	sendMsg(msg);
 }
 
-// Start the setup of the racetrack var setupRT = function() {
+// Start the setup of the racetrack 
+var setupRT = function() {
 
 	let msg = {};
-	msg.c = "s";
-	msg.s = 10;
+	msg.c = MSG_SET_TRACK;
+	msg.s = ST_TR_SET_START;
 
-	sendObj(msg);
+	sendMsg(msg);
 }
 
 // Start the setup of the racetrack
 var stopSetupRT = function() {
 
 	let msg = {};
-	msg.c = "s";
-	msg.s = 12;
+	msg.c = MSG_SET_TRACK;
+	msg.s = ST_TR_SET_STOP;
 
-	sendObj(msg);
+	sendMsg(msg);
 }
 
 
@@ -74,18 +140,18 @@ var stopSetupRT = function() {
 // ----------------
 // params
 //
-var initHeat = function (id) {
+var initHeat = function (heat_id) {
 
 	let msg = {};
 	msg.id = id;
-	msg.c = "i";
-	msg.h = 7;
+	msg.c = MSG_INIT_HEAT;
+	msg.h = heat_id;
 	msg.l = [];
 
 	// either receive car information via function call 
 	// from outside or retrieve information directly from db
 
-	sendObj(msg);
+	sendMsg(msg);
 }
 
 
@@ -93,13 +159,13 @@ var initHeat = function (id) {
 // ----------------
 // params
 //
-var startHeat = function () {
+var startHeat = function (heat_id) {
 
 	let msg = {};
-	msg.c = "g";
-	msg.h = 7;
+	msg.c = MSG_START_HEAT;
+	msg.h = heat_id;
 
-	sendObj(msg);
+	sendMsg(msg);
 }
 
 // function for updating heat information
@@ -183,7 +249,7 @@ port.on('readable', function () {
   logger.debug('JSON data (message ID): %i', message_id);
   message_cc = data.c;
 
-  if (message_cc == "p") { // we have received a progess update
+  if (message_cc == MSG_PROG_HEAT) { // we have received a progess update
 	  message_heat = data.h;
 	  message_state = data.s;
 	  message_lanes = data.l;
@@ -195,21 +261,21 @@ port.on('readable', function () {
 		  updateHeat(message_heat, messate_state, message_lanes);
 	  }
 
-  } else if (message_cc == "d") {
+  } else if (message_cc == MSG_DET_CAR) {
 	  message_heat = data.h;
 	  message_state = data.s;
 	  message_lanes = data.l;
 
 	  carDetected(message_heat, message_state, message_lanes);
 
-  } else if (message_cc == "c") {
+  } else if (message_cc == MSG_CPL_HEAT) {
 	  if (data.s == 1) { // everything is okay
 		  message_heat = data.h;
 
 		  heatSetupComplete(message_heat);
 
 	  }
-  } else if (message_cc == "l") {
+  } else if (message_cc == MSG_REP_LASER) {
 	  if ( data.s == 11) {
 		laserSetup(data.l);
 	  }
