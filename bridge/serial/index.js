@@ -59,17 +59,25 @@ var sendMsg = function (msg, msgId) {
   msgId = msgId || -1
 
   if (msgId === -1) { // new message that is not yet in queue
+    logger.debug('Received new message to send on line')
+
     msgId = ++msgIdCounter // generating new unique msg id
+
+    logger.debug('Constructing message object')
     var msgQueueItem = {}
     msgQueueItem.id = msgId
     msgQueueItem.msg = msg
     msgQueueItem.msg.id = msgId
     msgQueueItem.state = MSG_STATE_PENDING
+
+    logger.debug('Pushing message object to message queue')
     msgQueueOpen.push(msgQueueItem)
 
     if (msgQueueStatus === MSG_QUEUE_STOPPED) { // timer not running, start it
+      logger.debug('Message queue timer not running')
       msgQueueTimer = setInterval(checkMsgQueue, TIMER_DELAY)
       msgQueueStatus = MSG_QUEUE_RUNNING
+      logger.debug('Message queue timer started')
     }
   }
 
@@ -81,19 +89,25 @@ var sendMsg = function (msg, msgId) {
 // params
 //
 var checkMsgQueue = function () {
+  logger.debug('Checking open message queue for unacknowledged messages')
   for (var i = 0; i < msgQueueOpen.length; i++) { // looping through open msg queue
     if (msgQueueOpen[i].state === MSG_STATE_PENDING) { // msg still unacknowledged, resend
+      logger.debug('Message still unacknowledged, resending it')
       sendMsg(msgQueueOpen[i].msg, msgQueueOpen[i].id)
     } else { // msg already acknowledged, pop from open msg queue
+      logger.debug('Message already acknowledged, pushing it to complete queue')
       msgQueueComplete.push(msgQueueOpen[i])
       msgQueueOpen.splice(i, 1)
+      logger.debug('Message removed from open queue')
     }
   }
 
   if (msgQueueOpen === 0) { // msg queue is empty, we can stop timer
+    logger.debug('Message queue empty, stopping timer')
     clearInterval(msgQueueTimer)
     msgQueueTimer = null
     msgQueueStatus = MSG_QUEUE_STOPPED
+    logger.debug('Message queue timer stopped')
   }
 }
 
@@ -118,15 +132,20 @@ var sortByTime = function (a, b) {
 var updateLeaderboard = function (heatId, lanes) {
   let leaderboardDb = level('../db/leaderboard')
 
+  logger.debug('Sorting current heat by time')
   let lanesSorted = lanes.sort(sortByTime)
 
+  logger.debug('Calculating points for current heat')
   for (var i = 0; i < lanesSorted.length; i++) {
     lanesSorted[i].points = Math.pow(2, i)
+    logger.debug('Racer: %s, Points: %i', lanesSorted[i].name, lanesSorted[i].points)
   }
 
   leaderboardDb.get(RACE_ID, function (err, value) {
     if (err) {
       // error handling
+      logger.error('Could not retrieve leaderboard information from database')
+      throw err
     }
 
     let leadership = JSON.parse(value)
@@ -134,15 +153,19 @@ var updateLeaderboard = function (heatId, lanes) {
     for (var i = 0; i < lanes.length; i++) {
       let laneRfid = lanes[i].rf
       if (heatId <= 40) {
+        logger.debug('Still in qualifying, writing information to qualifying data')
         leadership[laneRfid].score_quali += lanes[i].points
         leadership[laneRfid].time_quali += lanes[i].t
       } else {
+	logger.debug('Already in finals, writing information to finals data')
         leadership[laneRfid].score_finals += lanes[i].points
         leadership[laneRfid].time_finals += lanes[i].t
       }
     }
 
+    logger.debug('Saving leaderboard information to database')
     leaderboardDb.put(RACE_ID, JSON.stringify(leadership))
+    logger.debug('Successfully saved leaderboard information to database')
   })
 }
 
@@ -153,16 +176,21 @@ var updateLeaderboard = function (heatId, lanes) {
 var updateHighscore = function (heatId, lanes) {
   let highscoreDb = level('../db/highscore')
 
+  logger.debug('Getting current highscore from database')
   highscoreDb.get(RACE_ID, function (err, value) {
     if (err) {
       // error handling
+      logger.error('Could not retrieve highscore information from database')
+      throw err
     }
 
     let highscore = JSON.parse(value)
 
+    logger.debug('Iterating through current highscore to see if there is a new one')
     for (var i = 0; i < lanes.length; i++) {
       for (var k = 0; k < highscore.length; k++) {
         if (lanes[i].t < highscore[k].t) {
+          logger.info('Found new highscore: Heat - %i, Racer - %s, Time - %ims, Rank - %i', heatId, lanes[i].name, k + 1, lanes[i].t)
           lanes[i].heat = heatId
           lanes[i].rank = k + 1
           highscore.splice(k, 0, lanes[i])
@@ -172,7 +200,16 @@ var updateHighscore = function (heatId, lanes) {
       }
     }
 
+    logger.debug('Reapplying ranking to highscore')
+    highscore = highscore.sort(sortByTime)
+    for (var i = 0; i < highscore.length; i++) {
+
+	    highscore[i].rank = i + 1
+    }
+
+    logger.debug('Saving highscore information to database')
     highscoreDb.put(RACE_ID, JSON.stringify(highscore))
+    logger.debug('Successfully saved highscore information to database')
   })
 }
 
@@ -181,33 +218,41 @@ var updateHighscore = function (heatId, lanes) {
 // params
 //
 var ack = function (id, state) {
+  logger.debug('Building acknowledge message')
   let msg = {}
   msg.id = id
   msg.c = MSG_ACK
   if (state === true) {
+    logger.debug('Message status is okay')
     msg.s = ST_OK
   } else if (state === false) {
+    logger.debug('Message status is error')
     msg.s = ST_ERROR
   }
 
+  logger.debug('Sending acknowledge message over the line')
   sendMsg(msg)
 }
 
 // Start the setup of the racetrack
 var setupRT = function () {
+  logger.debug('Building setup race track message')
   let msg = {}
   msg.c = MSG_SET_TRACK
   msg.s = ST_TR_SET_START
 
+  logger.debug('Sending setup race track message over the line')
   sendMsg(msg)
 }
 
 // Start the setup of the racetrack
 var stopSetupRT = function () {
+  logger.debug('Building stop setup race track message')
   let msg = {}
   msg.c = MSG_SET_TRACK
   msg.s = ST_TR_SET_STOP
 
+  logger.debug('Sending stop setup race track message over the line')
   sendMsg(msg)
 }
 
@@ -216,26 +261,53 @@ var stopSetupRT = function () {
 // params
 //
 var initHeat = function (heatId) {
+  logger.debug('Building init heat message')
   let msg = {}
   msg.c = MSG_INIT_HEAT
   msg.h = heatId
   msg.l = []
 
-  // either receive car information via function call
-  // from outside or retrieve information directly from db
   let heatdb = level('../db/heatdb')
 
-  let heatKey = '2018-Race-' + ('0' + heatId).splice(-2)
+  logger.debug('Retrieving heat information from the database')
+  let heatKey = RACE_KEY + '-' + ('0' + heatId).splice(-2)
   heatdb.get(heatKey, function (err, value) {
     if (err) {
+      logger.error('Unable to retrieve heat information from database')
       throw err
     }
 
     let heatConfig = JSON.parse(value)
     msg.l = heatConfig
 
+    logger.debug('Sending init heat message over the line')
     sendMsg(msg)
+
+    initLaneStatus(heatId)
   })
+}
+
+
+// function for initializing lane status information in database
+// ----------------
+// params
+//
+var initLaneStatus = function(heatId) {
+
+  logger.debug('Building initial lane status data')
+  let dto = {}
+  dto.status = 'nok'
+  dto.heat = heatId
+  dto.lanes = []
+  dto.lanes[0].status = "nok"
+  dto.lanes[1].status = "nok"
+  dto.lanes[2].status = "nok"
+  dto.lanes[3].status = "nok"
+
+  
+  logger.debug('Saving lane status information to database')
+  saveLaneStatus(dto)
+  logger.debug('Successfully saved lane status information to database')
 }
 
 // function for starting a heat
@@ -243,10 +315,12 @@ var initHeat = function (heatId) {
 // params
 //
 var startHeat = function (heatId) {
+  logger.debug('Building start heat message')
   let msg = {}
   msg.c = MSG_START_HEAT
   msg.h = heatId
 
+  logger.debug('Sending start heat message over the line')
   sendMsg(msg)
 }
 
@@ -255,23 +329,30 @@ var startHeat = function (heatId) {
 // params
 //
 var updateHeat = function (heatId, heatStatus, lanes) {
+  logger.info('Processing update heat message')
   let dto = {}
   dto.heat = heatId
   dto.lanes = lanes
 
   if (heatStatus === 2) { // we have received the progess for an ongoing heat
     // simply update heat status
+    logger.info('Received progress of unfinished heat')
     dto.state = 'running'
   } else if (heatStatus === 3) { // we have received the progess for a finished heat
+    logger.info('Received progress of finished heat')
     dto.state = 'finished'
+    logger.debug('Update leaderboard with new data')
     updateLeaderboard(heatId, lanes)
+    logger.debug('Update highscore with new data')
     updateHighscore(heatId, lanes)
   }
 
   let heatdb = level('../db/heatdb')
 
-  let heatKey = RACE_ID + ('0' + heatId).splice(-2)
+  logger.debug('Saving updated heat information to database')
+  let heatKey = RACE_ID + "-" + ('0' + heatId).splice(-2)
   heatdb.put(heatKey, JSON.stringify(dto))
+  logger.debug('Successfully saved updated heat information to database')
 }
 
 // function for car detection
@@ -279,6 +360,7 @@ var updateHeat = function (heatId, heatStatus, lanes) {
 // params
 //
 var carDetected = function (heatId, msgState, lanes) {
+  logger.info('Processing car detected message')
   let dto = {}
   dto.status = 'nok'
   dto.heat = heatId
@@ -287,32 +369,42 @@ var carDetected = function (heatId, msgState, lanes) {
   let laneStatusDb = level('../db/lanedb')
 
   let lanesKey = RACE_ID
+  logger.debug('Retrieving lane status information from database')
   laneStatusDb.get(lanesKey, function (err, value) {
     let lanesDb = JSON.parse(value)
 
     if (err) {
+       logger.error('Could not retrieve lane status information from database')
        throw err
     }
 
+    logger.debug('Processing data')
     for (var i = 0; i < lanes.length; i++) {
       let lane = lanes[i]
       lane.lane = i
 
       if (lane.rf) {
         if (msgState === ST_HEAT_UNKWN) {
+          logger.info('Unknown heat')
           lane.state = 'nok'
         } else if (msgState === ST_COR_LANE) {
+          logger.info('Car %s set in correct lane', lane.rf)
           lane.state = 'ok'
         } else if (msgState === ST_WRO_LANE) {
+          logger.info('Car %s set in wrong lane', lane.rf)
           lane.state = 'nok'
         }
         dto.lanes[i] = lane
       } else {
+        logger.debug('Data from race track does not contain any information for lane %i', i)
+	logger.debug('Using previous data from database')
         dto.lanes[i] = lanesDb[i]
       }
     }
 
+    logger.debug('Saving lane status information to database')
     saveLaneStatus(dto)
+    logger.debug('Successfully saved lane status information to database')
   })
 }
 
@@ -321,6 +413,7 @@ var carDetected = function (heatId, msgState, lanes) {
 // params
 //
 var heatSetupComplete = function (heatId, lanes) {
+  logger.info('Processing heat setup complete message')
   let dto = {}
   dto.status = 'ok'
   dto.heat = heatId
@@ -333,7 +426,9 @@ var heatSetupComplete = function (heatId, lanes) {
     dto.lanes[i] = lane
   }
 
+  logger.debug('Saving heat setup complete data to database')
   saveLaneStatus(dto)
+  logger.debug('Successfully saved heat setup complete data to database')
 }
 
 // function for pushin lane status to database
@@ -344,6 +439,7 @@ var saveLaneStatus = function (laneDto) {
   let laneDB = level('../db/lanedb')
 
   var laneKey = RACE_ID
+  logger.debug('Pushing lane status to database')
   laneDB.put(laneKey, JSON.stringify(laneDto))
 }
 
@@ -353,6 +449,8 @@ var saveLaneStatus = function (laneDto) {
 //
 var laserSetup = function (laserData) {
   // message laser setup measurements do db or somewhere else ??
+  logger.debug('Processing laser setup message')
+  logger.error('Routine currently not implemented')
 
 }
 
@@ -362,6 +460,7 @@ port.on('readable', function () {
   logger.info('got serial data: %s', newdata)
   let data
   try {
+    logger.debug('Parsing data to JSON object')
     data = JSON.parse(newdata)
   } catch (err) {
     logger.error('Error parsing input data to JSON obj: %s', err.message)
@@ -373,34 +472,43 @@ port.on('readable', function () {
   logger.debug('JSON data (message ID): %i', messageId)
 
   // message received completely, acknowledge
+  logger.info('Message received completely, sending acknowledge')
   ack(messageId, true)
 
   let messageCc = data.c
 
   if (messageCc === MSG_ACK) { // we have received a message acknowledge
+	  logger.info('Received an acknowledge message')
+          logger.debug('Iterating through open message queue to find corresponding message')
           for (var i = 0; i < msgQueueOpen.length; i++) {
                   if (msgQueueOpen[i].id === messageId) {
+			  logger.info('Message found in queue')
                           if (data.s === ST_OK) {
+				  logger.info('Setting message state to acknowledged')
                                   msgQueueOpen[i].state = MSG_STATE_ACK
                           } else if (data.s === ST_ERROR) {
+				  logger.info('Received error acknowledge, resend corresponding message')
                                   sendMsg(msgQueueOpen[i].msg, messageId)
                           }
                   }
                   break
           }
   } else if (messageCc === MSG_PROG_HEAT) { // we have received a progess update
+	  logger.info('Received a progress update message for a heat')
           let messageHeat = data.h
           let messageState = data.s
           let messageLanes = data.l
 
           updateHeat(messageHeat, messageState, messageLanes)
   } else if (messageCc === MSG_DET_CAR) {
+	  logger.info('Received a car detected message')
           let messageHeat = data.h
           let messateState = data.s
           let messageLanes = data.l
 
           carDetected(messageHeat, messateState, messageLanes)
   } else if (messageCc === MSG_CPL_HEAT) {
+	  logger.info('Received a heat setup complete message')
           if (data.s === ST_HEAT_SETUP) { // everything is okay
                   let messageHeat = data.h
                   let messageLines = data.l
@@ -408,8 +516,9 @@ port.on('readable', function () {
                   heatSetupComplete(messageHeat, messageLines)
           }
   } else if (messageCc === MSG_REP_LASER) {
+	  logger.info('Received a laser setup message')
           if (data.s === 11) {
-      laserSetup(data.l)
+            laserSetup(data.l)
           }
   }
 })
