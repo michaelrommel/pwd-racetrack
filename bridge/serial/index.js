@@ -1,6 +1,8 @@
 const logger = require('../utils/logger')
 const level = require('level')
 
+const RACE_ID = "2018-Race-";
+
 const MSG_ACK = "a";
 const MSG_INIT_HEAT = "i";
 const MSG_START_HEAT = "g";
@@ -182,7 +184,7 @@ var startHeat = function (heat_id) {
 	sendMsg(msg);
 }
 
-// function for updating heat information
+// function for updating heat progress information
 // ----------------
 // params
 //
@@ -205,35 +207,8 @@ var updateHeat = function (heat_id, heat_status, lanes) {
 
 	let heatdb = level('../db/heatdb');
 
-	heatdb.put("2018-Race", dto);
-
-	/*
-	 heatdb.get(heat_id, function(err, value) {
-		if (err) { // some error occured
-			if (err.notFound) { // key not found, heat does not exist yet in db
-			
-			}
-
-		} else { // heat found in db, insert new information
-
-		}
-	}
-	
-	// show all key-value pairs
-	heatdb.createReadStream()
-	  .on('data', function (data) {
-	    logger.info('Key=%s, Value=%s', data.key, data.value)
-	  })
-	  .on('error', function (err) {
-	    logger.info('Error while reading db stream: %s!', err)
-	  })
-	  .on('close', function () {
-	    logger.info('DB stream closed')
-	  })
-	  .on('end', function () {
-	    logger.info('Stream ended')
-	  })
-	  */
+	heat_key = RACE_ID + ("0" + heat_id).splice(-2);
+	heatdb.put(heat_key, JSON.stringify(dto));
 }
 
 
