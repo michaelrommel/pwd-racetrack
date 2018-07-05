@@ -52,8 +52,8 @@ void PWDProtocol::sendCarDetection( const uint8_t laneNumber, const char* rfid )
   const uint16_t capacity = JSON_ARRAY_SIZE(4) + 3*JSON_OBJECT_SIZE(0) + JSON_OBJECT_SIZE(1) + JSON_OBJECT_SIZE(5) + 100;
   StaticJsonBuffer<capacity> jsonBuffer;
 
-  _hwser.print( F("JSON Size: ") );
-  _hwser.println( capacity );
+  //SerialUSB.print( F("JSON Size: ") );
+  //SerialUSB.println( capacity );
   JsonObject& root = jsonBuffer.createObject();
   root["id"] = ++_id;
   root["c"] = "d";
@@ -77,8 +77,8 @@ void PWDProtocol::sendCarDetection( const uint8_t heatno, const uint8_t laneNumb
   const uint16_t capacity = JSON_ARRAY_SIZE(4) + 3*JSON_OBJECT_SIZE(0) + JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(5) + 100;
   StaticJsonBuffer<capacity> jsonBuffer;
 
-  _hwser.print( F("JSON Size: ") );
-  _hwser.println( capacity );
+  //SerialUSB.print( F("JSON Size: ") );
+  //SerialUSB.println( capacity );
   JsonObject& root = jsonBuffer.createObject();
   root["id"] = ++_id;
   root["c"] = "d";
@@ -116,8 +116,8 @@ void PWDProtocol::sendCompleteOrProgress( const uint8_t messageType, const PWDHe
   StaticJsonBuffer<capacity> jsonBuffer;
 
   // debug display the size of the allocated JSON buffer
-  _hwser.print( F("JSON Size: ") );
-  _hwser.println( capacity );
+  //SerialUSB.print( F("JSON Size: ") );
+  //SerialUSB.println( capacity );
 
   // allocate a single character as string 
   char messageString[2];
@@ -163,8 +163,8 @@ void PWDProtocol::sendLaserLevel( const uint8_t messageType, const PWDHeat* heat
   StaticJsonBuffer<capacity> jsonBuffer;
 
   // debug display the size of the allocated JSON buffer
-  _hwser.print( F("JSON Size: ") );
-  _hwser.println( capacity );
+  //SerialUSB.print( F("JSON Size: ") );
+  //SerialUSB.println( capacity );
 
   // allocate a single character as string 
   char messageString[2];
@@ -214,75 +214,92 @@ bool PWDProtocol::receiveCommand( PWDHeat* heat )
 
   if( countRead == 0 ) {
     // error, we did not find any usable data
-    _hwser.println("error!");
+    SerialUSB.println("error!");
     return false;
   } else {
-    _hwser.print("got bytes: ");
-    _hwser.println( countRead );
+    SerialUSB.print("got bytes: ");
+    SerialUSB.println( countRead );
     // decode data
     JsonObject& root = jsonBuffer.parse(incomingBytes);
     if( root.success() ) {
       // check valid commands
-      const char* _code = root["c"];
-      const char code = _code[0];
-      _hwser.print("Code was: ");
-      _hwser.println( code );
+      const char* codePtr = root["c"];
+      const char code = codePtr[0];
+      SerialUSB.print("Code was: ");
+      SerialUSB.println( code );
       if( checkWhitelist( code ) ) {
         // get ID
         uint8_t theirId = root["id"];
+        // try to initialize the lanes array before switch to keep
+        // the compiler happy
+        JsonArray& _lanes = root["l"];
         // process command 
         switch( code ) {
-          case CODE_ACK:
+          case (uint8_t) CODE_ACK:
             // remove the potentially saved message from outgoing buffer
             //removeMessage( root["id"] );
+            return false;
             break;
-          case CODE_INIT:
+          case (uint8_t) CODE_INIT:
             // send acknowlege
             sendAck( theirId, STATUS_OK );
             // take the information from the command and save it to the heat
             heat->state = STATE_HEATSETUP;
             heat->status = STATUS_OK;
             heat->heatno = root["h"];
-            JsonArray& _lanes = root["l"];
+            //JsonArray& _lanes = root["l"];
             for( int i=0; i<4; i++ ) {
               JsonObject& l = _lanes[i];
-              strncpy(heat->lane[i]->rfid, l["rf"], 14);
-              strncpy(heat->lane[i]->owner, l["ow"], 15);
+              if( strlen( l["rf"] ) != 0 ) { 
+                strncpy(heat->lane[i]->rfid, l["rf"], 14);
+              } else {
+                *heat->lane[i]->rfid = '\0';
+              }
+              if( strlen( l["ow"] ) != 0 ) { 
+                strncpy(heat->lane[i]->owner, l["ow"], 15);
+              } else {
+                *heat->lane[i]->owner = '\0';
+              }
               heat->lane[i]->matno = l["mn"];
               heat->lane[i]->serno = l["sn"];
             }
             // indicate state change
             return true;
             break;
-          case CODE_GO:
+          case (uint8_t) CODE_GO:
             // send acknowlege
             sendAck( theirId, STATUS_OK );
             // send start signal to Startgate
             // ... TODO
-            heat->state = STATE_RACE;
+            heat->state = STATE_RACING;
             heat->status = STATUS_HEATINPROGRESS;
             heat->heatno = root["h"];
             // indicate state change
             return true;
             break;
-          case CODE_SETUP:
+          case (uint8_t) CODE_SETUP:
             // send acknowlege
             sendAck( theirId, STATUS_OK );
             // put track in/out of LDR display mode
+            // ... TODO
+            heat->state = STATE_TRACKSETUP;
+            heat->status = STATUS_OK;
+            return true;
             break;
-          else:
+          default:
             // send error
-            sendAck( theidId, STATUS_UNSUPPORTEDCOMMAND );
+            sendAck( theirId, STATUS_UNSUPPORTEDCOMMAND );
+            return false;
             break;
         }
       } else {
-        _hwser.println("invalid command");
+        SerialUSB.println("invalid command");
         // send invalid command message
         sendAck( 0, STATUS_INVALIDCOMMAND );
         return false;
       }
     } else {
-      _hwser.println("error decoding json");
+      SerialUSB.println("error decoding json");
       // parsing JSON failed
       sendAck( 0, STATUS_CORRUPTEDJSON );
       return false;
