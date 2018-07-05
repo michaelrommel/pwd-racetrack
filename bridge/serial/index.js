@@ -1,3 +1,4 @@
+/* jslint node: true */
 'use strict'
 
 const logger = require('../utils/logger')
@@ -419,4 +420,4 @@ serialCommer.stopSetupRT = stopSetupRT
 serialCommer.initHeat = initHeat
 serialCommer.startHeat = startHeat
 
-modules.export = serialCommer
+module.export = serialCommer
