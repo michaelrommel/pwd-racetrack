@@ -1,3 +1,11 @@
 {"id":13,"c":"i","h":7,"l":[{"rf":"045F57A22D4D81","ow":"Kara Thrace","mn":1234567,"sn":42 },{"rf":"03857FAD2D4D74","ow":"Lee Adama","mn":1234567,"sn":35 },{"rf":"156F78DA2D6582","ow":"Sharon Valerii","mn":1234567,"sn":24 },{"rf":"669EBCC390DA03","ow":"Karl Agathon","mn":1234567,"sn":45}]}
-{"id":13,"c":"i","h":7,"l":[{"rf":"045F57A22D4D81","ow":"Kara Thrace","mn":1234567,"sn":42 }]}
+{"id":17,"c":"i","h":32,"l":[{"rf":"045F2345234524","ow":"Humphrey Bogart","mn":1234567,"sn":99999 },{"rf":"03855678345D74","ow":"Ingrid Bergman","mn":1234567,"sn":123456 },{"rf":"15123422234362","ow":"Clark Kent","mn":1234567,"sn":444444 },{"rf":"66934577817883","ow":"Bruce Wayne","mn":1234567,"sn":666656}]}
+{"id":14,"c":"i","h":8,"l":[{"rf":"045F57A22D4D81","ow":"Kara Thrace","mn":1234567,"sn":42 }]}
+{"id":15,"c":"i","h":9,"l":[{},{"rf":"03857FAD2D4D74","ow":"Lee Adama","mn":1234567,"sn":35 },{},{"rf":"669EBCC390DA03","ow":"Karl Agathon","mn":1234567,"sn":45}]}
+{"id":15,"c":"i","h":9,"l":[{},{"rf":"038BAAAADD6664","ow":"Arnold Schwarzenegger","mn":1234567,"sn":35 },{},{"rf":"669EBCC390DA03","ow":"Karl Agathon","mn":1234567,"sn":45}]}
+
+Heap RAM Used: 0
+Program RAM Used 5924
+Stack RAM Used 88
+Estimated Free RAM: 92292
 
