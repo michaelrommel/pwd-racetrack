@@ -77,6 +77,36 @@ namespace Util
     return ret;
   }
 
+
+  // create a random car progress message derived from set up heat
+  // returns the lane number of the finishing car or 4 if the heat 
+  // is finished
+  uint8_t createRandomProgress( PWDHeat* heat, unsigned long finishtime ) {
+    uint8_t tl = random(0,4);
+    uint8_t c = 4;
+    uint8_t ret = 4;
+
+    // randomly select a lane to look at
+    // find from there the next car, which has not finished by looking at
+    // the time field of the heat
+    while( c > 0 ) {
+      SerialUSB.print( "c is ");
+      SerialUSB.println( c );
+      if( heat->lane[tl]->time == 0 ) {
+        // this car has not finished
+        SerialUSB.print( "Selected car in lane ");
+        SerialUSB.println( tl );
+        heat->lane[tl]->time = finishtime;
+        // return the changed lane
+        return tl;
+      }
+      // otherwise continue with the next lane, wrapping around
+      c--;
+      tl = (tl + 1) % 4;
+    }
+    return ret;
+  }
+
 }
 
 // vim:ci:si:sw=2

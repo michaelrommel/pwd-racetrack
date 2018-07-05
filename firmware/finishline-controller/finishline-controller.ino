@@ -44,24 +44,52 @@ PWDLaneDisplay laneDisplay[LANES] = {
 // channel to bridge
 PWDProtocol combr( Serial );
 // define acceptable commands for use in begin()
-uint8_t combr_whitelist[8] = {
-  PWDProtocol::CODE_ACK,
-  PWDProtocol::CODE_INIT,
-  PWDProtocol::CODE_GO,
-  PWDProtocol::CODE_SETUP
+uint8_t combr_whitelist[4][8] = {
+  { // IDLE
+    PWDProtocol::CODE_ACK, PWDProtocol::CODE_INIT,
+    PWDProtocol::CODE_SETUP
+  },
+  { // HEATSETUP
+    PWDProtocol::CODE_ACK, PWDProtocol::CODE_INIT,
+    PWDProtocol::CODE_GO, PWDProtocol::CODE_SETUP
+  },
+  { // RACING
+    PWDProtocol::CODE_ACK
+  },
+  { // TRACKSETUP
+    PWDProtocol::CODE_ACK, PWDProtocol::CODE_SETUP
+  }
 };
 // channel to Raspberry Pi
 PWDProtocol compi( Serial2 );
 // define acceptable commands for use in begin()
-uint8_t compi_whitelist[8] = {
-  PWDProtocol::CODE_ACK,
-  PWDProtocol::CODE_GO
+uint8_t compi_whitelist[4][8] = {
+  { // IDLE
+    PWDProtocol::CODE_ACK
+  },
+  { // HEATSETUP
+    PWDProtocol::CODE_ACK, PWDProtocol::CODE_GO
+  },
+  { // RACING
+  },
+  { // TRACKSETUP
+  }
 };
 // channel to Startgate
 PWDProtocol comsg( Serial1 );
 // define acceptable commands for use in begin()
-uint8_t comsg_whitelist[8] = {
-  PWDProtocol::CODE_ACK,
+uint8_t comsg_whitelist[4][8] = {
+  { // IDLE
+    PWDProtocol::CODE_ACK
+  },
+  { // HEATSETUP
+    PWDProtocol::CODE_ACK, PWDProtocol::CODE_GO
+  },
+  { // RACING
+    PWDProtocol::CODE_ACK
+  },
+  { // TRACKSETUP
+  }
 };
 
 // global main data structure for a heat
@@ -91,9 +119,12 @@ PWDStatistics loopStats( SerialUSB );
 unsigned long elapsed;
 unsigned long start;
 
-int ldr;
+// bit array indicating if the car in this lane has finished  
+// LSB = lane 0, MSB = lane 4 (or more...)
 int lane_status;
+// counter, how many cars have finished thiÂs heat
 int finishers;
+
 bool race_on;
 bool update_rank;
 // rank contains the lane numbers in the order they finish
@@ -295,7 +326,15 @@ void loop() {
           // state changed
           SerialUSB.print("State changed to: " );
           SerialUSB.println( heat.state );
-          //dumpHeat();
+          if( heat.state == PWDProtocol::STATE_RACING ) {
+            // remember start time
+            // TODO change to time of received ACK!!
+            start = millis();
+            // no lane has finished
+            lane_status = 0;
+            // number of cars which finised is zero
+            finishers = 0;
+          }
           // cancel watchdog
           emitterWatchdog = 0;
         }
@@ -313,6 +352,7 @@ void loop() {
               // this means, all cars are right on the track
               SerialUSB.println( "Setup correct" );
               combr.sendCompleteOrProgress( PWDProtocol::CODE_COMPLETE, &heat );
+              compi.sendCompleteOrProgress( PWDProtocol::CODE_COMPLETE, &heat );
             } else {
               bool wronglane = strncmp( setupHeat.lane[detectlane]->rfid, heat.lane[detectlane]->rfid, 14 );
               SerialUSB.print( "wronglane is ");
@@ -336,6 +376,75 @@ void loop() {
       break;
 
     case PWDProtocol::STATE_RACING:
+      // blank the displays
+      clearDisplays();
+      // check connection to startgate
+      if( comsg.available() ) {
+        // read and process the serial command
+        bool res = comsg.receiveCommand( &heat );
+        if( res ) {
+          // startgate will not change the state
+          // in this state we will only receive the 
+          // acknowledge of the open gate command
+          // TODO how to sync the times and start timer
+        }
+      }
+      // check serial connection to bridge
+      if( combr.available() ) {
+        // read and process the serial command
+        bool res = combr.receiveCommand( &heat );
+        if( res ) {
+          // during the race, only acks are 
+          // expected, this should not happen
+          // state changed
+          SerialUSB.print("State changed to: " );
+          SerialUSB.println( heat.state );
+          // cancel watchdog
+          emitterWatchdog = 0;
+        }
+      }
+      // check if we are in demo mode, if so
+      // generate random detect messages
+      if( demo ) {
+        if( emitterWatchdog > 1 ) {
+          // the watchdog has been set
+          if ( millis() > emitterWatchdog ) {
+            // it has fired
+            SerialUSB.println( "Crafting random progress message" );
+            uint8_t progresslane = Util::createRandomProgress( &heat, elapsed );
+            // set bit for this lane
+            lane_status = lane_status | (1 << progresslane);
+            // increase number of finishers (1-4)
+            finishers++;
+            // remember the lane for the n-th finisher
+            rank[finishers-1] = progresslane;
+            // remember the place for this lane
+            place[progresslane] = finishers;
+            update_rank = true; 
+            if ( finishers == LANES ) {
+              // this means, all cars have finished the heat
+              SerialUSB.println( "Heat ended" );
+              heat.status =  PWDProtocol::STATUS_HEATFINISHED;
+              // cancel watchdog
+              emitterWatchdog = 0;
+              // return to idle state
+              heat.state = PWDProtocol::STATE_IDLE;
+            } else {
+              // create the car progress message
+              // renew watchdog for next cars, add 200ms up to 1sec between cars
+              emitterWatchdog = millis() + random(400, 1000);
+            }
+            combr.sendCompleteOrProgress( PWDProtocol::CODE_PROGRESS, &heat );
+            compi.sendCompleteOrProgress( PWDProtocol::CODE_PROGRESS, &heat );
+          }
+        } else {
+          // shall now set the initialwatchdog
+          emitterWatchdog = millis() + random(4000, 6000);
+          SerialUSB.print( "Setting initial watchdog to: " );
+          SerialUSB.println( emitterWatchdog );
+          SerialUSB.print( "Resetting finisher array" );
+        } 
+      }
       break;
 
     case PWDProtocol::STATE_TRACKSETUP:
@@ -396,7 +505,7 @@ void loop() {
         select_laneDisplay( n );
         laneDisplay[n].showNumber( elapsed );
         // normally we would do that also continuously, so simulate this here
-        ldr = analogRead( A7 );
+        int ldr = analogRead( A7 );
         //Serial.print( "LDR: " );
         //Serial.println( ldr );
         if( ldr > LDR_THRESHOLD ) {
@@ -430,7 +539,7 @@ void loop() {
       //Serial.println( "Race is off." );
       // select lane chip
       select_laneDisplay( n );
-      ldr = analogRead( A7 ) / 10;
+      int ldr = analogRead( A7 ) / 10;
       laneDisplay[n].showNumber( ldr );
       //delay(50);
 

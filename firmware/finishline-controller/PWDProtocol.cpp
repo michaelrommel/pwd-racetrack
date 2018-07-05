@@ -15,15 +15,17 @@ PWDProtocol::PWDProtocol( HardwareSerial& serial ) :
 }
 
 // initialise the port
-void PWDProtocol::begin( uint8_t whitelist[8])
+void PWDProtocol::begin( uint8_t whitelist[4][8])
 {
   _hwser.begin( 57600 );
   // should return immediately except for the Leonardo
   while ( ! _hwser );
   // the max time we wait for incoming data in millis
   _hwser.setTimeout( 400 );
-  for( int i=0; i<8; i++ ) {
-    _codeWhitelist[i] = whitelist[i];
+  for( int j=0; j<4; j++ ) {
+    for( int i=0; i<8; i++ ) {
+      _codeWhitelist[j][i] = whitelist[j][i];
+    }
   }
 }
 
@@ -188,10 +190,10 @@ void PWDProtocol::sendLaserLevel( const uint8_t messageType, const PWDHeat* heat
 
 
 // checks, whether a given command is valid for this comm
-bool PWDProtocol::checkWhitelist( uint8_t code) {
+bool PWDProtocol::checkWhitelist( uint8_t state, uint8_t code) {
   bool ok = false;
   for( int i=0; i<8; i++ ) {
-    if( _codeWhitelist[i] == code ) {
+    if( _codeWhitelist[state][i] == code ) {
       ok = true;
     }
   }
@@ -227,7 +229,7 @@ bool PWDProtocol::receiveCommand( PWDHeat* heat )
       const char code = codePtr[0];
       SerialUSB.print("Code was: ");
       SerialUSB.println( code );
-      if( checkWhitelist( code ) ) {
+      if( checkWhitelist( heat->state, code ) ) {
         // get ID
         uint8_t theirId = root["id"];
         // try to initialize the lanes array before switch to keep

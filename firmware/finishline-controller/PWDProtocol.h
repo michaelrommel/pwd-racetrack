@@ -10,7 +10,7 @@ class PWDProtocol {
 
   public:
     explicit PWDProtocol( HardwareSerial& serial );
-    void begin( uint8_t whitelist[8]);
+    void begin( uint8_t whitelist[4][8]);
     bool available();
     void sendAck( const uint16_t id, const uint8_t status );
     void sendCarDetection( const uint8_t laneNumber, const char* rfid );
@@ -45,19 +45,21 @@ class PWDProtocol {
     static const uint8_t STATUS_INVALIDCOMMAND = 103;
     static const uint8_t STATUS_UNSUPPORTEDCOMMAND = 104;
     // definitions of states of the program
-    static const uint8_t STATE_IDLE = 1;
-    static const uint8_t STATE_HEATSETUP = 2;
-    static const uint8_t STATE_RACING = 3;
-    static const uint8_t STATE_TRACKSETUP = 4;
+    // this state codes must be consecutive, starting at 0
+    // because they are used as array indices
+    static const uint8_t STATE_IDLE = 0;
+    static const uint8_t STATE_HEATSETUP = 1;
+    static const uint8_t STATE_RACING = 2;
+    static const uint8_t STATE_TRACKSETUP = 3;
 
   private:
-    bool checkWhitelist( uint8_t code);
+    bool checkWhitelist( uint8_t state, uint8_t code );
 
     HardwareSerial& _hwser;
     // the message identifier counter for this comm
     uint16_t _id;
-    // whitelist of command codes accepted from this comm partner
-    uint8_t _codeWhitelist[8];
+    // whitelist of command codes accepted from this comm partner in which state
+    uint8_t _codeWhitelist[4][8];
     // remember the state before track setup, so we can return to it
     uint8_t _stateBeforeSetup = STATE_IDLE;
     
