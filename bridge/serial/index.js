@@ -101,6 +101,51 @@ var check_msg_queue = function () {
 }
 
 
+// function for updating the race leaderboard
+// -----------------
+// params
+//
+var updateLeaderboard = function(heat_id, lanes) {
+
+}
+
+
+// function for updating the race highscore
+// -----------------
+// params
+//
+var updateHighscore = function(heat_id, lanes) {
+
+	highscore_db = level('../db/highscore');
+
+	highscore_db.get(RACE_ID, function(err, value) {
+
+		if (err) {
+			// error handling
+		}
+
+		highscore = JSON.parse(value);
+
+		for (int i = 0; i < lanes.length; i++) {
+			for (int k = 0; k < highscore.length; k++) {
+
+				if (lanes[i].t < highscore[k].t) {
+
+					lanes[i].heat = heat_id;
+					lanes[i].rank = k + 1;
+					highscore.splice(k, 0, lanes[i]);
+					highscore.splice(-1);
+					break;
+				}
+			}
+		}
+
+		highscore_db.put(RACE_ID, JSON.stringify(highscore));
+	}
+
+}
+
+
 // function for acknowledging messages from race track
 // -----------------
 // params
@@ -196,13 +241,15 @@ var updateHeat = function (heat_id, heat_status, lanes) {
 
 	if (message_state == 2) { // we have received the progess for an ongoing heat
 		// simply update heat status	
-		dto.state = 'running';
+		dto.state = "running";
 		
 	} else if (message_state == 3) { // we have received the progess for a finished heat
 
-		dto.state = 'finished';
-		// update highscore and leaderboard
+		dto.state = "finished";
+		updateLeaderboard(heat_id, lanes);
+		updateHighscore(heat_id, lanes);
 	}
+
 
 	let heatdb = level('../db/heatdb');
 
@@ -226,6 +273,7 @@ var carDetected = function (heat_id, msg_state, lanes) {
 
 	lanes_key = RACE_ID;
 	lane_status_db.get(lanes_key, function(err, value) {
+		lanes_db = JSON.parse(value);
 
 		if (err) {
 			return callback(err);
@@ -251,7 +299,7 @@ var carDetected = function (heat_id, msg_state, lanes) {
 				dto.lanes[i] = lane;
 			} else {
 
-				dto.lanes[i] = value[i];
+				dto.lanes[i] = lanes_db[i];
 			}
 		}
 
