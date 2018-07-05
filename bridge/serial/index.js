@@ -1,7 +1,7 @@
 const logger = require('../utils/logger')
 const level = require('level')
 
-const RACE_ID = "2018-Race-";
+const RACE_ID = "2018-Race";
 
 const MSG_ACK = "a";
 const MSG_INIT_HEAT = "i";
@@ -204,7 +204,6 @@ var updateHeat = function (heat_id, heat_status, lanes) {
 		// update highscore and leaderboard
 	}
 
-
 	let heatdb = level('../db/heatdb');
 
 	heat_key = RACE_ID + ("0" + heat_id).splice(-2);
@@ -222,27 +221,43 @@ var carDetected = function (heat_id, msg_state, lanes) {
 	dto.status = "nok";
 	dto.heat = heat_id;
 	dto.lanes = []
-	
-	for (int i = 0; i < lanes.length; i++) {
-		lane = lanes[i];
-		lane.lane = i;
 
-		if (msg_state == ST_HEAT_UNKNWN) {
+	lane_status_db = level('../db/lanedb');
 
-			lane.state = "nok";
-			dto.lanes.push(lane);
-		} else if (msg_state == ST_COR_LANE) {
+	lanes_key = RACE_ID;
+	lane_status_db.get(lanes_key, function(err, value) {
 
-			lane.state = "ok";
-			dto.lanes.push(lane);
-		} else if (msg_state == ST_WRO_LANE) {
-
-			lane.state = "nok";
-			dto.lanes.push(lane);
+		if (err) {
+			return callback(err);
 		}
-	}
 
-	saveLaneStatus(dto);
+
+		for (int i = 0; i < lanes.length; i++) {
+			lane = lanes[i];
+			lane.lane = i;
+
+			if (lane.rf) {
+					
+				if (msg_state == ST_HEAT_UNKNWN) {
+
+					lane.state = "nok";
+				} else if (msg_state == ST_COR_LANE) {
+
+					lane.state = "ok";
+				} else if (msg_state == ST_WRO_LANE) {
+
+					lane.state = "nok";
+				}
+				dto.lanes[i] = lane;
+			} else {
+
+				dto.lanes[i] = value[i];
+			}
+		}
+
+		saveLaneStatus(dto);
+	});
+	
 }
 
 
@@ -262,7 +277,7 @@ var heatSetupComplete = function(heatid, lanes) {
 		lane = lanes[i];
 		lane.lane = i;
 		lane.state = "ok";
-		dto.lanes.push(lane);
+		dto.lanes[i] = lane;
 	}
 
 	saveLaneStatus(dto);
@@ -277,7 +292,8 @@ var saveLaneStatus = function(laneDto) {
 
 	let laneDB = level('../db/lanedb');
 
-	laneDB.put("2018-Race", laneDto)
+	lane_key = RACE_ID;
+	laneDB.put(lane_key, JSON.stringify(laneDto));
 }
 
 
