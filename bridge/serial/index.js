@@ -1,5 +1,5 @@
 /* jslint node: true */
-'use strict'
+'use strict';
 
 const logger = require('../utils/logger')
 const level = require('level')
@@ -291,7 +291,7 @@ var carDetected = function (heatId, msgState, lanes) {
     let lanesDb = JSON.parse(value)
 
     if (err) {
-      throw err
+       throw err
     }
 
     for (var i = 0; i < lanes.length; i++) {
@@ -378,39 +378,39 @@ port.on('readable', function () {
   let messageCc = data.c
 
   if (messageCc === MSG_ACK) { // we have received a message acknowledge
-    for (var i = 0; i < msgQueueOpen.length; i++) {
-      if (msgQueueOpen[i].id === messageId) {
-        if (data.s === ST_OK) {
-          msgQueueOpen[i].state = MSG_STATE_ACK
-        } else if (data.s === ST_ERROR) {
-          sendMsg(msgQueueOpen[i].msg, messageId)
-        }
-      }
-      break
-    }
+          for (var i = 0; i < msgQueueOpen.length; i++) {
+                  if (msgQueueOpen[i].id === messageId) {
+                          if (data.s === ST_OK) {
+                                  msgQueueOpen[i].state = MSG_STATE_ACK
+                          } else if (data.s === ST_ERROR) {
+                                  sendMsg(msgQueueOpen[i].msg, messageId)
+                          }
+                  }
+                  break
+          }
   } else if (messageCc === MSG_PROG_HEAT) { // we have received a progess update
-    let messageHeat = data.h
-    let messageState = data.s
-    let messageLanes = data.l
+          let messageHeat = data.h
+          let messageState = data.s
+          let messageLanes = data.l
 
-    updateHeat(messageHeat, messageState, messageLanes)
+          updateHeat(messageHeat, messageState, messageLanes)
   } else if (messageCc === MSG_DET_CAR) {
-    let messageHeat = data.h
-    let messateState = data.s
-    let messageLanes = data.l
+          let messageHeat = data.h
+          let messateState = data.s
+          let messageLanes = data.l
 
-    carDetected(messageHeat, messateState, messageLanes)
+          carDetected(messageHeat, messateState, messageLanes)
   } else if (messageCc === MSG_CPL_HEAT) {
-    if (data.s === ST_HEAT_SETUP) { // everything is okay
-      let messageHeat = data.h
-      let messageLines = data.l
+          if (data.s === ST_HEAT_SETUP) { // everything is okay
+                  let messageHeat = data.h
+                  let messageLines = data.l
 
-      heatSetupComplete(messageHeat, messageLines)
-    }
+                  heatSetupComplete(messageHeat, messageLines)
+          }
   } else if (messageCc === MSG_REP_LASER) {
-    if (data.s === 11) {
+          if (data.s === 11) {
       laserSetup(data.l)
-    }
+          }
   }
 })
 
@@ -420,4 +420,4 @@ serialCommer.stopSetupRT = stopSetupRT
 serialCommer.initHeat = initHeat
 serialCommer.startHeat = startHeat
 
-module.export = serialCommer
+module.exports = serialCommer
