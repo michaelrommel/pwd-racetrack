@@ -55,7 +55,7 @@ var sendMsg = function (msg, msg_id) {
 	msg_id = msg_id || -1;
 	
 	if (msg_id == -1) { // new message that is not yet in queue
-		msg_id == msg_id_counter++; // generating new unique msg id
+		msg_id == ++msg_id_counter; // generating new unique msg id
 		msg_queue_item = {};
 		msg_queue_item.id = msg_id;
 		msg_queue_item.msg = msg;
@@ -152,8 +152,20 @@ var initHeat = function (heat_id) {
 
 	// either receive car information via function call 
 	// from outside or retrieve information directly from db
+	heatdb = level('../db/heatdb');
 
-	sendMsg(msg);
+	let heat_key = "2018-Race-" + ("0" + heat_id).splice(-2);
+	heatdb.get(heat_key, function(err, value) {
+	
+		if (err) {
+			return callback(err);
+		}
+	
+		heat_config = JSON.parse(value);
+		msg.l = heat_config;
+
+		sendMsg(msg);
+	});
 }
 
 
@@ -314,7 +326,7 @@ port.on('readable', function () {
   } catch (err) {
     logger.error('Error parsing input data to JSON obj: %s', err.message);
     // error acknowledgement
-    // id cannot be transmitted if JSON obj is malformed and cannot be parsed
+    ack(0, false)
   }
 
   message_id = data.id;
