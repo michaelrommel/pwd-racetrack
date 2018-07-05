@@ -414,10 +414,9 @@ port.on('readable', function () {
   }
 })
 
-var serialCommer
-serialCommer.setupRT = setupRT
-serialCommer.stopSetupRT = stopSetupRT
-serialCommer.initHeat = initHeat
-serialCommer.startHeat = startHeat
-
-module.exports = serialCommer
+module.exports = {
+	setupRt: setupRT,
+	stopSetupRt: stopSetupRT,
+	initHeat: initHeat,
+	startHeat: startHeat
+}
