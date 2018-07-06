@@ -16,7 +16,7 @@ class PWDProtocol {
     void sendCarDetection( const uint8_t laneNumber, const char* rfid );
     void sendCarDetection( const uint8_t heatno, const uint8_t laneNumber, const PWDLane* lane, const bool wrongLane );
     void sendCompleteOrProgress( const uint8_t messageType, const PWDHeat* heat );
-    void sendLaserLevel( const uint8_t messageType, const PWDHeat* heat );
+    void sendLaserLevel( const PWDHeat* heat );
     bool receiveCommand( PWDHeat* heat );
 
     // constants to be used also from outside

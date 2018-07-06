@@ -16,10 +16,12 @@ void PWDStatistics::show( void )
   if( (millis() - _lastMillis) > reportInterval ) {
     // get counter diff divided by elapsed millis
     unsigned long millisPerLoop = ( millis() - _lastMillis ) / _loopCounter ;
-    _lastMillis = millis();
-    _loopCounter = 1;
+    _serialUSB.print( "Number of loop iterations: " );
+    _serialUSB.println( _loopCounter );
     _serialUSB.print( "Milliseconds per loop iteration: " );
     _serialUSB.println( millisPerLoop );
+    _lastMillis = millis();
+    _loopCounter = 1;
   }
   _loopCounter++;
 }

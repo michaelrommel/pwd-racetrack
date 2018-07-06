@@ -37,6 +37,19 @@ namespace Util
 		}
 	}
 
+  // create a random car detection on uninitialized track
+  // returns the lane number of the detected car
+  uint8_t createRandomCarDetection( PWDHeat* setupHeat ) {
+    // arbitratily select a lane
+    uint8_t tl = random(0,4);
+    const char* hex = "0123456789ABCDEF";
+    for( int i=0; i<14; i++ ) {
+      //take a random character and insert it into the rfid string
+      setupHeat->lane[tl]->rfid[i] = hex[random(0,16)];
+    }
+    return tl;
+  }
+
   // create a random car detection derived from set up heat
   // returns the lane number of the detected car
   uint8_t createRandomCarDetection( PWDHeat* heat, PWDHeat* setupHeat ) {
@@ -92,7 +105,7 @@ namespace Util
     while( c > 0 ) {
       SerialUSB.print( "c is ");
       SerialUSB.println( c );
-      if( heat->lane[tl]->time == 0 ) {
+      if( heat->lane[tl]->time == 0 && strlen( heat->lane[tl]->rfid ) > 0 ) {
         // this car has not finished
         SerialUSB.print( "Selected car in lane ");
         SerialUSB.println( tl );
