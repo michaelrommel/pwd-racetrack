@@ -130,7 +130,7 @@ var sortByTime = function (a, b) {
 // params
 //
 var updateLeaderboard = function (heatId, lanes) {
-  let leaderboardDb = level('../db/leaderboard')
+  let leaderboardDb = level('../db/leaderboard', ({valueEncoding: 'json'}))
 
   logger.debug('Sorting current heat by time')
   let lanesSorted = lanes.sort(sortByTime)
@@ -148,7 +148,7 @@ var updateLeaderboard = function (heatId, lanes) {
       throw err
     }
 
-    let leadership = JSON.parse(value)
+    let leadership = value
 
     for (var i = 0; i < lanes.length; i++) {
       let laneRfid = lanes[i].rf
@@ -164,7 +164,7 @@ var updateLeaderboard = function (heatId, lanes) {
     }
 
     logger.debug('Saving leaderboard information to database')
-    leaderboardDb.put(RACE_ID, JSON.stringify(leadership))
+    leaderboardDb.put(RACE_ID, leadership)
     logger.debug('Successfully saved leaderboard information to database')
   })
 }
@@ -174,7 +174,7 @@ var updateLeaderboard = function (heatId, lanes) {
 // params
 //
 var updateHighscore = function (heatId, lanes) {
-  let highscoreDb = level('../db/highscore')
+  let highscoreDb = level('../db/highscore', ({valueEncoding: 'json'})
 
   logger.debug('Getting current highscore from database')
   highscoreDb.get(RACE_ID, function (err, value) {
@@ -184,7 +184,7 @@ var updateHighscore = function (heatId, lanes) {
       throw err
     }
 
-    let highscore = JSON.parse(value)
+    let highscore = value
 
     logger.debug('Iterating through current highscore to see if there is a new one')
     for (var i = 0; i < lanes.length; i++) {
@@ -208,7 +208,7 @@ var updateHighscore = function (heatId, lanes) {
     }
 
     logger.debug('Saving highscore information to database')
-    highscoreDb.put(RACE_ID, JSON.stringify(highscore))
+    highscoreDb.put(RACE_ID, highscore)
     logger.debug('Successfully saved highscore information to database')
   })
 }
@@ -267,7 +267,7 @@ var initHeat = function (heatId) {
   msg.h = heatId
   msg.l = []
 
-  let heatdb = level('../db/heatdb')
+  let heatdb = level('../db/heatdb', ({valueEncoding: 'json'})
 
   logger.debug('Retrieving heat information from the database')
   let heatKey = RACE_KEY + '-' + ('0' + heatId).splice(-2)
@@ -277,7 +277,7 @@ var initHeat = function (heatId) {
       throw err
     }
 
-    let heatConfig = JSON.parse(value)
+    let heatConfig = value
     msg.l = heatConfig
 
     logger.debug('Sending init heat message over the line')
@@ -347,11 +347,11 @@ var updateHeat = function (heatId, heatStatus, lanes) {
     updateHighscore(heatId, lanes)
   }
 
-  let heatdb = level('../db/heatdb')
+  let heatdb = level('../db/heatdb', ({valueEncoding: 'json'})
 
   logger.debug('Saving updated heat information to database')
   let heatKey = RACE_ID + "-" + ('0' + heatId).splice(-2)
-  heatdb.put(heatKey, JSON.stringify(dto))
+  heatdb.put(heatKey, dto)
   logger.debug('Successfully saved updated heat information to database')
 }
 
@@ -366,12 +366,12 @@ var carDetected = function (heatId, msgState, lanes) {
   dto.heat = heatId
   dto.lanes = []
 
-  let laneStatusDb = level('../db/lanedb')
+  let laneStatusDb = level('../db/lanedb', ({valueEncoding: 'json'})
 
   let lanesKey = RACE_ID
   logger.debug('Retrieving lane status information from database')
   laneStatusDb.get(lanesKey, function (err, value) {
-    let lanesDb = JSON.parse(value)
+    let lanesDb = value
 
     if (err) {
        logger.error('Could not retrieve lane status information from database')
@@ -436,11 +436,11 @@ var heatSetupComplete = function (heatId, lanes) {
 // params
 //
 var saveLaneStatus = function (laneDto) {
-  let laneDB = level('../db/lanedb')
+  let laneDB = level('../db/lanedb', ({valueEncoding: 'json'})
 
   var laneKey = RACE_ID
   logger.debug('Pushing lane status to database')
-  laneDB.put(laneKey, JSON.stringify(laneDto))
+  laneDB.put(laneKey, laneDto)
 }
 
 // function for laser setup measurement
