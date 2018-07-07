@@ -105,6 +105,7 @@ var sendMsg = function (msg, msgId) {
 //
 var checkMsgQueue = function () {
   logger.debug('Checking open message queue for unacknowledged messages')
+  logger.debug('Number unacknowledged messages: %i', msgQueueOpen.length)
   for (var i = 0; i < msgQueueOpen.length; i++) { // looping through open msg queue
     if (msgQueueOpen[i].state === MSG_STATE_PENDING) { // msg still unacknowledged, resend
       logger.debug('Message still unacknowledged, resending it: %s', JSON.stringify(msgQueueOpen[i]))
@@ -117,7 +118,7 @@ var checkMsgQueue = function () {
     }
   }
 
-  if (msgQueueOpen === 0) { // msg queue is empty, we can stop timer
+  if (msgQueueOpen.length === 0) { // msg queue is empty, we can stop timer
     logger.debug('Message queue empty, stopping timer')
     clearInterval(msgQueueTimer)
     msgQueueTimer = null
@@ -126,11 +127,25 @@ var checkMsgQueue = function () {
   }
 }
 
-// function for sorting lanes by time
+// function for sorting lanes by time ascending
 // -----------------
 // params
 //
-var sortByTime = function (a, b) {
+var sortByTimeAsc = function (a, b) {
+  if (a.t < b.t) {
+    return 1
+  } else if (a.t > b.t) {
+    return -1
+  }
+
+  return 0
+}
+
+// function for sorting lanes by time descending
+// -----------------
+// params
+//
+var sortByTimeDesc = function (a, b) {
   if (a.t < b.t) {
     return -1
   } else if (a.t > b.t) {
@@ -148,14 +163,15 @@ var updateLeaderboard = function (heatId, lanes) {
   let leaderboardDb = level('../db/leaderboard', ({valueEncoding: 'json'}))
 
   logger.debug('Sorting current heat by time')
-  let lanesSorted = lanes.sort(sortByTime)
+  let lanesSorted = lanes.sort(sortByTimeAsc)
 
   logger.debug('Calculating points for current heat')
   for (var i = 0; i < lanesSorted.length; i++) {
     lanesSorted[i].points = Math.pow(2, i)
-    logger.debug('Racer: %s, Points: %i', lanesSorted[i].name, lanesSorted[i].points)
+    logger.debug('Racer: %s, Points: %i', lanesSorted[i].ow, lanesSorted[i].points)
   }
 
+  
   leaderboardDb.get(RACE_ID, function (err, value) {
     if (err) {
       // error handling
@@ -164,22 +180,30 @@ var updateLeaderboard = function (heatId, lanes) {
     }
 
     let leadership = value
+    
+    //logger.debug('Leadership: %s', leadership)
 
-    for (var i = 0; i < lanes.length; i++) {
-      let laneRfid = lanes[i].rf
+    for (var i = 0; i < lanesSorted.length; i++) {
+      let laneRfid = lanesSorted[i].rf
+      logger.debug('Got RFID: %s', laneRfid)
       
       if (laneRfid === undefined) {
           continue
       }
       
-      if (heatId <= 40) {
-        logger.debug('Still in qualifying, writing information to qualifying data')
-        leadership[laneRfid].score_quali += lanes[i].points
-        leadership[laneRfid].time_quali += lanes[i].t
-      } else {
-	logger.debug('Already in finals, writing information to finals data')
-        leadership[laneRfid].score_finals += lanes[i].points
-        leadership[laneRfid].time_finals += lanes[i].t
+      for (var k = 0; k < leadership.length; k++) {
+        if (leadership[k].rf !== laneRfid) {
+            continue
+        }
+        if (heatId <= 40) { 
+          logger.debug('Still in qualifying, writing information to qualifying data')
+          leadership[k].score_quali += lanesSorted[i].points
+          leadership[k].time_quali += lanesSorted[i].t
+        } else {
+	      logger.debug('Already in finals, writing information to finals data')
+          leadership[k].score_finals += lanesSorted[i].points
+          leadership[k].time_finals += lanesSorted[i].t
+        }
       }
     }
     
@@ -221,19 +245,23 @@ var updateHighscore = function (heatId, lanes) {
     logger.debug('Iterating through current highscore to see if there is a new one')
     for (var i = 0; i < lanes.length; i++) {
       for (var k = 0; k < highscore.length; k++) {
+        let laneInserted = false
         if (lanes[i].t < highscore[k].t) {
-          logger.info('Found new highscore: Heat - %i, Racer - %s, Time - %ims, Rank - %i', heatId, lanes[i].name, k + 1, lanes[i].t)
+          logger.info('Found new highscore: Heat - %i, Racer - %s, Time - %ims, Rank - %i', heatId, lanes[i].ow, lanes[i].t, k + 1)
           lanes[i].heat = heatId
           lanes[i].rank = k + 1
           highscore.splice(k, 0, lanes[i])
           highscore.splice(-1)
-          break
+          laneInserted = true
+        }
+        if (laneInserted === true) {
+            break
         }
       }
     }
 
     logger.debug('Reapplying ranking to highscore')
-    highscore = highscore.sort(sortByTime)
+    highscore = highscore.sort(sortByTimeDesc)
     for (var i = 0; i < highscore.length; i++) {
 
 	    highscore[i].rank = i + 1
@@ -606,12 +634,12 @@ module.exports = {
 
 var testTimer = setTimeout(function () {
     logger.debug('Entering test routine, sending test message for heat setup')
-    sendMsg({"c":"i","h":7,"l":[{"rf":"045F57A22D4D81","ow":"Kara Thrace","mn":1234567,"sn":42 },{"rf":"03857FAD2D4D74","ow":"Lee Adama","mn":1234567,"sn":35 },{"rf":"156F78DA2D6582","ow":"Sharon Valerii","mn":1234567,"sn":24 },{"rf":"669EBCC390DA03","ow":"Karl Agathon","mn":1234567,"sn":45}]})
+    sendMsg({"id":13,"c":"i","h":7,"l":[{"rf": "043E57A22D4D", "ow": "Michael Pueschel", "mn": "1234567", "sn": "1216" },{"rf": "04E556A22D4D", "ow": "Sandner Sascha", "mn": "1234567", "sn": "1221" },{"rf": "04F157A22D4D", "ow": "Wolfgang Heimsch", "mn": "1234567", "sn": "1226" },{"rf": "04B256A22D4D", "ow": "Stefan Henkel", "mn": "1234567", "sn": "1228"}]})
     
     let timer = setTimeout( function() {
       
       logger.debug('Sending test message for start heat')
-      sendMsg({"c":"g","h":18})  
+      sendMsg({"c":"g","h":7})  
     }, 20000)
 
 }, 20000)
@@ -619,43 +647,43 @@ var testTimer = setTimeout(function () {
 
 
 var carArray = [
-  { 'rf': '04 A2 56 A2 2D 4D', 'ow': 'Bernd Ebert', 'mn': '1234567', 'sn': '1200' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 77 56 A2 2D 4D', 'ow': 'Yvan Muelli', 'mn': '1234567', 'sn': '1209' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 5B 56 A2 2D 4D', 'ow': 'Nick Cooke', 'mn': '1234567', 'sn': '1210' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 56 57 A2 2D 4D', 'ow': 'Hartmut Janke', 'mn': '1234567', 'sn': '1211' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 4E 57 A2 2D 4D', 'ow': 'Boris Bijelic', 'mn': '1234567', 'sn': '1212' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 67 56 A2 2D 4D', 'ow': 'Geert Roose', 'mn': '1234567', 'sn': '1213' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 3B 56 A2 2D 4D', 'ow': 'Niels Christian Broberg', 'mn': '1234567', 'sn': '1214' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 43 56 A2 2D 4D', 'ow': 'Bela Megyesi', 'mn': '1234567', 'sn': '1215' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 3E 57 A2 2D 4D', 'ow': 'Michael Pueschel', 'mn': '1234567', 'sn': '1216' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 4B 56 A2 2D 4D', 'ow': 'Martin Kohlert', 'mn': '1234567', 'sn': '1217' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 46 57 A2 2D 4D', 'ow': 'Bernd Nuessel', 'mn': '1234567', 'sn': '1218' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 97 56 A2 2D 4D', 'ow': 'Christian Reh', 'mn': '1234567', 'sn': '1201' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 53 56 A2 2D 4D', 'ow': 'Sergius Polinski', 'mn': '1234567', 'sn': '1219' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 DB 55 A2 2D 4D', 'ow': 'David Drews', 'mn': '1234567', 'sn': '1220' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 E5 56 A2 2D 4D', 'ow': 'Sandner Sascha', 'mn': '1234567', 'sn': '1221' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 FB 57 A2 2D 4D', 'ow': 'Simon McGrath', 'mn': '1234567', 'sn': '1222' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 BA 56 A2 2D 4D', 'ow': 'Paul Terick / Kevin Reinhart', 'mn': '1234567', 'sn': '1223' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 05 57 A2 2D 4D', 'ow': 'Victor Bascones Munoz', 'mn': '1234567', 'sn': '1224' },
-  { 'rf': '04 CA 56 A2 2D 4D', 'ow': 'Gerald Bechtold', 'mn': '1234567', 'sn': '1225' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 F1 57 A2 2D 4D', 'ow': 'Wolfgang Heimsch', 'mn': '1234567', 'sn': '1226' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 D1 54 A2 2D 4D', 'ow': 'Peter Wiener', 'mn': '1234567', 'sn': '1227' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 B2 56 A2 2D 4D', 'ow': 'Stefan Henkel', 'mn': '1234567', 'sn': '1228' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 66 57 A2 2D 4D', 'ow': 'Denis Raveau', 'mn': '1234567', 'sn': '1202' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 C2 56 A2 2D 4D', 'ow': 'Theo Twieling', 'mn': '1234567', 'sn': '1229' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 4A 56 A2 2D 4D', 'ow': 'Markus Zahnjel', 'mn': '1234567', 'sn': '1230' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 10 58 A2 2D 4D', 'ow': 'Ratnam Ramanathan', 'mn': '1234567', 'sn': '1231' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 21 58 A2 2D 4D', 'ow': 'Johan Van Opstal', 'mn': '1234567', 'sn': '1232' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 18 58 A2 2D 4D', 'ow': 'Gene Schroeder', 'mn': '1234567', 'sn': '1233' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 29 58 A2 2D 4D', 'ow': 'Sven Egil Hauan', 'mn': '1234567', 'sn': '1234' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 5A 56 A2 2D 4D', 'ow': 'Herbert Brouwers', 'mn': '1234567', 'sn': '1235' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 52 56 A2 2D 4D', 'ow': 'Christina Blumthaler', 'mn': '1234567', 'sn': '1236' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 87 56 A2 2D 4D', 'ow': 'Angelo Constantini', 'mn': '1234567', 'sn': '1203' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 8F 56 A2 2D 4D', 'ow': 'Nicolino Pizzo', 'mn': '1234567', 'sn': '1204' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 70 57 A2 2D 4D', 'ow': 'Alexander Eike', 'mn': '1234567', 'sn': '1205' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 AA 56 A2 2D 4D', 'ow': 'Ugur Timurlenk', 'mn': '1234567', 'sn': '1206' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 7F 56 A2 2D 4D', 'ow': 'Kanamma R', 'mn': '1234567', 'sn': '1207' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
-  { 'rf': '04 5E 57 A2 2D 4D', 'ow': 'Ricardo Ramires', 'mn': '1234567', 'sn': '1208' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0}
+  { 'rf': '04A256A22D4D', 'ow': 'Bernd Ebert', 'mn': '1234567', 'sn': '1200' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '047756A22D4D', 'ow': 'Yvan Muelli', 'mn': '1234567', 'sn': '1209' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '045B56A22D4D', 'ow': 'Nick Cooke', 'mn': '1234567', 'sn': '1210' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '045657A22D4D', 'ow': 'Hartmut Janke', 'mn': '1234567', 'sn': '1211' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '044E57A22D4D', 'ow': 'Boris Bijelic', 'mn': '1234567', 'sn': '1212' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '046756A22D4D', 'ow': 'Geert Roose', 'mn': '1234567', 'sn': '1213' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '043B56A22D4D', 'ow': 'Niels Christian Broberg', 'mn': '1234567', 'sn': '1214' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '044356A22D4D', 'ow': 'Bela Megyesi', 'mn': '1234567', 'sn': '1215' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '043E57A22D4D', 'ow': 'Michael Pueschel', 'mn': '1234567', 'sn': '1216' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '044B56A22D4D', 'ow': 'Martin Kohlert', 'mn': '1234567', 'sn': '1217' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '044657A22D4D', 'ow': 'Bernd Nuessel', 'mn': '1234567', 'sn': '1218' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '049756A22D4D', 'ow': 'Christian Reh', 'mn': '1234567', 'sn': '1201' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '045356A22D4D', 'ow': 'Sergius Polinski', 'mn': '1234567', 'sn': '1219' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '04DB55A22D4D', 'ow': 'David Drews', 'mn': '1234567', 'sn': '1220' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '04E556A22D4D', 'ow': 'Sandner Sascha', 'mn': '1234567', 'sn': '1221' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '04FB57A22D4D', 'ow': 'Simon McGrath', 'mn': '1234567', 'sn': '1222' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '04BA56A22D4D', 'ow': 'Paul Terick / Kevin Reinhart', 'mn': '1234567', 'sn': '1223' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '040557A22D4D', 'ow': 'Victor Bascones Munoz', 'mn': '1234567', 'sn': '1224' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '04CA56A22D4D', 'ow': 'Gerald Bechtold', 'mn': '1234567', 'sn': '1225' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '04F157A22D4D', 'ow': 'Wolfgang Heimsch', 'mn': '1234567', 'sn': '1226' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '04D154A22D4D', 'ow': 'Peter Wiener', 'mn': '1234567', 'sn': '1227' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '04B256A22D4D', 'ow': 'Stefan Henkel', 'mn': '1234567', 'sn': '1228' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '046657A22D4D', 'ow': 'Denis Raveau', 'mn': '1234567', 'sn': '1202' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '04C256A22D4D', 'ow': 'Theo Twieling', 'mn': '1234567', 'sn': '1229' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '044A56A22D4D', 'ow': 'Markus Zahnjel', 'mn': '1234567', 'sn': '1230' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '041058A22D4D', 'ow': 'Ratnam Ramanathan', 'mn': '1234567', 'sn': '1231' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '042158A22D4D', 'ow': 'Johan Van Opstal', 'mn': '1234567', 'sn': '1232' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '041858A22D4D', 'ow': 'Gene Schroeder', 'mn': '1234567', 'sn': '1233' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '042958A22D4D', 'ow': 'Sven Egil Hauan', 'mn': '1234567', 'sn': '1234' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '045A56A22D4D', 'ow': 'Herbert Brouwers', 'mn': '1234567', 'sn': '1235' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '045256A22D4D', 'ow': 'Christina Blumthaler', 'mn': '1234567', 'sn': '1236' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '048756A22D4D', 'ow': 'Angelo Constantini', 'mn': '1234567', 'sn': '1203' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '048F56A22D4D', 'ow': 'Nicolino Pizzo', 'mn': '1234567', 'sn': '1204' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '047057A22D4D', 'ow': 'Alexander Eike', 'mn': '1234567', 'sn': '1205' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '04AA56A22D4D', 'ow': 'Ugur Timurlenk', 'mn': '1234567', 'sn': '1206' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '047F56A22D4D', 'ow': 'Kanamma R', 'mn': '1234567', 'sn': '1207' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0},
+  { 'rf': '045E57A22D4D', 'ow': 'Ricardo Ramires', 'mn': '1234567', 'sn': '1208' , 'time_quali': 0, 'score_quali': 0, 'time_finals': 0, 'score_finals': 0}
 ]
 
 
@@ -666,12 +694,27 @@ var initLeaderboard = function () {
     logger.debug('Saving leaderboard information to database')
     leaderboardDb.put(RACE_ID, carArray)
     logger.debug('Successfully saved leaderboard information to database')
-    logger.debug('Closing database')
+    leaderboardDb.createReadStream()
+    .on('data', function (data) {
+        console.log(data.key, '=', data.value)
+        })
+        .on('error', function (err) {
+            console.log('Oh my!', err)
+            })
+            .on('close', function () {
+                console.log('Stream closed')
+                })
+                .on('end', function () {
+                    console.log('Stream ended')
+                    logger.debug('Closing database')
     leaderboardDb.close(function (err) {
         if (err) {
             logger.error('Could not close database: %s', err.message)
         }
     })
+                    })
+  
+    
   }
 
 
