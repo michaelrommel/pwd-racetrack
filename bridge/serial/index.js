@@ -42,6 +42,9 @@ var msgQueueComplete = []
 
 
 var laneDb = level('./db/lanedb', ({valueEncoding: 'json'}))
+var heatdb = level('./db/heatdb', ({valueEncoding: 'json'}))
+var leaderboardDb = level('./db/leaderboard', ({valueEncoding: 'json'}))
+var highscoreDb = level('./db/highscore', ({valueEncoding: 'json'}))
 
 var port = new SerialPort('/dev/ttyACM0',
   { 'baudRate': 57600,
@@ -94,7 +97,7 @@ var sendMsg = function (msg, msgId) {
     if (err) {
       return logger.error('Error on writing on line: ', err.message);
     }
-    logger.info('Message written successfully on line');
+    logger.info('Message written successfully on line: %s', msg);
 });
 
 }
@@ -160,7 +163,6 @@ var sortByTimeDesc = function (a, b) {
 // params
 //
 var updateLeaderboard = function (heatId, lanes) {
-  let leaderboardDb = level('./db/leaderboard', ({valueEncoding: 'json'}))
 
   logger.debug('Sorting current heat by time')
   let lanesSorted = lanes.sort(sortByTimeAsc)
@@ -217,11 +219,13 @@ var updateLeaderboard = function (heatId, lanes) {
     leaderboardDb.put(RACE_ID, leadership)
     logger.debug('Successfully saved leaderboard information to database')
     logger.debug('Closing database')
+    /*
     leaderboardDb.close(function (err) {
         if (err) {
             logger.error('Could not close database: %s', err.message)
         }
     })
+    */
   })
 }
 
@@ -230,7 +234,6 @@ var updateLeaderboard = function (heatId, lanes) {
 // params
 //
 var updateHighscore = function (heatId, lanes) {
-  let highscoreDb = level('./db/highscore', ({valueEncoding: 'json'}))
 
   logger.debug('Getting current highscore from database')
   highscoreDb.get(RACE_ID, function (err, value) {
@@ -273,11 +276,13 @@ var updateHighscore = function (heatId, lanes) {
     highscoreDb.put(RACE_ID, highscore)
     logger.debug('Successfully saved highscore information to database')
     logger.debug('Closing database')
+    /*
     highscoreDb.close(function (err) {
         if (err) {
             logger.error('Could not close database: %s', err.message)
         }
     })
+    */
   })
 }
 
@@ -299,7 +304,7 @@ var ack = function (id, state) {
   }
 
   logger.debug('Sending acknowledge message over the line')
-  sendMsg(msg)
+  sendMsg(msg, id)
 }
 
 // Start the setup of the racetrack
@@ -335,7 +340,6 @@ var initHeat = function (heatId) {
   msg.h = heatId
   msg.l = []
 
-  let heatdb = level('./db/heatdb', ({valueEncoding: 'json'}))
 
   logger.debug('Retrieving heat information from the database')
   let heatKey = RACE_KEY + '-' + ('0' + heatId).splice(-2)
@@ -354,11 +358,13 @@ var initHeat = function (heatId) {
     initLaneStatus(heatId)
     
     logger.debug('Closing database')
+    /*
     heatdb.close(function (err) {
         if (err) {
             logger.error('Could not close database: %s', err.message)
         }
     })
+    */
   })
 }
 
@@ -425,18 +431,19 @@ var updateHeat = function (heatId, heatStatus, lanes) {
     updateHighscore(heatId, lanes)
   }
 
-  let heatdb = level('./db/heatdb', ({valueEncoding: 'json'}))
 
   logger.debug('Saving updated heat information to database')
   let heatKey = RACE_ID + "-" + ("0" + heatId).slice(-2)
   heatdb.put(heatKey, dto)
   logger.debug('Successfully saved updated heat information to database')
   logger.debug('Closing database')
+  /*
   heatdb.close(function (err) {
     if (err) {
       logger.error('Could not close database: %s', err.message)
     }
   })
+  */
 }
 
 // function for car detection
@@ -588,8 +595,8 @@ port.on('readable', function () {
 				  logger.info('Received error acknowledge, resend corresponding message')
                                   sendMsg(msgQueueOpen[i].msg, messageId)
                           }
-                  }
                   break
+                  }
           }
   } else if (messageCc === MSG_PROG_HEAT) { // we have received a progess update
 	  logger.info('Received a progress update message for a heat')
@@ -632,24 +639,27 @@ module.exports = {
 
 // for testing only
 
+var h = 0
+
+var testRun1 = function() {
 var t0 = setTimeout(function () {
     logger.debug('Entering test routine, sending test message for heat setup')
-    sendMsg({"c":"i","h":7,"l":[{"rf": "043E57A22D4D", "ow": "Michael Pueschel", "mn": "1234567", "sn": "1216" },{"rf": "04E556A22D4D", "ow": "Sandner Sascha", "mn": "1234567", "sn": "1221" },{"rf": "04F157A22D4D", "ow": "Wolfgang Heimsch", "mn": "1234567", "sn": "1226" },{"rf": "04B256A22D4D", "ow": "Stefan Henkel", "mn": "1234567", "sn": "1228"}]})
+    sendMsg({"c":"i","h":h++,"l":[{"rf": "043E57A22D4D", "ow": "Michael Pueschel", "mn": "1234567", "sn": "1216" },{"rf": "04E556A22D4D", "ow": "Sandner Sascha", "mn": "1234567", "sn": "1221" },{"rf": "04F157A22D4D", "ow": "Wolfgang Heimsch", "mn": "1234567", "sn": "1226" },{"rf": "04B256A22D4D", "ow": "Stefan Henkel", "mn": "1234567", "sn": "1228"}]})
     
     let t1 = setTimeout( function() {
       
       logger.debug('Sending test message for start heat')
-      sendMsg({"c":"g","h":7})  
+      sendMsg({"c":"g","h":h})  
 
 
       let t2 = setTimeout( function() {
 
 	logger.debug('Sending test message for second heat setup')
-	sendMsg({"c":"i","h":8,"l":[{"rf":"044657A22D4D","ow":"Bernd Nuessel","mn":"1234567","sn":"1218" },{"rf":"04CA56A22D4D","ow":"Gerald Bechtold","mn":"1234567","sn":"1225" },{"rf":"04D154A22D4D","ow":"Peter Wiener","mn":"1234567","sn":"1227" },{"rf":"04C256A22D4D","ow":"Theo Twieling","mn":"1234567","sn":"1229"}]})
+	sendMsg({"c":"i","h":h++,"l":[{"rf":"044657A22D4D","ow":"Bernd Nuessel","mn":"1234567","sn":"1218" },{"rf":"04CA56A22D4D","ow":"Gerald Bechtold","mn":"1234567","sn":"1225" },{"rf":"04D154A22D4D","ow":"Peter Wiener","mn":"1234567","sn":"1227" },{"rf":"04C256A22D4D","ow":"Theo Twieling","mn":"1234567","sn":"1229"}]})
 
 	let t3 = setTimeout( function() {
           logger.debug('Sending test message for start heat')
-          sendMsg({"c":"g","h":7})  
+          sendMsg({"c":"g","h":h})  
 
 	}, 20000)
 	  
@@ -657,6 +667,47 @@ var t0 = setTimeout(function () {
     }, 20000)
 
 }, 20000)
+
+}
+
+
+var getRandomRacers = function() {
+
+
+    let lanes = []
+    for (var i = 0; i < 4; i++) {
+
+      let racer = carArray[Math.floor(Math.random() * carArray.length)]
+      let lane = {}
+      lane.rf = racer.rf
+      lane.ow = racer.ow
+      lane.mn = racer.mn
+      lane.sn = racer.sn
+      lanes.push(lane)
+    }
+    return lanes
+}
+
+
+var testRun2 = function() {
+var t0 = setTimeout(function () {
+    logger.debug('Entering test routine, sending test message for heat setup')
+    sendMsg({"c":"i","h":h++,"l":getRandomRacers()})
+    
+    let t1 = setTimeout( function() {
+      
+      logger.debug('Sending test message for start heat')
+      sendMsg({"c":"g","h":h})  
+
+	  
+    }, 20000)
+
+}, 20000)
+
+}
+
+testRun2()
+var t = setInterval(testRun2, 120000)
 
 
 
@@ -702,7 +753,6 @@ var carArray = [
 
 
 var initLeaderboard = function () {
-  let leaderboardDb = level('./db/leaderboard', ({valueEncoding: 'json'}))
 
 
     logger.debug('Saving leaderboard information to database')
@@ -721,11 +771,13 @@ var initLeaderboard = function () {
                 .on('end', function () {
                     console.log('Stream ended')
                     logger.debug('Closing database')
+		    /*
     leaderboardDb.close(function (err) {
         if (err) {
             logger.error('Could not close database: %s', err.message)
         }
     })
+    */
                     })
   
     
@@ -737,7 +789,6 @@ initLeaderboard()
 
 
 var initHighscore = function (heatId, lanes) {
-  let highscoreDb = level('./db/highscore', ({valueEncoding: 'json'}))
 
   let highscore = []
   for (var i = 0; i < 5; i++) {
@@ -752,11 +803,13 @@ var initHighscore = function (heatId, lanes) {
   highscoreDb.put(RACE_ID, highscore)
   logger.debug('Successfully saved highscore information to database')
   logger.debug('Closing database')
+  /*
   highscoreDb.close(function (err) {
     if (err) {
       logger.error('Could not close database: %s', err.message)
     }
   })
+  */
 }
 
 initHighscore()
