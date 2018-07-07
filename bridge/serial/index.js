@@ -41,9 +41,9 @@ var msgQueueOpen = []
 var msgQueueComplete = []
 
 
-var laneDb = level('../db/lanedb', ({valueEncoding: 'json'}))
+var laneDb = level('./db/lanedb', ({valueEncoding: 'json'}))
 
-var port = new SerialPort('COM6',
+var port = new SerialPort('/dev/ttyACM0',
   { 'baudRate': 57600,
     'dataBits': 8,
     'parity': 'none',
@@ -160,7 +160,7 @@ var sortByTimeDesc = function (a, b) {
 // params
 //
 var updateLeaderboard = function (heatId, lanes) {
-  let leaderboardDb = level('../db/leaderboard', ({valueEncoding: 'json'}))
+  let leaderboardDb = level('./db/leaderboard', ({valueEncoding: 'json'}))
 
   logger.debug('Sorting current heat by time')
   let lanesSorted = lanes.sort(sortByTimeAsc)
@@ -230,7 +230,7 @@ var updateLeaderboard = function (heatId, lanes) {
 // params
 //
 var updateHighscore = function (heatId, lanes) {
-  let highscoreDb = level('../db/highscore', ({valueEncoding: 'json'}))
+  let highscoreDb = level('./db/highscore', ({valueEncoding: 'json'}))
 
   logger.debug('Getting current highscore from database')
   highscoreDb.get(RACE_ID, function (err, value) {
@@ -335,7 +335,7 @@ var initHeat = function (heatId) {
   msg.h = heatId
   msg.l = []
 
-  let heatdb = level('../db/heatdb', ({valueEncoding: 'json'}))
+  let heatdb = level('./db/heatdb', ({valueEncoding: 'json'}))
 
   logger.debug('Retrieving heat information from the database')
   let heatKey = RACE_KEY + '-' + ('0' + heatId).splice(-2)
@@ -425,7 +425,7 @@ var updateHeat = function (heatId, heatStatus, lanes) {
     updateHighscore(heatId, lanes)
   }
 
-  let heatdb = level('../db/heatdb', ({valueEncoding: 'json'}))
+  let heatdb = level('./db/heatdb', ({valueEncoding: 'json'}))
 
   logger.debug('Saving updated heat information to database')
   let heatKey = RACE_ID + "-" + ("0" + heatId).slice(-2)
@@ -632,14 +632,28 @@ module.exports = {
 
 // for testing only
 
-var testTimer = setTimeout(function () {
+var t0 = setTimeout(function () {
     logger.debug('Entering test routine, sending test message for heat setup')
-    sendMsg({"id":13,"c":"i","h":7,"l":[{"rf": "043E57A22D4D", "ow": "Michael Pueschel", "mn": "1234567", "sn": "1216" },{"rf": "04E556A22D4D", "ow": "Sandner Sascha", "mn": "1234567", "sn": "1221" },{"rf": "04F157A22D4D", "ow": "Wolfgang Heimsch", "mn": "1234567", "sn": "1226" },{"rf": "04B256A22D4D", "ow": "Stefan Henkel", "mn": "1234567", "sn": "1228"}]})
+    sendMsg({"c":"i","h":7,"l":[{"rf": "043E57A22D4D", "ow": "Michael Pueschel", "mn": "1234567", "sn": "1216" },{"rf": "04E556A22D4D", "ow": "Sandner Sascha", "mn": "1234567", "sn": "1221" },{"rf": "04F157A22D4D", "ow": "Wolfgang Heimsch", "mn": "1234567", "sn": "1226" },{"rf": "04B256A22D4D", "ow": "Stefan Henkel", "mn": "1234567", "sn": "1228"}]})
     
-    let timer = setTimeout( function() {
+    let t1 = setTimeout( function() {
       
       logger.debug('Sending test message for start heat')
       sendMsg({"c":"g","h":7})  
+
+
+      let t2 = setTimeout( function() {
+
+	logger.debug('Sending test message for second heat setup')
+	sendMsg({"c":"i","h":8,"l":[{"rf":"044657A22D4D","ow":"Bernd Nuessel","mn":"1234567","sn":"1218" },{"rf":"04CA56A22D4D","ow":"Gerald Bechtold","mn":"1234567","sn":"1225" },{"rf":"04D154A22D4D","ow":"Peter Wiener","mn":"1234567","sn":"1227" },{"rf":"04C256A22D4D","ow":"Theo Twieling","mn":"1234567","sn":"1229"}]})
+
+	let t3 = setTimeout( function() {
+          logger.debug('Sending test message for start heat')
+          sendMsg({"c":"g","h":7})  
+
+	}, 20000)
+	  
+      }, 30000)
     }, 20000)
 
 }, 20000)
@@ -688,7 +702,7 @@ var carArray = [
 
 
 var initLeaderboard = function () {
-  let leaderboardDb = level('../db/leaderboard', ({valueEncoding: 'json'}))
+  let leaderboardDb = level('./db/leaderboard', ({valueEncoding: 'json'}))
 
 
     logger.debug('Saving leaderboard information to database')
@@ -723,7 +737,7 @@ initLeaderboard()
 
 
 var initHighscore = function (heatId, lanes) {
-  let highscoreDb = level('../db/highscore', ({valueEncoding: 'json'}))
+  let highscoreDb = level('./db/highscore', ({valueEncoding: 'json'}))
 
   let highscore = []
   for (var i = 0; i < 5; i++) {
