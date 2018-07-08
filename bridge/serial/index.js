@@ -252,7 +252,7 @@ module.exports = function (ctx) {
       logger.debug('Reapplying ranking to highscore')
       highscore = highscore.sort(sortByTimeDesc)
       for (var j = 0; j < highscore.length; j++) {
-        highscore[i].rank = j + 1
+        highscore[j].rank = j + 1
 
         logger.debug(JSON.stringify(highscore[j]))
       }
