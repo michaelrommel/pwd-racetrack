@@ -65,7 +65,7 @@ Pinewood Derby Racetrack Communication Protocol
 | 1xx        | Error Codes                                        |
 | 101        | Malformed JSON string                              |
 | 102        | Invalid State transition                           |
-| 103        | Invalid Command (for this communication partner)   |
+| 103        | Invalid Command (for this partner or state)        |
 
 ### Table of Command Codes ###
 
@@ -138,6 +138,20 @@ state transition is invalid.
 }
 ```
 
+### Error Invalid Command ###
+
+No retransmission of the message with the mentioned `id` is needed, because the sent
+command is invalid for this state or not allowed from this communication partner
+
+
+```
+{
+  "id" : 11,      // This is the id of the received message
+  "c" : "a",
+  "s" : 103       // e.g. requesting a heat start, when there is still one running
+}
+```
+
 
 ### Start the setup the racetrack ###
 
@@ -145,6 +159,7 @@ state transition is invalid.
 {
   "id" : 11,
   "c" : "s",
+  "h" : 0,
   "s" : 10
 }
 ```
@@ -155,6 +170,7 @@ state transition is invalid.
 {
   "id" : 12,
   "c" : "s",
+  "h" : 0,
   "s" : 12
 }
 ```

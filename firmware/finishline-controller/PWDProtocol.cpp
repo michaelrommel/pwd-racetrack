@@ -15,15 +15,17 @@ PWDProtocol::PWDProtocol( HardwareSerial& serial ) :
 }
 
 // initialise the port
-void PWDProtocol::begin( uint8_t whitelist[8])
+void PWDProtocol::begin( uint8_t whitelist[4][8])
 {
   _hwser.begin( 57600 );
   // should return immediately except for the Leonardo
   while ( ! _hwser );
   // the max time we wait for incoming data in millis
   _hwser.setTimeout( 400 );
-  for( int i=0; i<8; i++ ) {
-    _codeWhitelist[i] = whitelist[i];
+  for( int j=0; j<4; j++ ) {
+    for( int i=0; i<8; i++ ) {
+      _codeWhitelist[j][i] = whitelist[j][i];
+    }
   }
 }
 
@@ -35,7 +37,7 @@ bool PWDProtocol::available() {
 // send acknowledge packets for the provided id
 void PWDProtocol::sendAck( const uint16_t id, const uint8_t status )
 {
-  const uint16_t capacity = JSON_OBJECT_SIZE(4);
+  const uint16_t capacity = JSON_OBJECT_SIZE(4) + 50;
   StaticJsonBuffer<capacity> jsonBuffer;
 
   JsonObject& root = jsonBuffer.createObject();
@@ -112,7 +114,7 @@ void PWDProtocol::sendCarDetection( const uint8_t heatno, const uint8_t laneNumb
 // send the heat setup complete message or race progress message
 void PWDProtocol::sendCompleteOrProgress( const uint8_t messageType, const PWDHeat* heat )
 {
-  const uint16_t capacity = JSON_ARRAY_SIZE(4) + 4*JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(5) + 100;
+  const uint16_t capacity = JSON_ARRAY_SIZE(4) + 4*JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(5) + 250;
   StaticJsonBuffer<capacity> jsonBuffer;
 
   // debug display the size of the allocated JSON buffer
@@ -157,19 +159,15 @@ void PWDProtocol::sendCompleteOrProgress( const uint8_t messageType, const PWDHe
 }
 
 // report the laser levels during race track setup (also displayed on the 7-segments)
-void PWDProtocol::sendLaserLevel( const uint8_t messageType, const PWDHeat* heat )
+void PWDProtocol::sendLaserLevel( const PWDHeat* heat )
 {
   const uint16_t capacity = JSON_ARRAY_SIZE(4) + 4*JSON_OBJECT_SIZE(1) + JSON_OBJECT_SIZE(5) + 100;
   StaticJsonBuffer<capacity> jsonBuffer;
 
-  // debug display the size of the allocated JSON buffer
-  //SerialUSB.print( F("JSON Size: ") );
-  //SerialUSB.println( capacity );
-
   // allocate a single character as string 
   char messageString[2];
-  messageString[0]=messageType;
-  messageString[1]=0;
+  messageString[0] = CODE_LASER;
+  messageString[1] = 0;
 
   // create the JSON object
   JsonObject& root = jsonBuffer.createObject();
@@ -188,10 +186,10 @@ void PWDProtocol::sendLaserLevel( const uint8_t messageType, const PWDHeat* heat
 
 
 // checks, whether a given command is valid for this comm
-bool PWDProtocol::checkWhitelist( uint8_t code) {
+bool PWDProtocol::checkWhitelist( uint8_t state, uint8_t code) {
   bool ok = false;
   for( int i=0; i<8; i++ ) {
-    if( _codeWhitelist[i] == code ) {
+    if( _codeWhitelist[state][i] == code ) {
       ok = true;
     }
   }
@@ -227,7 +225,7 @@ bool PWDProtocol::receiveCommand( PWDHeat* heat )
       const char code = codePtr[0];
       SerialUSB.print("Code was: ");
       SerialUSB.println( code );
-      if( checkWhitelist( code ) ) {
+      if( checkWhitelist( heat->state, code ) ) {
         // get ID
         uint8_t theirId = root["id"];
         // try to initialize the lanes array before switch to keep
@@ -281,9 +279,14 @@ bool PWDProtocol::receiveCommand( PWDHeat* heat )
             // send acknowlege
             sendAck( theirId, STATUS_OK );
             // put track in/out of LDR display mode
-            // ... TODO
-            heat->state = STATE_TRACKSETUP;
-            heat->status = STATUS_OK;
+            if( root["s"] == STATUS_TRACKSETUPSTART ) {
+              _stateBeforeSetup = heat->state;
+              heat->state = STATE_TRACKSETUP;
+              heat->status = STATUS_TRACKSETUPSTART;
+            } else if( root["s"] == STATUS_TRACKSETUPSTOP ) {
+              heat->state = _stateBeforeSetup;
+              heat->status = STATUS_OK;
+            }
             return true;
             break;
           default:

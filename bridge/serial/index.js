@@ -583,13 +583,4 @@ module.exports = function (ctx) {
   })
 
   initLaneStatus()
-
-  /*
-        module.exports = {
-                setupRt: setupRT,
-                stopSetupRt: stopSetupRT,
-                initHeat: initHeat,
-                startHeat: startHeat
-        }
-        */
 }
