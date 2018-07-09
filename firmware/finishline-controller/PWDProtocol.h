@@ -4,7 +4,7 @@
 #include "PWDData.h"
 #include <Arduino.h>
 
-#define PWDPROTOCOL_VERSION "0.0.1"
+#define PWDPROTOCOL_VERSION "0.1.0"
 
 class PWDProtocol {
 
@@ -36,7 +36,7 @@ class PWDProtocol {
     static const uint8_t STATUS_SETUPCOMPLETE = 1;
     static const uint8_t STATUS_HEATINPROGRESS = 2;
     static const uint8_t STATUS_HEATFINISHED = 3;
-    static const uint8_t STATUS_HEATUNKNOWN = 4;
+    static const uint8_t STATUS_HEATUNKNOWN = 5;
     static const uint8_t STATUS_CORRECTLANE = 6;
     static const uint8_t STATUS_WRONGLANE = 7;
     static const uint8_t STATUS_GATEOPENED = 8;

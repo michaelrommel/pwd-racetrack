@@ -42,12 +42,20 @@ void PWDProtocol::sendAck( const uint16_t id, const uint8_t status )
   const uint16_t capacity = JSON_OBJECT_SIZE(4) + 50;
   StaticJsonBuffer<capacity> jsonBuffer;
 
+  // allocate a single character as string 
+  char messageString[2];
+  messageString[0] = CODE_ACK;
+  messageString[1] = '\0';
+
   JsonObject& root = jsonBuffer.createObject();
   root["id"] = id;
-  root["c"] = "a";
+  root["c"] = messageString;
   root["s"] = status;
   root.printTo( _hwser );
   _hwser.println();
+
+  //root.printTo( SerialUSB );
+  
 }
 
 // send the car detection for a heat, that has not yet been set up
@@ -56,13 +64,18 @@ void PWDProtocol::sendCarDetection( const uint8_t laneNumber, const char* rfid )
   const uint16_t capacity = JSON_ARRAY_SIZE(4) + 3*JSON_OBJECT_SIZE(0) + JSON_OBJECT_SIZE(1) + JSON_OBJECT_SIZE(5) + 100;
   StaticJsonBuffer<capacity> jsonBuffer;
 
+  // allocate a single character as string 
+  char messageString[2];
+  messageString[0] = CODE_DETECT;
+  messageString[1] = '\0';
+
   //SerialUSB.print( F("JSON Size: ") );
   //SerialUSB.println( capacity );
   JsonObject& root = jsonBuffer.createObject();
   root["id"] = ++_id;
-  root["c"] = "d";
+  root["c"] = messageString;
   root["h"] = 0;
-  root["s"] = 5;
+  root["s"] = (uint8_t) STATUS_HEATUNKNOWN;;
   JsonArray& l = root.createNestedArray( "l" );
   for ( int i=0; i<4; i++ ) {
     JsonObject& laneobj = l.createNestedObject();
@@ -81,11 +94,16 @@ void PWDProtocol::sendCarDetection( const uint8_t heatno, const uint8_t laneNumb
   const uint16_t capacity = JSON_ARRAY_SIZE(4) + 3*JSON_OBJECT_SIZE(0) + JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(5) + 100;
   StaticJsonBuffer<capacity> jsonBuffer;
 
+  // allocate a single character as string 
+  char messageString[2];
+  messageString[0] = CODE_DETECT;
+  messageString[1] = '\0';
+
   //SerialUSB.print( F("JSON Size: ") );
   //SerialUSB.println( capacity );
   JsonObject& root = jsonBuffer.createObject();
   root["id"] = ++_id;
-  root["c"] = "d";
+  root["c"] = messageString;
   root["h"] = heatno;
   root["s"] = wrongLane ? (uint8_t) STATUS_WRONGLANE : (uint8_t) STATUS_CORRECTLANE;
   JsonArray& l = root.createNestedArray( "l" );
@@ -98,8 +116,8 @@ void PWDProtocol::sendCarDetection( const uint8_t heatno, const uint8_t laneNumb
       if( strlen( lane->owner ) != 0 ) {
         laneobj["ow"] = lane->owner;
       }
-      if( lane->matno > 0 ) {
-        laneobj["mn"] = lane->matno;
+      if( lane->modelno > 0 ) {
+        laneobj["mn"] = lane->modelno;
       }
       if( lane->serno > 0 ) {
         laneobj["sn"] = lane->serno;
@@ -125,8 +143,8 @@ void PWDProtocol::sendCompleteOrProgress( const uint8_t messageType, const PWDHe
 
   // allocate a single character as string 
   char messageString[2];
-  messageString[0]=messageType;
-  messageString[1]=0;
+  messageString[0] = messageType;
+  messageString[1] = '\0';
 
   // create the JSON object
   JsonObject& root = jsonBuffer.createObject();
@@ -145,8 +163,8 @@ void PWDProtocol::sendCompleteOrProgress( const uint8_t messageType, const PWDHe
       if( strlen( heat->lane[i]->owner ) != 0 ) {
         laneobj["ow"] = heat->lane[i]->owner;
       }
-      if( heat->lane[i]->matno > 0 ) {
-        laneobj["mn"] = heat->lane[i]->matno;
+      if( heat->lane[i]->modelno > 0 ) {
+        laneobj["mn"] = heat->lane[i]->modelno;
       }
       if( heat->lane[i]->serno > 0 ) {
         laneobj["sn"] = heat->lane[i]->serno;
@@ -169,7 +187,7 @@ void PWDProtocol::sendLaserLevel( const PWDHeat* heat )
   // allocate a single character as string 
   char messageString[2];
   messageString[0] = CODE_LASER;
-  messageString[1] = 0;
+  messageString[1] = '\0';
 
   // create the JSON object
   JsonObject& root = jsonBuffer.createObject();
@@ -187,7 +205,7 @@ void PWDProtocol::sendLaserLevel( const PWDHeat* heat )
 }
 
 
-// report the laser levels during race track setup (also displayed on the 7-segments)
+// forward a smaller init message to the startgate
 void PWDProtocol::sendSkinnyInit( const PWDHeat* heat )
 {
   const uint16_t capacity = JSON_ARRAY_SIZE(4) + 4*JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(5) + 200;
@@ -196,7 +214,7 @@ void PWDProtocol::sendSkinnyInit( const PWDHeat* heat )
   // allocate a single character as string 
   char messageString[2];
   messageString[0] = CODE_INIT;
-  messageString[1] = 0;
+  messageString[1] = '\0';
 
   // create the JSON object
   JsonObject& root = jsonBuffer.createObject();
@@ -219,7 +237,7 @@ void PWDProtocol::sendSkinnyInit( const PWDHeat* heat )
 }
 
 
-// report the laser levels during race track setup (also displayed on the 7-segments)
+// send a small version of the GO command to the startgate
 void PWDProtocol::sendSkinnyGo( const PWDHeat* heat )
 {
   const uint16_t capacity = JSON_OBJECT_SIZE(3) + 20;
@@ -228,7 +246,7 @@ void PWDProtocol::sendSkinnyGo( const PWDHeat* heat )
   // allocate a single character as string 
   char messageString[2];
   messageString[0] = CODE_GO;
-  messageString[1] = 0;
+  messageString[1] = '\0';
 
   // create the JSON object
   JsonObject& root = jsonBuffer.createObject();
@@ -242,6 +260,8 @@ void PWDProtocol::sendSkinnyGo( const PWDHeat* heat )
 
 // checks, whether a given command is valid for this comm
 bool PWDProtocol::checkWhitelist( uint8_t state, uint8_t code) {
+  SerialUSB.print( F("Checking Whitelist for state: ") );
+  SerialUSB.println( state );
   bool ok = false;
   for( int i=0; i<8; i++ ) {
     if( _codeWhitelist[state][i] == code ) {
@@ -257,7 +277,7 @@ bool PWDProtocol::checkWhitelist( uint8_t state, uint8_t code) {
 bool PWDProtocol::receiveCommand( PWDHeat* heat )
 {
   const uint16_t len = 384;
-  char incomingBytes[len];
+  char incomingBytes[len+1];
   uint16_t countRead;
   
   const uint16_t capacity = JSON_ARRAY_SIZE(4) + 4*JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(5) + 320;
@@ -270,10 +290,11 @@ bool PWDProtocol::receiveCommand( PWDHeat* heat )
     SerialUSB.println("error!");
     return false;
   } else {
+    incomingBytes[countRead] = '\0';
+
     SerialUSB.print("got bytes: ");
     SerialUSB.println( countRead );
     // debug startgate
-    incomingBytes[countRead]=0;
     SerialUSB.print("Received: ");
     SerialUSB.println( incomingBytes );
 
@@ -296,7 +317,8 @@ bool PWDProtocol::receiveCommand( PWDHeat* heat )
           case (uint8_t) CODE_ACK:
             // TODO remove the potentially saved message from outgoing buffer
             //removeMessage( root["id"] );
-            // if we get a ACK with a status of GATEOPENED, return true
+            // if we get a ACK with a status of GATEOPENED, it must be from
+            // the startgate, thus return true
             if( root["s"] == STATUS_GATEOPENED ) {
               return true;
             } else {
@@ -323,39 +345,76 @@ bool PWDProtocol::receiveCommand( PWDHeat* heat )
               } else {
                 *heat->lane[i]->owner = '\0';
               }
-              heat->lane[i]->matno = l["mn"];
+              heat->lane[i]->modelno = l["mn"];
               heat->lane[i]->serno = l["sn"];
             }
             // indicate state change
             return true;
             break;
           case (uint8_t) CODE_DETECT:
-            // send acknowlege
-            sendAck( theirId, STATUS_OK );
-            // detect messages come from the startgate, we deal with setupHeat here
-            // take the information from the command and save it to the heat
-            // TODO - differentiate the various detect messages and states
-            heat->state = STATE_HEATSETUP;
-            heat->status = STATUS_OK;
-            heat->heatno = root["h"];
-            for( int i=0; i<4; i++ ) {
-              JsonObject& l = _lanes[i];
-              if( strlen( l["rf"] ) != 0 ) { 
-                strncpy(heat->lane[i]->rfid, l["rf"], 14);
-              } else {
-                *heat->lane[i]->rfid = '\0';
+            {
+              // send acknowlege
+              sendAck( theirId, STATUS_OK );
+              // detect messages come from the startgate, we deal with setupHeat here
+              // take the information from the command and save it to the heat
+              uint8_t s = root["s"];
+              switch( s ) {
+                case STATUS_HEATUNKNOWN:
+                  heat->state = STATE_HEATSETUP;
+                  break;
+                case STATUS_CORRECTLANE:
+                case STATUS_WRONGLANE:
+                  heat->state = STATE_HEATSETUP;
+                  break;
+                default:
+                  // send error
+                  break;
               }
-              if( strlen( l["ow"] ) != 0 ) { 
-                strncpy(heat->lane[i]->owner, l["ow"], 15);
-              } else {
-                *heat->lane[i]->owner = '\0';
+              heat->status = root["s"];
+              heat->heatno = root["h"];
+              for( int i=0; i<4; i++ ) {
+                JsonObject& l = _lanes[i];
+                if( strlen( l["rf"] ) != 0 ) { 
+                  strncpy(heat->lane[i]->rfid, l["rf"], 14);
+                } else {
+                  *heat->lane[i]->rfid = '\0';
+                }
+                if( strlen( l["ow"] ) != 0 ) { 
+                  strncpy(heat->lane[i]->owner, l["ow"], 15);
+                } else {
+                  *heat->lane[i]->owner = '\0';
+                }
               }
-              heat->lane[i]->matno = l["mn"];
-              heat->lane[i]->serno = l["sn"];
+              // indicate that a message shall be sent
+              return true;
+              break;
             }
-            // indicate no state change
-            return false;
-            break;
+          case (uint8_t) CODE_COMPLETE:
+            {
+              // send acknowlege
+              sendAck( theirId, STATUS_OK );
+              // complete messages come from the startgate
+              // we can take all information and save it to the
+              // setupHeat
+              heat->status = root["s"];
+              heat->heatno = root["h"];
+              for( int i=0; i<4; i++ ) {
+                JsonObject& l = _lanes[i];
+                if( strlen( l["rf"] ) != 0 ) { 
+                  strncpy(heat->lane[i]->rfid, l["rf"], 14);
+                } else {
+                  *heat->lane[i]->rfid = '\0';
+                }
+                if( strlen( l["ow"] ) != 0 ) { 
+                  strncpy(heat->lane[i]->owner, l["ow"], 15);
+                } else {
+                  *heat->lane[i]->owner = '\0';
+                }
+              }
+              // indicate that a message shall be sent
+              return true;
+              break;
+            }
           case (uint8_t) CODE_GO:
             // send acknowlege
             sendAck( theirId, STATUS_OK );

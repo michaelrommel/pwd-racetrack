@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define PWDSKINNYDATA_VERSION "0.0.1"
+#define PWDSKINNYDATA_VERSION "0.1.0"
 
 typedef struct {
   char* rfid;

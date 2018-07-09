@@ -3,12 +3,12 @@
 
 #include <stdint.h>
 
-#define PWDDATA_VERSION "0.0.1"
+#define PWDDATA_VERSION "0.1.0"
 
 typedef struct {
   char* rfid;
   char* owner;
-  uint32_t matno;
+  uint32_t modelno;
   uint32_t serno;
   uint32_t time;
   uint8_t laser;

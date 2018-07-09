@@ -11,7 +11,7 @@
 
 #define SS_PIN 53
 
-PWDStartGateDisplayReader::PWDStartGateDisplayReader( uint8_t portNumber, bool rotated, uint8_t* allPins, uint8_t index ) :
+PWDStartGateDisplayReader::PWDStartGateDisplayReader( uint8_t portNumber, bool rotated, const uint8_t* allPins, uint8_t index ) :
   // _oled( 4 ),
   //_oled( rotated ? U8G2_R2 : U8G2_R0, SCL, SDA, U8X8_PIN_NONE ),
   _oled( rotated ? U8G2_R2 : U8G2_R0 ),
@@ -59,7 +59,7 @@ void PWDStartGateDisplayReader::display( char* name )
 
 }
 
-void PWDStartGateDisplayReader::showDetails( char* name, char* details )
+void PWDStartGateDisplayReader::showDetails( const char* name, const char* details )
 {
   tcaselect(); 
 

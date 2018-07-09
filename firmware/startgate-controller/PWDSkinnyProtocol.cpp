@@ -53,8 +53,8 @@ void PWDProtocol::sendAck( const uint16_t id, const uint8_t status )
 
   // allocate a single character as string 
   char messageString[2];
-  messageString[0]=CODE_ACK;
-  messageString[1]=0;
+  messageString[0] = CODE_ACK;
+  messageString[1] = '\0';
 
   JsonObject& root = jsonBuffer.createObject();
   root["id"] = id;
@@ -72,8 +72,8 @@ void PWDProtocol::sendCarDetection( const uint8_t laneNumber, const char* rfid )
 
   // allocate a single character as string 
   char messageString[2];
-  messageString[0]=CODE_DETECT;
-  messageString[1]=0;
+  messageString[0] = CODE_DETECT;
+  messageString[1] = '\0';
 
   //SerialUSB.print( F("JSON Size: ") );
   //SerialUSB.println( capacity );
@@ -81,7 +81,7 @@ void PWDProtocol::sendCarDetection( const uint8_t laneNumber, const char* rfid )
   root["id"] = ++_id;
   root["c"] = messageString;
   root["h"] = 0;
-  root["s"] = 5;
+  root["s"] = (uint8_t) STATUS_HEATUNKNOWN;
   JsonArray& l = root.createNestedArray( "l" );
   for ( int i=0; i<4; i++ ) {
     JsonObject& laneobj = l.createNestedObject();
@@ -102,8 +102,8 @@ void PWDProtocol::sendCarDetection( const uint8_t heatno, const uint8_t laneNumb
 
   // allocate a single character as string 
   char messageString[2];
-  messageString[0]=CODE_DETECT;
-  messageString[1]=0;
+  messageString[0] = CODE_DETECT;
+  messageString[1] = '\0';
 
   //SerialUSB.print( F("JSON Size: ") );
   //SerialUSB.println( capacity );
@@ -130,7 +130,7 @@ void PWDProtocol::sendCarDetection( const uint8_t heatno, const uint8_t laneNumb
   _hwser.println();
 }
 
-//
+
 // send the heat setup complete message or race progress message
 void PWDProtocol::sendCompleteOrProgress( const uint8_t messageType, const PWDHeat* heat )
 {
@@ -143,8 +143,8 @@ void PWDProtocol::sendCompleteOrProgress( const uint8_t messageType, const PWDHe
 
   // allocate a single character as string 
   char messageString[2];
-  messageString[0]=messageType;
-  messageString[1]=0;
+  messageString[0] = messageType;
+  messageString[1] = '\0';
 
   // create the JSON object
   JsonObject& root = jsonBuffer.createObject();
@@ -185,7 +185,7 @@ bool PWDProtocol::checkWhitelist( uint8_t state, uint8_t code) {
 bool PWDProtocol::receiveSkinnyCommand( PWDHeat* heat )
 {
   const uint16_t len = 384;
-  char incomingBytes[len];
+  char incomingBytes[len+1];
   uint16_t countRead;
   
   const uint16_t capacity = JSON_ARRAY_SIZE(4) + 4*JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(5) + 200;
@@ -198,6 +198,8 @@ bool PWDProtocol::receiveSkinnyCommand( PWDHeat* heat )
     //Serial.println("error!");
     return false;
   } else {
+    incomingBytes[countRead]='\0';
+
     Serial.print("got bytes: ");
     Serial.println( countRead );
     Serial.println( incomingBytes );

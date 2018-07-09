@@ -1,7 +1,10 @@
 # Generic Project details
 ARCHITECTURE = avr
-BOARD_TAG = pro
-BOARD_SUB = 8MHzatmega328
+# use make show_boards and make show_submenu for lists
+BOARD_TAG = mega
+BOARD_SUB = atmega2560
+#BOARD_TAG = pro
+#BOARD_SUB = 8MHzatmega328
 
 ifeq ($(OS), Windows_NT)
 
@@ -20,25 +23,13 @@ include D:/MichaelRommel/Software/Arduino-Makefile/Arduino.mk
 
 else
 
-# using screen
-#MONITOR_PORT = /dev/tty.usbserial-AH02IXG1
-#MONITOR_BAUDRATE  = 57600
-
 # using picocom
 MONITOR_CMD = PICOCOM
-MONITOR_PORT = /dev/tty.usbserial-AH02IXG1
+MONITOR_PORT = /dev/cu.usbserial-AD01W5DU
 MONITOR_BAUDRATE = -b 57600
 
-# using minicom
-#MONITOR_CMD = minicom 
-#FORCE_MONITOR_PORT = 1
-#MONITOR_PORT = -D /dev/tty.usbserial-AH02IXG1
-#MONITOR_BAUDRATE = -b 57600
-
 ARDUINO_PACKAGE_DIR := $(HOME)/Library/Arduino15/packages
-#USER_LIB_PATH := $(realpath /Volumes/Data/Software/michael/arduino/libraries/) 
-USER_LIB_PATH = /Volumes/Data/Software/michael/arduino/libraries/
-ARDUINO_LIBS = Wire ArduinoJson Adafruit_GFX Adafruit_SSD1306
+ARDUINO_LIBS = SPI Wire ArduinoJson U8g2 MFRC522
 
 include ../../../Arduino-Makefile-sudar/Arduino.mk
 

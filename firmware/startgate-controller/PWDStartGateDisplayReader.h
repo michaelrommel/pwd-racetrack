@@ -11,16 +11,16 @@
 #include <U8g2lib.h>
 #include <MFRC522.h>
 
-#define PWDSTARTGATEDISPLAYREADER_VERSION "0.0.1"
+#define PWDSTARTGATEDISPLAYREADER_VERSION "0.1.0"
 
 class PWDStartGateDisplayReader {
 
   public:
-    explicit PWDStartGateDisplayReader( uint8_t laneNumber, bool rotated, uint8_t* allPins, uint8_t index );
+    explicit PWDStartGateDisplayReader( uint8_t laneNumber, bool rotated, const uint8_t* allPins, uint8_t index );
     void begin( void );
     void blank( void );
     void display( char* name );
-    void showDetails( char* name, char* details );
+    void showDetails( const char* name, const char* details );
     bool checkRFID( PWDHeat* setupHeat );
 
   private:
@@ -28,7 +28,7 @@ class PWDStartGateDisplayReader {
     void readerselect( void );
     uint8_t _portNumber;
     bool _rotated;
-    uint8_t* _allPins;
+    const uint8_t* _allPins;
     uint8_t _index;
     // Adafruit_SSD1306 _oled; 
     // U8G2_SSD1305_128X32_NONAME_F_HW_I2C _oled;

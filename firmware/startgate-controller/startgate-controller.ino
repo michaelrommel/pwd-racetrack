@@ -1,5 +1,5 @@
 //
-// Racetrack Firmware
+// Racetrack Firmware Startgate Controller
 //
 
 #include "PWDSkinnyData.h"
@@ -8,8 +8,12 @@
 #include "PWDStartGateDisplayReader.h"
 #include "util.h"
 
+#include <Arduino.h>
+
 #include <stdlib.h>
 #include <stdio.h>
+
+#define STARTGATE_VERSION "0.1.0"
 
 #define STARTGATE_PIN 45
 #define SOLENOID_OPENTIME 750
@@ -91,13 +95,7 @@ uint8_t nextRFIDCheck;
 // Helper functions that are necessary for the main loop
 //
 
-// resets all the counters for a heat run
-void initializeRace() {
-  Serial.println( "initializeRace()" );
-  // set correct heat status 
-  heat.status =  PWDProtocol::STATUS_HEATINPROGRESS;
-}
-
+// shows free ram on a pro mini or mega
 int freeRam() {
     extern int __heap_start, *__brkval;
     int v;
@@ -107,23 +105,28 @@ int freeRam() {
 }
 
 
-// for debugging echo the current heat structure to the Serial port
-void dumpHeat() {
-  comfl.sendCompleteOrProgress( PWDProtocol::CODE_COMPLETE, &heat );
+// resets all the counters for a heat run
+void initializeRace() {
+  Serial.println( "initializeRace()" );
+  // set correct heat status 
+  heat.status =  PWDProtocol::STATUS_HEATINPROGRESS;
+}
+
+// clears any information from previous runs
+void clearHeat( PWDHeat* heat ) {
+  heat->state = PWDProtocol::STATE_IDLE;
+  heat->status = PWDProtocol::STATUS_OK;
+  heat->heatno = 0;
+  for( int i=0; i<4; i++ ) {
+    *heat->lane[i]->rfid = '\0';
+    *heat->lane[i]->owner = '\0';
+  }
 }
 
 
-//
-// Setup all needed peripherals
-//
-void setup() {
-
-  // initialize all communication channels
-  comfl.begin( comfl_whitelist );
-
-  Serial.begin( 57600 );
-
-  // initialize the lane and heat structure for race heat
+// link the data structures together
+void initStructures( void ) {
+  // initialize the lane and heat structure for the race heat
   // this should be now a fixed data structure in globals
   for( int i=0; i<4; i++ ) {
     lane[i].rfid = &rfid[i][0];
@@ -144,6 +147,29 @@ void setup() {
   setupHeat.state = PWDProtocol::STATE_IDLE;
   setupHeat.status = PWDProtocol::STATUS_OK;
   setupHeat.heatno = 0;
+}
+
+
+// for debugging echo the current heat structure to the Serial port
+void dumpHeat() {
+  comfl.sendCompleteOrProgress( PWDProtocol::CODE_COMPLETE, &heat );
+  comfl.sendCompleteOrProgress( PWDProtocol::CODE_COMPLETE, &setupHeat );
+}
+
+
+//
+// Setup all needed peripherals
+//
+void setup() {
+
+  // initialize all communication channels
+  comfl.begin( comfl_whitelist );
+
+  Serial.begin( 57600 );
+
+  // set up the linked data structures for 
+  // heat and setup status
+  initStructures();
 
   // set all pin modes
   pinMode( STARTGATE_PIN, OUTPUT );
@@ -173,6 +199,9 @@ void setup() {
 
   // visually signal that Serial should be ready now
   Util::blink( FAST );
+  Serial.print( F("\n\nPinewood Derby Startgate Version ") );
+  Serial.println( STARTGATE_VERSION );
+  Serial.println();
   Serial.print( F("Free RAM: ") );
   Serial.println( freeRam() );
   //Serial.println( F("Finished setup()") );
@@ -192,7 +221,10 @@ void loop() {
           // reset flag
           stateInitNeeded = false;
           Serial.println( "entering idle" );
+          // resetting everything
           gateOpen = false;
+          clearHeat( &heat );
+          clearHeat( &setupHeat );
           // blank the displays
           for( int i=0; i<LANES; i++ ) {
             oledreader[i].blank();
@@ -227,10 +259,13 @@ void loop() {
         if( stateInitNeeded ) {
           // reset flag
           stateInitNeeded = false;
-          // show target names on OLED displays
           Serial.println( "entering heatsetup" );
           for( int i=0; i<LANES; i++ ) {
+            // show target names on OLED displays
             oledreader[i].display( heat.lane[i]->owner );
+            // reset any previously detected information
+            *setupHeat.lane[i]->rfid = '\0';
+            *setupHeat.lane[i]->owner = '\0';
           }
         }
         // check connection to startgate
@@ -255,7 +290,19 @@ void loop() {
             } else {
               // correct car
               oledreader[nextRFIDCheck].showDetails( heat.lane[nextRFIDCheck]->owner, setupHeat.lane[nextRFIDCheck]->rfid );
-              comfl.sendCarDetection( heat.heatno, nextRFIDCheck, heat.lane[nextRFIDCheck], false );
+              // only in this case, we check, if all cars are actually correct and detemin the message type
+              bool complete = true;
+              for( int i=0; i<4; i++ ) {
+                if( strncmp(heat.lane[i]->rfid, setupHeat.lane[i]->rfid, 14) != 0 ) {
+                  complete = false;
+                }
+              }
+              if( complete ) {
+                heat.status = PWDProtocol::STATUS_SETUPCOMPLETE;
+                comfl.sendCompleteOrProgress( PWDProtocol::CODE_COMPLETE, &heat );
+              } else {
+                comfl.sendCarDetection( heat.heatno, nextRFIDCheck, heat.lane[nextRFIDCheck], false );
+              }
             }
           }
         }
@@ -312,7 +359,7 @@ void loop() {
       }
   }
 
-  nextRFIDCheck = ++nextRFIDCheck % LANES;
+  nextRFIDCheck = (nextRFIDCheck + 1) % LANES;
 
   loopStats.show();
 }

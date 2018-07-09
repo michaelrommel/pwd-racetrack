@@ -3,7 +3,7 @@
 
 #include "Arduino.h"
 
-#define PWDSTATISTICS_VERSION "0.0.1"
+#define PWDSTATISTICS_VERSION "0.1.0"
 
 class PWDStatistics {
 
