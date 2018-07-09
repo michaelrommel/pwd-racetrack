@@ -42,7 +42,7 @@ PWDLaneDisplay laneDisplay[LANES] = {
 
 // instantiate three serial communication channels
 // channel to bridge
-PWDProtocol combr( Serial );
+PWDProtocol combr( Serial, 57600 );
 // define acceptable commands for use in begin()
 uint8_t combr_whitelist[4][8] = {
   { // IDLE
@@ -61,7 +61,7 @@ uint8_t combr_whitelist[4][8] = {
   }
 };
 // channel to Raspberry Pi
-PWDProtocol compi( Serial2 );
+PWDProtocol compi( Serial2, 57600 );
 // define acceptable commands for use in begin()
 uint8_t compi_whitelist[4][8] = {
   { // IDLE
@@ -76,7 +76,7 @@ uint8_t compi_whitelist[4][8] = {
   }
 };
 // channel to Startgate
-PWDProtocol comsg( Serial1 );
+PWDProtocol comsg( Serial1, 19200 );
 // define acceptable commands for use in begin()
 uint8_t comsg_whitelist[4][8] = {
   { // IDLE
@@ -382,7 +382,7 @@ void loop() {
         // check connection to startgate
         if( comsg.available() ) {
           // read and process the serial command
-          bool res = comsg.receiveCommand( &heat );
+          bool res = comsg.receiveCommand( &setupHeat );
           if( res ) {
             // startgate will not change the state
             // in this state we will only receive detect
@@ -439,6 +439,8 @@ void loop() {
           clearDisplays();
           // set correct heat status 
           heat.status =  PWDProtocol::STATUS_OK;
+          // send the setup to the startgate
+          comsg.sendSkinnyInit( &heat );
         }
         // check connection to startgate
         if( comsg.available() ) {
@@ -514,15 +516,15 @@ void loop() {
           stateInitNeeded = false;
           initializeRace();
           // send the command to open the gate to the startgate
-          //comsg.sendSkinnyGo(); TODO
+          comsg.sendSkinnyGo( &heat );
         }
         // check connection to startgate
         if( comsg.available() ) {
           // read and process the serial command
           bool res = comsg.receiveCommand( &heat );
           if( res ) {
-            // in this case a returned true means, that we received the skinny
-            // GO_ACK from the startgate indicating that it opened the gate
+            // in this case a returned true means, that we received the 
+            // GATEOPENED response from the startgate indicating that it opened the gate
             unsigned long rtt = millis() - start;
             SerialUSB.print( "RTT to gate was: " );
             SerialUSB.println( rtt );
@@ -560,9 +562,9 @@ void loop() {
               }
             } else {
               // update displays checking the LDRs
-              // without this the small displays get only updated in demot mode 
+              // without this the small displays get only updated in demo mode 
               // when the watchdog fires
-              oneMore = checkOrSetFinishers( );
+              oneMore = checkOrSetFinishers( 13 );
             }
 
           } else {

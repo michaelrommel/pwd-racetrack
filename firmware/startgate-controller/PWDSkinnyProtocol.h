@@ -1,7 +1,7 @@
 #ifndef _PWDPROTOCOL_H
 #define _PWDPROTOCOL_H
 
-#include "PWDData.h"
+#include "PWDSkinnyData.h"
 #include <Arduino.h>
 
 #define PWDPROTOCOL_VERSION "0.0.1"
@@ -11,15 +11,14 @@ class PWDProtocol {
   public:
     explicit PWDProtocol( HardwareSerial& serial, uint32_t baudRate );
     void begin( uint8_t whitelist[4][8]);
+    int freeRam();
     bool available();
     void sendAck( const uint16_t id, const uint8_t status );
     void sendCarDetection( const uint8_t laneNumber, const char* rfid );
     void sendCarDetection( const uint8_t heatno, const uint8_t laneNumber, const PWDLane* lane, const bool wrongLane );
     void sendCompleteOrProgress( const uint8_t messageType, const PWDHeat* heat );
     void sendLaserLevel( const PWDHeat* heat );
-    void sendSkinnyInit( const PWDHeat* heat );
-    void sendSkinnyGo( const PWDHeat* heat );
-    bool receiveCommand( PWDHeat* heat );
+    bool receiveSkinnyCommand( PWDHeat* heat );
 
     // constants to be used also from outside
     // definition of message types
@@ -67,6 +66,7 @@ class PWDProtocol {
     uint8_t _stateBeforeSetup = STATE_IDLE;
     // baudRate
     uint32_t _baudRate;
+    
 };
 
 #endif
