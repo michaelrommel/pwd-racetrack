@@ -1,16 +1,25 @@
-const MODULE_ID = 'app:main'
+const MODULE_ID = 'main'
 const config = require('./config')
 const logger = require('./utils/logger')
 const jwt = require('restify-jwt-community')
 const level = require('level')
-const SerialPort = require('serialport')
 
 logger.info('%s: initializing', MODULE_ID)
 
 var restify = require('restify')
 var plugins = require('restify').plugins
 
+var racedb = level('./db/racedb', ({valueEncoding: 'json'}))
+var cardb = level('./db/cardb', ({valueEncoding: 'json'}))
+var lanedb = level('./db/lanedb', ({valueEncoding: 'json'}))
+var heatdb = level('./db/heatdb', ({valueEncoding: 'json'}))
+var leaderboarddb = level('./db/leaderboard', ({valueEncoding: 'json'}))
+var highscoredb = level('./db/highscore', ({valueEncoding: 'json'}))
+
+const serialCom = require('./serial')
+
 var server = restify.createServer()
+
 server.use(plugins.bodyParser())
 
 // Auth
@@ -22,55 +31,16 @@ var jwtConfig = {
 server.use(jwt(jwtConfig).unless({
   path: [
     '/ping',
-    '/register'
+    '/user/login'
   ]
 }))
 
 // Routes
-require('./routes')(server, plugins)
+require('./routes')({server, plugins, racedb, cardb, heatdb, leaderboarddb, highscoredb, serialCom})
 
 // Serve
 server.listen(config.PORT)
 logger.info('%s: ready. listening on port %d', MODULE_ID, config.PORT)
 
-var heatdb = level('./db/heatdb')
-
-var port1 = new SerialPort('COM7',
-  { 'baudRate': 57600,
-    'dataBits': 8,
-    'parity': 'none',
-    'stopBits': 1
-  },
-  function (err) {
-    if (err) {
-      logger.info('Error opening: %s', err.message)
-    }
-  }
-)
-
-// for testing just an incremented number
-var i = 0
-
-port1.on('readable', function () {
-  let newdata = port1.read().toString('utf8')
-  logger.info('got serial data: %s', newdata)
-  heatdb.put(i, newdata)
-  i++
-
-  // show all key-value pairs
-  heatdb.createReadStream()
-    .on('data', function (data) {
-      logger.info('Key=%s, Value=%s', data.key, data.value)
-    })
-    .on('error', function (err) {
-      logger.info('Error while reading db stream: %s!', err)
-    })
-    .on('close', function () {
-      logger.info('DB stream closed')
-    })
-    .on('end', function () {
-      logger.info('Stream ended')
-    })
-})
-
-module.exports = server
+// initialize Serial communication
+serialCom.init({lanedb, heatdb, leaderboarddb, highscoredb})

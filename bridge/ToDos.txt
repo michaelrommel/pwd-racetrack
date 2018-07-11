@@ -1,80 +1,48 @@
-# ToDos for Bridge #
+## ToDos for the Bridge ##
 
-## Data Structures / DB ##
+### User DB ###
 
-### User ###
+- initialise an empty database with 2 generic users (admin/secret, display/secret)
+- force user after first login via REST to change password
+- offer ability to register further users
+- store random (CSPRNG) salts together with hashes (PBKDF2)
+- login returns JWT token
 
-### Race ###
-- how many cars
-- how many lanes
-- how many heats
-- heat configuration
+### Websocket Verbindung ###
 
-{ "2018-Race" : {
-  "no_of_cars": 36,
-  "no_of_heats": 36,
-  "no_of_lanes": 4,
-  "this_heat": "2018-Quali-015",
-  "next heat": "2018-Quali-016",
- }
-}
+- use watershed to open a second connection for events
+- use EventEmitter to generate events from serial info
 
+### Routes ###
 
+- GET /car - list all cars
+- POST /car - import a complete car list
+- GET /car/:id - get this one car
+- POST /car/:id - create a new car
+- PUT /car/:id - update an existing car
+- DEL /car/:id - delete a car
 
-"heat_config": {
-    "01": [ "1", "3", "5", "8"],
-    "02": .....
+- GET /race - list all races
+- POST /race/:id - create a new race
+- GET /race/leaderboard/:id - get the leaderboard for this race
+- GET /race/highscores/:id - get the highscores for this race
 
-  }
+- GET /raceconfig - get all race configurations
+- GET /raceconfig/:id - get a specific race configuration
+- POST /raceconfig/:id - create a specific race configuration
 
-                         }
-### Heat ###
-- heat status: started, finished ...
-- race results
+- GET /heat/:id - get a specific heat
+- GET /heat/current - get the current heat
+- GET /heat/next - get the next heat
+- PUT /heat/current/:id - mark this heat as current
+- PUT /heat/next/:id - mark this heat as next
+- PUT /heat/init/:id - initialize this heat
+- PUT /heat/go/:id - start this heat
 
-{ "2018-Race-015": [
-  {"rf":"DEADFOODBADBAD", "ow": "Tobias Hartmann", "mn": 1234567, "sn": 123, "t": 1234},
-  {"rf":"DEADFOODBADBAD", "ow": "Tobias Hartmann", "mn": 1234567, "sn": 123, "t": 1234},
-  {"rf":"DEADFOODBADBAD", "ow": "Tobias Hartmann", "mn": 1234567, "sn": 123, "t": 1234},
-  {"rf":"DEADFOODBADBAD", "ow": "Tobias Hartmann", "mn": 1234567, "sn": 123, "t": 1234}
-]}
+- GET /track/highscores - get the overall highscores
 
+- POST /user/:id - create a new user
+- POST /user/login - login as a user get JWT token
+- PUT /user/:id - update user credentials and properties
 
-### Cars ###
-- rfid
-- owner
-- materialnummer
-- serialnummer
-- racenumber
-
-
-### Highscore ###
-- rank 
-- fastest time
-- owner
-- heat #
-
-### Leaderboard ###
-- per car one entry, key is car racenumber
-- score qualifications (1st place = 8, 2nd place= 4, 3rd place = 2, 4th place = 1)
-- score finals
-- cumulated time qualifications
-- cumulated time finals
-
-
-## Websocket Verbindung ##
-watershed
-
-
-### Lane status ###
-
-{ "2018-Race" : {
-  "status": "ok",
-  "heat": 1,
-  "lanes": [
-  {"lane": 1, status: "ok, "rf":"DEADFOODBADBAD", "ow": "Tobias Hartmann", "mn": 1234567, "sn": 123},
-  {"lane": 2, status: "ok, "rf":"DEADFOODBADBAD", "ow": "Tobias Hartmann", "mn": 1234567, "sn": 123},
-  {"lane": 3, status: "ok, "rf":"DEADFOODBADBAD", "ow": "Tobias Hartmann", "mn": 1234567, "sn": 123},
-  {"lane": 4, status: "ok, "rf":"DEADFOODBADBAD", "ow": "Tobias Hartmann", "mn": 1234567, "sn": 123}
-]}}
-   
+- GET /ping - keepalive message

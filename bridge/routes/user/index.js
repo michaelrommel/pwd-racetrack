@@ -1,9 +1,9 @@
-const MODULE_ID = 'api:register'
+const MODULE_ID = 'user'
 const logger = require('../../utils/logger')
 const config = require('../../config')
 const errors = require('restify-errors')
 
-module.exports = (req, res, next) => {
+function loginUser (req, res, next) {
   logger.info('%s: request received', MODULE_ID)
 
   let resp = {}
@@ -31,4 +31,26 @@ module.exports = (req, res, next) => {
 
   logger.info('%s: response sent', MODULE_ID)
   return next()
+}
+
+function createUser (req, res, next) {
+  logger.info('%s: request received', MODULE_ID)
+  let resp = {}
+  res.send(resp)
+  logger.info('%s: response sent', MODULE_ID)
+  return next()
+}
+
+function modifyUser (req, res, next) {
+  logger.info('%s: request received', MODULE_ID)
+  let resp = {}
+  res.send(resp)
+  logger.info('%s: response sent', MODULE_ID)
+  return next()
+}
+
+module.exports = (server) => {
+  server.post('/user/:id', createUser)
+  server.post('/user/login', loginUser)
+  server.put('/user/:id', modifyUser)
 }
