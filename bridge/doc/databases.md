@@ -3,12 +3,10 @@ Pinewood Derby Bridge Database Structures
 
 | Key     | Value      |
 |---------|------------|
-| Version | 0.1        |
-| Date    | 2018-07-10 |
+| Version | 0.2        |
+| Date    | 2018-07-11 |
 
 ## Overview ##
-
-- ...
 
 ## DB structure definition ##
 
@@ -30,9 +28,9 @@ Properties of the race are:
 
 Properties of the car arrays are:
 
-| Property       | Type   | Description                                         |
-|----------------|--------|-----------------------------------------------------|
-| <startnumber>  | string | uuid or other key from the Car Database             |
+| Property        | Type   | Description                                         |
+|-----------------|--------|-----------------------------------------------------|
+| \<startnumber\> | string | uuid or other key from the Car Database             |
 
 
 #### Example ####
@@ -87,67 +85,82 @@ Value:
 ```
 
 
-### 'Race Config Database ###
+### Race Config Database ###
 
 The database shall hold the lane assignments for races with a predfined number of participants.
 The number of cars equals the number of heats. Currently we store only configs for 4 lanes.
 The key is the number of lanes followed by a minus sign and the number of cars/heats.
 
-The value of a raceconfig is just an array of <NoOfHeats> arrays of 4 car numbers:
+The value of a raceconfig is just an array of \<NoOfHeats\> heat config objects, consisting 
+of an arrays of 4 car numbers:
+
+Properties of each heat config object are:
+
+| Property       | Type   | Description                                    |
+|----------------|--------|------------------------------------------------|
+| \<heatnumber\> | Array  | contains a lane array                          |
+
+Lane array members:
+
+| Property       | Type   | Description                                    |
+|----------------|--------|------------------------------------------------|
+| \<carnumber\>  | number | startnumber of a car that starts in the lane   |
+
 
 #### Example ####
 
 ```
 Key:
-  "4-33"
+  "4-36"
 Value:
 	[
-		[  1,  3,	 6,	10],
-		[  2,	 4,	 7,	11],
-		[ 12,	14,	17,	21], 
-		[ 13,	15,	18,	22],
-		[ 23,	25,	28,	32],
-		[ 24,	26,	29,	33],
-		[ 25,	27,	30,	34],
-		[ 36,	 2,	 5,	 9],
-		[ 11,	13,	16,	20],
-		[ 26,	28,	31,	35],
-		[  3,	 5,	 8,	12],
-		[ 14,	16,	19,	23],
-		[ 15,	17,	20,	24],
-		[ 27,	29,	32,	36],
-		[ 35,	 1,	 4,	 8],
-		[  5,	 7,	10,	14],
-		[  4,	 6,	 9,	13],
-		[ 16,	18,	21,	25],
-		[ 17,	19,	22,	26],
-		[ 28,	30,	33,	 1],
-		[ 29,	31,	34,	 2],
-		[  6,	 8,	11,	15],
-		[ 18,	20,	23,	27],
-		[ 30,	32,	35,	 3],
-		[  7,	 9,	12,	16],
-		[ 19,	21,	24,	28],
-		[ 31,	33,	36,	 4],
-		[  8,	10,	13,	17],
-		[ 20,	22,	25,	29],
-		[ 32,	34,	 1,	 5],
-		[  9,	11,	14,	18],
-		[ 10,	12,	15,	19],
-		[ 21,	23,	26,	30],
-		[ 22,	24,	27,	31],
-		[ 33,	35,	 2,	 6],
-		[ 34,	36,	 3,	 7]
-	] 
-  
+    { "1":  [  1,  3,	 6,	10] },
+    { "2":  [  2,	 4,	 7,	11] },
+    { "3":  [ 12,	14,	17,	21] }, 
+    { "4":  [ 13,	15,	18,	22] },
+    { "5":  [ 23,	25,	28,	32] },
+		{ "6":  [ 24,	26,	29,	33] },
+		{ "7":  [ 25,	27,	30,	34] },
+		{ "8":  [ 36,	 2,	 5,	 9] },
+		{ "9":  [ 11,	13,	16,	20] },
+		{ "10": [ 26,	28,	31,	35] },
+		{ "11": [  3,	 5,	 8,	12] },
+		{ "12": [ 14,	16,	19,	23] },
+		{ "13": [ 15,	17,	20,	24] },
+		{ "14": [ 27,	29,	32,	36] },
+		{ "15": [ 35,	 1,	 4,	 8] },
+		{ "16": [  5,	 7,	10,	14] },
+		{ "17": [  4,	 6,	 9,	13] },
+		{ "18": [ 16,	18,	21,	25] },
+		{ "19": [ 17,	19,	22,	26] },
+		{ "20": [ 28,	30,	33,	 1] },
+		{ "21": [ 29,	31,	34,	 2] },
+		{ "22": [  6,	 8,	11,	15] },
+		{ "23": [ 18,	20,	23,	27] },
+		{ "24": [ 30,	32,	35,	 3] },
+		{ "25": [  7,	 9,	12,	16] },
+		{ "26": [ 19,	21,	24,	28] },
+		{ "27": [ 31,	33,	36,	 4] },
+		{ "28": [  8,	10,	13,	17] },
+		{ "29": [ 20,	22,	25,	29] },
+		{ "30": [ 32,	34,	 1,	 5] },
+		{ "31": [  9,	11,	14,	18] },
+		{ "32": [ 10,	12,	15,	19] },
+		{ "33": [ 21,	23,	26,	30] },
+		{ "34": [ 22,	24,	27,	31] },
+		{ "35": [ 33,	35,	 2,	 6] },
+		{ "36": [ 34,	36,	 3,	 7] }
+	]
+
 ```
 
 
 ### Heat Database ###
 
 The database shall hold information about each heat. It gets preconfigured when a race
-is set up with the cars. The key is the ID from the race combined with a minus sign, 
-followed by the heatnumber in this race.
+is set up with the cars. The key is the ID from the race combined with a minus
+sign, followed by the heatnumber in this race. The heatnumbers in a race start
+with 1 (not zero).
  
 Properties of each heat are:
 
@@ -175,7 +188,7 @@ Properties of a lane result object:
 | mn             | number | model identifier of the car (max. 8 digits, <100.000.000)                     |
 | sn             | number | serial number of the car within the model line (max. 6 digits, <1.000.000)    |
 | t              | number | time in milliseconds the car needed for this run                              |
-| points         | number | the score, that this car got for the place in this run                        |
+| score          | number | the score, that this car got for the place in this run                        |
 
 
 
@@ -190,10 +203,10 @@ Value:
     "heat": 7,
     "status": "finished",
     "results" : [
-      {"rf":"044E57A22D4D","ow":"Kara Thrace","mn":201807181,"sn":14,"t":5455,"points":1},
-      {"rf":"045657A22D4D","ow":"Lee Adama","mn":201807181,"sn":28,"t":3440,"points":8},
-      {"rf":"04E556A22D4D","ow":"Sharon Valerii","mn":201807181,"sn":9,"t":3729,"points":2},
-      {"rf":"047756A22D4D","ow":"Karl Agathon","mn":201807181,"sn":22,"t":3671,"points":4}
+      {"rf":"044E57A22D4D","ow":"Kara Thrace","mn":201807181,"sn":14,"t":5455,"score":1},
+      {"rf":"045657A22D4D","ow":"Lee Adama","mn":201807181,"sn":28,"t":3440,"score":8},
+      {"rf":"04E556A22D4D","ow":"Sharon Valerii","mn":201807181,"sn":9,"t":3729,"score":2},
+      {"rf":"047756A22D4D","ow":"Karl Agathon","mn":201807181,"sn":22,"t":3671,"score":4}
     ]
   }
 ```
@@ -210,7 +223,7 @@ Properties of each race entry are car objects:
 
 | Property       | Type   | Description                                    |
 |----------------|--------|------------------------------------------------|
-| <car rfid>     | Object | contains a car object                          |
+| \<car rfid\>   | Object | contains a car object                          |
 
 Properties of a car object:
 
@@ -233,26 +246,28 @@ Key:
   "2018-Race"
 Value:
   [
-    "04A256A22D4D": {
-      "rf":"04A256A22D4D",
-      "ow":"Louanne Katraine",
-      "mn":"201807181",
-      "sn":"1200",
-      "cumTimeQuali":0,
-      "cumScoreQuali":0,
-      "cumTimeFinals":0,
-      "cumScoreFinals":0},
-    "047756A22D4D": {
-      "rf":"047756A22D4D",
-      "ow":"Margaret Edmondson",
-      "mn":"201807181",
-      "sn":"1209",
-      "cumTimeQuali":3671,
-      "cumScoreQuali":8,
-      "cumTimeFinals":0,
-      "cumScoreFinals":0},
-    "045B56A22D4D": {
-      "rf":"045B56A22D4D",
+    { "04A256A22D4D": {
+        "rf":"04A256A22D4D",
+        "ow":"Louanne Katraine",
+        "mn":"201807181",
+        "sn":"1200",
+        "cumTimeQuali":0,
+        "cumScoreQuali":0,
+        "cumTimeFinals":0,
+        "cumScoreFinals":0 } 
+    },
+    { "047756A22D4D": {
+        "rf":"047756A22D4D",
+        "ow":"Margaret Edmondson",
+        "mn":"201807181",
+        "sn":"1209",
+        "cumTimeQuali":3671,
+        "cumScoreQuali":8,
+        "cumTimeFinals":0,
+        "cumScoreFinals":0 }
+    },
+    { "045B56A22D4D": {
+        "rf":"045B56A22D4D",
       ... }
   ]      
   
@@ -264,14 +279,8 @@ Value:
 
 The database shall hold information about the 20 track records, the fastest
 times that these cars have achieved. A car can be in the higscore table multiple
-times. The value is an array of rank objects. The The key is the ID from the race.
+times. The value is an array of rank objects. The key is the ID from the race.
  
-Properties of each race entry are car objects:
-
-| Property       | Type   | Description                                    |
-|----------------|--------|------------------------------------------------|
-| <rank no>      | Object | contains a rank object                         |
-
 Properties of a rank object:
 
 | Property       | Type   | Description                                                                                       |
@@ -293,7 +302,7 @@ Key:
   "2018-Race"
 Value:
   [
-    "1": {
+    {
       "rf":"04A256A22D4D",
       "ow":"Louanne Katraine",
       "mn":"201807181",
@@ -301,8 +310,8 @@ Value:
       "t": 3671,
       "score":8,
       "heat":"2018-Race-00",
-      "rank":1},
-    "2": {
+      "rank":1 },
+    {
       "rf":"047756A22D4D",
       "ow":"Margaret Edmondson",
       "mn":"201807181",
@@ -310,13 +319,19 @@ Value:
       "t":3690,
       "score":8,
       "heat":"2018-Race-05",
-      "rank":2},
-    "3": {
+      "rank":2 },
+    {
       "rf":"045B56A22D4D",
       ... }
   ]      
 
 ```
 
+
+## Changelog ##
+
+0.2
+- fixed typos
+- changed highscore to revert back to flat array of objects
 
 
