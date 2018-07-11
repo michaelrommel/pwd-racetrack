@@ -1,17 +1,13 @@
-#ifndef _PWDDATA_H
-#define _PWDDATA_H
+#ifndef _PWDSKINNYDATA_H
+#define _PWDSKINNYDATA_H
 
 #include <stdint.h>
 
-#define PWDDATA_VERSION "0.1.0"
+#define PWDSKINNYDATA_VERSION "0.1.0"
 
 typedef struct {
   char* rfid;
   char* owner;
-  uint32_t modelno;
-  uint32_t serno;
-  uint32_t time;
-  uint8_t laser;
 } PWDLane;
 
 typedef struct {

@@ -1,5 +1,5 @@
 //
-// Racetrack Firmware
+// Racetrack Firmware Finishline Controller
 //
 
 #include "FastLED.h"
@@ -12,6 +12,8 @@
 #include <malloc.h>
 #include <stdlib.h>
 #include <stdio.h>
+
+#define FINISHLINE_VERSION "0.1.0"
 
 #define TM1637_DATA 24
 #define TM1637_CLOCK 26
@@ -42,7 +44,7 @@ PWDLaneDisplay laneDisplay[LANES] = {
 
 // instantiate three serial communication channels
 // channel to bridge
-PWDProtocol combr( Serial );
+PWDProtocol combr( Serial, 57600 );
 // define acceptable commands for use in begin()
 uint8_t combr_whitelist[4][8] = {
   { // IDLE
@@ -61,7 +63,7 @@ uint8_t combr_whitelist[4][8] = {
   }
 };
 // channel to Raspberry Pi
-PWDProtocol compi( Serial2 );
+PWDProtocol compi( Serial2, 57600 );
 // define acceptable commands for use in begin()
 uint8_t compi_whitelist[4][8] = {
   { // IDLE
@@ -76,14 +78,15 @@ uint8_t compi_whitelist[4][8] = {
   }
 };
 // channel to Startgate
-PWDProtocol comsg( Serial1 );
+PWDProtocol comsg( Serial1, 19200 );
 // define acceptable commands for use in begin()
 uint8_t comsg_whitelist[4][8] = {
   { // IDLE
-    PWDProtocol::CODE_ACK
+    PWDProtocol::CODE_ACK, PWDProtocol::CODE_DETECT
   },
   { // HEATSETUP
-    PWDProtocol::CODE_ACK, PWDProtocol::CODE_GO
+    PWDProtocol::CODE_ACK, PWDProtocol::CODE_DETECT, 
+    PWDProtocol::CODE_COMPLETE
   },
   { // RACING
     PWDProtocol::CODE_ACK
@@ -252,8 +255,8 @@ void showLaserLevel() {
 
 
 // resets all the counters for a heat run
-void initializeRace() {
-  SerialUSB.println( "initializeRace()" );
+void resetHeat() {
+  SerialUSB.println( "resetHeat()" );
   // switch on the lasers
   digitalWrite( LASER_PIN, HIGH );
   // blank the displays
@@ -262,43 +265,36 @@ void initializeRace() {
   start = millis();
   // reset elapsed var
   elapsed = 0;
+  // following should be taken care of in the idle init
   // reset race times
-  for( int i=0; i<4; i++ ) {
-    heat.lane[i]->time = 0;
-  }
+  //for( int i=0; i<4; i++ ) {
+  //  heat.lane[i]->time = 0;
+  //}
   // no lane has finished
   lane_status = 0;
   // number of cars which finished is zero
   finishers = 0;
   // get the number of participants
   expectedFinishers = getExpectedFinishers();
-  // set correct heat status 
-  heat.status =  PWDProtocol::STATUS_HEATINPROGRESS;
 }
 
-
-// for debugging echo the current heat structure to the Serial port
-void dumpHeat() {
-  combr.sendCompleteOrProgress( PWDProtocol::CODE_COMPLETE, &heat );
-  combr.sendCompleteOrProgress( PWDProtocol::CODE_COMPLETE, &setupHeat );
+// clears any information from previous runs
+void clearHeat( PWDHeat* heat ) {
+  heat->state = PWDProtocol::STATE_IDLE;
+  heat->status = PWDProtocol::STATUS_OK;
+  heat->heatno = 0;
+  for( int i=0; i<4; i++ ) {
+    *heat->lane[i]->rfid = '\0';
+    *heat->lane[i]->owner = '\0';
+    heat->lane[i]->modelno = 0;
+    heat->lane[i]->serno = 0;
+    heat->lane[i]->time = 0;
+  }
 }
 
-
-//
-// Setup all needed peripherals
-//
-void setup() {
-
-  pinMode( LED_PIN, OUTPUT );
-
-  // initialize all communication channels
-  combr.begin( combr_whitelist );
-  compi.begin( compi_whitelist );
-  comsg.begin( comsg_whitelist );
-
-  SerialUSB.begin( 57600 );
-
-  // initialize the lane and heat structure for race heat
+// link the data structures together
+void initStructures( void ) {
+  // initialize the lane and heat structure for the race heat
   // this should be now a fixed data structure in globals
   for( int i=0; i<4; i++ ) {
     lane[i].rfid = &rfid[i][0];
@@ -321,6 +317,53 @@ void setup() {
   setupHeat.state = PWDProtocol::STATE_IDLE;
   setupHeat.status = PWDProtocol::STATUS_OK;
   setupHeat.heatno = 0;
+}
+
+
+// for debugging echo the current heat structure to the Serial port
+void dumpHeat( PWDHeat* heat ) {
+  SerialUSB.print( F("Heat: ") );
+  SerialUSB.println( heat->heatno );
+  SerialUSB.print( F("State: ") );
+  SerialUSB.println( heat->state );
+  SerialUSB.print( F("Status: ") );
+  SerialUSB.println( heat->status );
+  for( int i=0; i<LANES; i++ ) {
+    SerialUSB.print( F("Lane: ") );
+    SerialUSB.println( i );
+    SerialUSB.print( F("  RFID: ") );
+    SerialUSB.println( heat->lane[i]->rfid );
+    SerialUSB.print( F("  Owner: ") );
+    SerialUSB.println( heat->lane[i]->owner );
+    SerialUSB.print( F("  Model No.: ") );
+    SerialUSB.println( heat->lane[i]->modelno );
+    SerialUSB.print( F("  Serial No.: ") );
+    SerialUSB.println( heat->lane[i]->serno );
+    SerialUSB.print( F("  Time: ") );
+    SerialUSB.println( heat->lane[i]->time );
+  }
+  //combr.sendCompleteOrProgress( PWDProtocol::CODE_COMPLETE, &heat );
+  //combr.sendCompleteOrProgress( PWDProtocol::CODE_COMPLETE, &setupHeat );
+}
+
+
+//
+// Setup all needed peripherals
+//
+void setup() {
+
+  pinMode( LED_PIN, OUTPUT );
+
+  // initialize all communication channels
+  combr.begin( combr_whitelist );
+  compi.begin( compi_whitelist );
+  comsg.begin( comsg_whitelist );
+
+  SerialUSB.begin( 57600 );
+
+  // set up the linked data structures for 
+  // heat and setup status
+  initStructures();
 
   // set all pin modes
   pinMode( DEMO_PIN, INPUT_PULLUP );
@@ -351,9 +394,11 @@ void setup() {
 
   // visually signal that SerialUSB should be ready now
   Util::blink( FAST );
-  delay( 2000 );
+  Serial.print( F("\n\nPinewood Derby Finishline Version ") );
+  Serial.println( FINISHLINE_VERSION );
+  Serial.println();
   Util::ShowMemory( SerialUSB, &_end, sbrk(0) );
-  SerialUSB.println( "Finished setup()" );
+  //SerialUSB.println( F("Finished setup()") );
 
 }
 
@@ -378,19 +423,26 @@ void loop() {
           stateInitNeeded = false;
           // do not change the displays, audience should be able
           // to view the race results!
+          // clear all data structures from a previous heat
+          clearHeat( &heat );
+          clearHeat( &setupHeat );
         }
         // check connection to startgate
         if( comsg.available() ) {
           // read and process the serial command
-          bool res = comsg.receiveCommand( &heat );
+          bool res = comsg.receiveCommand( &setupHeat );
           if( res ) {
             // startgate will not change the state
             // in this state we will only receive detect
             // messages from the startgate. res will
             // tell us if we need to emit one to the 
             // bridge
-            // TODO
-            //sendCarDetection(laneNumber,rfid);
+            for( int i=0; i<LANES; i++ ) {
+              if( *setupHeat.lane[i]->rfid != '\0' ) {
+                combr.sendCarDetection( i, setupHeat.lane[i]->rfid );
+                compi.sendCarDetection( i, setupHeat.lane[i]->rfid );
+              }
+            }
           }
         }
         // check serial connection to bridge
@@ -415,6 +467,7 @@ void loop() {
               // it has fired
               uint8_t detectlane = Util::createRandomCarDetection( &setupHeat );
               combr.sendCarDetection( detectlane, setupHeat.lane[detectlane]->rfid );
+              compi.sendCarDetection( detectlane, setupHeat.lane[detectlane]->rfid );
               // renew watchdog
               emitterWatchdog = millis() + random(3000, 8000);
             }
@@ -439,18 +492,37 @@ void loop() {
           clearDisplays();
           // set correct heat status 
           heat.status =  PWDProtocol::STATUS_OK;
+          // send the setup to the startgate
+          comsg.sendSkinnyInit( &heat );
         }
         // check connection to startgate
         if( comsg.available() ) {
           // read and process the serial command
-          bool res = comsg.receiveCommand( &heat );
+          bool res = comsg.receiveCommand( &setupHeat );
           if( res ) {
-            // startgate will not change the state
-            // in this state we will only receive detect
-            // messages from the startgate. res will
-            // tell us if we need to emit one to the 
-            // bridge
-            //sendCarDetection(heatno,laneNumber,lane, wrongLane);
+            // startgate will not change the state in this state we will
+            // receive detect messages or complete messages from the startgate.
+            // res will tell us if we need to emit one to the bridge
+            dumpHeat( &setupHeat );
+            // if the status is complete
+            if( setupHeat.status == PWDProtocol::STATUS_SETUPCOMPLETE ) {
+              // send complete message
+              heat.status = PWDProtocol::STATUS_SETUPCOMPLETE;
+              combr.sendCompleteOrProgress( PWDProtocol::CODE_COMPLETE, &heat );
+              compi.sendCompleteOrProgress( PWDProtocol::CODE_COMPLETE, &heat );
+            } else {
+              // forward detect message
+              for( int i=0; i<LANES; i++ ) {
+                if( *setupHeat.lane[i]->rfid != '\0' ) {
+                  SerialUSB.print( F("car detected on lane ") );
+                  SerialUSB.println( i );
+                  combr.sendCarDetection( setupHeat.heatno, i, setupHeat.lane[i], 
+                      (setupHeat.status == PWDProtocol::STATUS_WRONGLANE) ? true : false );
+                  compi.sendCarDetection( setupHeat.heatno, i, setupHeat.lane[i], 
+                      (setupHeat.status == PWDProtocol::STATUS_WRONGLANE) ? true : false );
+                }
+              }
+            }
           }
         }
         // check serial connection to bridge
@@ -512,17 +584,20 @@ void loop() {
         if( stateInitNeeded ) {
           // reset flag
           stateInitNeeded = false;
-          initializeRace();
+          // reset all the counters for the heat
+          resetHeat();
+          // set correct heat status 
+          heat.status =  PWDProtocol::STATUS_HEATINPROGRESS;
           // send the command to open the gate to the startgate
-          //comsg.sendSkinnyGo(); TODO
+          comsg.sendSkinnyGo( &heat );
         }
         // check connection to startgate
         if( comsg.available() ) {
           // read and process the serial command
           bool res = comsg.receiveCommand( &heat );
           if( res ) {
-            // in this case a returned true means, that we received the skinny
-            // GO_ACK from the startgate indicating that it opened the gate
+            // in this case a returned true means, that we received the 
+            // GATEOPENED response from the startgate indicating that it opened the gate
             unsigned long rtt = millis() - start;
             SerialUSB.print( "RTT to gate was: " );
             SerialUSB.println( rtt );
@@ -560,9 +635,9 @@ void loop() {
               }
             } else {
               // update displays checking the LDRs
-              // without this the small displays get only updated in demot mode 
+              // without this the small displays get only updated in demo mode 
               // when the watchdog fires
-              oneMore = checkOrSetFinishers( );
+              oneMore = checkOrSetFinishers( 13 );
             }
 
           } else {

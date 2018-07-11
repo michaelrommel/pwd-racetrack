@@ -7,7 +7,7 @@
 #include "PCF8574.h"
 #include "TM1637.h"
 
-#define PWDLANE_VERSION "0.0.1"
+#define PWDLANE_VERSION "0.1.0"
 
 class PWDLaneDisplay {
 

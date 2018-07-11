@@ -71,7 +71,7 @@ namespace Util
           // with 60% certainty take the correct car
           strncpy( setupHeat->lane[tl]->rfid, heat->lane[tl]->rfid, 14 );
           strncpy( setupHeat->lane[tl]->owner, heat->lane[tl]->owner, 15 );
-          setupHeat->lane[tl]->matno = heat->lane[tl]->matno;
+          setupHeat->lane[tl]->modelno = heat->lane[tl]->modelno;
           setupHeat->lane[tl]->serno = heat->lane[tl]->serno;
         } else {
           sl = random(0,4);
@@ -79,7 +79,7 @@ namespace Util
           SerialUSB.println( sl );
           strncpy( setupHeat->lane[tl]->rfid, heat->lane[sl]->rfid, 14 );
           strncpy( setupHeat->lane[tl]->owner, heat->lane[sl]->owner, 15 );
-          setupHeat->lane[tl]->matno = heat->lane[sl]->matno;
+          setupHeat->lane[tl]->modelno = heat->lane[sl]->modelno;
           setupHeat->lane[tl]->serno = heat->lane[sl]->serno;
         }
         ret = tl;

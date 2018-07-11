@@ -5,10 +5,8 @@
 #define OFF LOW
 
 // pin definitions
-#define DP1 3
-#define DP2 2
-#define LASER 9
-#define GATE 10
+#define LASER 13
+#define GATE 2
 #define LDR A3
 const byte bitaddr[4] = {4, 6, 7, 5};
 const byte digit[4] = {8, A2, A1, A0};
@@ -17,7 +15,7 @@ const byte pow2[4] = {1, 2, 4, 8};
 // analog value, when a car blocks the laser beam
 const byte LDR_THRESHOLD = 30;
 // how long the solenoid shall be opened
-const int SOLENOID_HOLD = 500;
+const int SOLENOID_HOLD = 1000;
 // timeout value in milliseconds for cars that do not finish
 const double RACE_TIMEOUT = 15000;
 // when race is off, the loop slows down
@@ -47,13 +45,9 @@ void setDigit( byte d, int n ) {
 void displayNumber ( int number ) {
   if ( number > 9999 ) {
     // set decimalpoint #2
-    digitalWrite(DP1, LOW);
-    digitalWrite(DP2, HIGH);
     number /= 10;
   } else {
     // set decimalpoint #1
-    digitalWrite(DP1, HIGH);
-    digitalWrite(DP2, LOW);
   }
   for ( byte d = 4; d > 0; d-- ) {
     setDigit( d - 1, number % 10);
@@ -66,8 +60,6 @@ void setup() {
   Serial.begin( 57600 );
   while ( ! Serial );
   Serial.println( "Racetrack starting." );
-  pinMode(DP1, OUTPUT);
-  pinMode(DP2, OUTPUT);
   pinMode(LASER, OUTPUT);
   pinMode(GATE, OUTPUT);
   pinMode(LDR, OUTPUT);
@@ -197,6 +189,7 @@ void loop() {
     elapsed = millis() - start;
     displayNumber( elapsed );
     // get LDR value
+    /*
     byte ldr = analogRead( LDR );
     if ( ldr < LDR_THRESHOLD ) {
       //Serial.println( "under threshold" );
@@ -207,6 +200,8 @@ void loop() {
       //Serial.print( "LDR Index: " );
       //Serial.println( ldr_index );
       if ( ldr_index-- == 0 ) {
+      */
+    if( elapsed > 5000 ) {
         race_on = false;
         elapsed = finish - start;
         displayNumber( elapsed );
@@ -218,12 +213,13 @@ void loop() {
         lanes[2] = RACE_TIMEOUT;
         lanes[3] = RACE_TIMEOUT;
         send_raceprogress(id, heat, 0, lanes);
-      }
+      /*}
     } else {
       if ( ldr_index > 0 ) {
         // we have not reached a consistent light block for 5 cycles, reset counter
         ldr_index = LDR_COUNT;
       }
+      */
     }
   }
 

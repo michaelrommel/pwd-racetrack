@@ -38,6 +38,7 @@
 
 #arduino-makefile build directories
 *build-pro-*
+*build-mega-*
 *build-arduino_due_x*
 
 # VIM swapfiles
