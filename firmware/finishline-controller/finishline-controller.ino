@@ -467,6 +467,7 @@ void loop() {
               // it has fired
               uint8_t detectlane = Util::createRandomCarDetection( &setupHeat );
               combr.sendCarDetection( detectlane, setupHeat.lane[detectlane]->rfid );
+              compi.sendCarDetection( detectlane, setupHeat.lane[detectlane]->rfid );
               // renew watchdog
               emitterWatchdog = millis() + random(3000, 8000);
             }

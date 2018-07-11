@@ -3,8 +3,8 @@ Pinewood Derby Racetrack Communication Protocol
 
 | Key     | Value      |
 |---------|------------|
-| Version | 0.6        |
-| Date    | 2018-07-03 |
+| Version | 0.7        |
+| Date    | 2018-07-11 |
 
 ## Overview ##
 
@@ -43,7 +43,7 @@ Pinewood Derby Racetrack Communication Protocol
 |------------|-----------|--------|----------|-------------------------------------------------------------------------------|
 | time       | t         | number |          | Elapsed time of the car in this lane                                          |
 | rfid       | rf        | string |          | RFID of the car in this lane                                                  |
-| owner      | ow        | string |          | Full name of the car owner (max. 15 characters)                               |
+| owner      | ow        | string |          | Short name of the car owner (max. 14 characters)                              |
 | model      | mn        | number |          | Model identifier of the car (max. 8 digits, <100.000.000)                     |
 | serial     | sn        | number |          | Serial number of the car within the model line (max. 6 digits, <1.000.000)    |
 | laser      | ll        | number |          | Laser light level as detected by the LDR sensor, helps setting up the track   |
@@ -402,6 +402,9 @@ for each lane. This helps adjusting the optimal beam of light.
 }
 ```
 
+## Changelog ##
 
-
+0.7
+- changed full name to short name, because we can at max. display 14 characters
+- changed max length of short name to 14
 
