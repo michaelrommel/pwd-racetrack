@@ -32,6 +32,8 @@ module.exports = function (ctx) {
   const MSG_QUEUE_RUNNING = true
   const TIMER_DELAY = 2000
 
+  const NUM_HIGHSCORE_ENTRIES = 20
+
   const heatdb = ctx.heatdb
   const lanedb = ctx.lanedb
   const leaderboarddb = ctx.leaderboarddb
@@ -162,10 +164,10 @@ module.exports = function (ctx) {
     logger.debug('Sorting current heat by time')
     let lanesSorted = lanes.sort(sortByTimeAsc)
 
-    logger.debug('Calculating points for current heat')
+    logger.debug('Calculating score for current heat')
     for (var i = 0; i < lanesSorted.length; i++) {
-      lanesSorted[i].points = Math.pow(2, i)
-      logger.debug('Racer: %s, Points: %i', lanesSorted[i].ow, lanesSorted[i].points)
+      lanesSorted[i].score = Math.pow(2, i)
+      logger.debug('Racer: %s, Score: %i', lanesSorted[i].ow, lanesSorted[i].points)
     }
 
     leaderboarddb.get(RACE_ID, function (err, value) {
@@ -193,12 +195,12 @@ module.exports = function (ctx) {
           }
           if (heatId <= 40) {
             logger.debug('Still in qualifying, writing information to qualifying data')
-            leadership[k].score_quali += lanesSorted[i].points
-            leadership[k].time_quali += lanesSorted[i].t
+            leadership[k].cumScoreQuali += lanesSorted[i].score
+            leadership[k].cumTimeQuali += lanesSorted[i].t
           } else {
             logger.debug('Already in finals, writing information to finals data')
-            leadership[k].score_finals += lanesSorted[i].points
-            leadership[k].time_finals += lanesSorted[i].t
+            leadership[k].cumScoreFinals += lanesSorted[i].score
+            leadership[k].cumTimeFinals += lanesSorted[i].t
           }
         }
       }
@@ -213,6 +215,8 @@ module.exports = function (ctx) {
       leaderboarddb.put(RACE_ID, leadership)
       logger.debug('Successfully saved leaderboard information to database')
       logger.debug('Closing database')
+
+      return lanesSorted
     })
   }
 
@@ -223,24 +227,44 @@ module.exports = function (ctx) {
   var updateHighscore = function (heatId, lanes) {
     logger.debug('Getting current highscore from database')
     highscoredb.get(RACE_ID, function (err, value) {
-      if (err) {
+
+     let prepareHighscore = false
+     if (err) {
         // error handling
+	if (err.notFound) { // key not found, most likely the first heat, building mock highscore to compare against
+          prepareHighscore = true
+
+          }	
+      } else {
+
         logger.error('Could not retrieve highscore information from database')
         throw err
       }
+      
+
+      if (prepareHighscore || highscore.length < NUM_HIGHSCORE_ENTRIES) { // if highscore does not exist yet or has less than 20 entries we need some dummy entries to compare against
+
+        value = []
+	startingElement = highscore.length || 0
+        for (var i = startingElement; i < startingElement + 4; i++) {
+          value[i] = {}
+          value[i].rank = i + 1
+          value[i].t = 999999
+          value[i].rf = ""
+          value[i].heat = -1
+        }
+      }
 
       let highscore = value
-
       logger.debug('Iterating through current highscore to see if there is a new one')
       for (var i = 0; i < lanes.length; i++) {
         for (var k = 0; k < highscore.length; k++) {
           let laneInserted = false
           if (lanes[i].t < highscore[k].t) {
             logger.info('Found new highscore: Heat - %i, Racer - %s, Time - %ims, Rank - %i', heatId, lanes[i].ow, lanes[i].t, k + 1)
-            lanes[i].heat = heatId
+            lanes[i].heat = RACE_ID + '-' + ('0' + heatId).splice(-2)
             lanes[i].rank = k + 1
             highscore.splice(k, 0, lanes[i])
-            highscore.splice(-1)
             laneInserted = true
           }
           if (laneInserted === true) {
@@ -255,7 +279,12 @@ module.exports = function (ctx) {
         highscore[j].rank = j + 1
 
         logger.debug(JSON.stringify(highscore[j]))
+        if (highscore[j].t === 999999) { // remove interim entries
+
+        }
       }
+
+      highscore = highscore.slice(NUM_HIGHSCORE_ENTRIES)
 
       logger.debug('Saving highscore information to database')
       highscoredb.put(RACE_ID, highscore)
@@ -383,7 +412,7 @@ module.exports = function (ctx) {
     logger.info('Processing update heat message')
     let dto = {}
     dto.heat = heatId
-    dto.result = lanes
+    dto.results = lanes
 
     if (heatStatus === 2) { // we have received the progess for an ongoing heat
       // simply update heat status
@@ -393,9 +422,19 @@ module.exports = function (ctx) {
       logger.info('Received progress of finished heat')
       dto.status = 'finished'
       logger.debug('Update leaderboard with new data')
-      updateLeaderboard(heatId, lanes)
+      let lanesWithResult = updateLeaderboard(heatId, lanes)
       logger.debug('Update highscore with new data')
       updateHighscore(heatId, lanes)
+    }
+
+    for (var i = 0; i < dto.results.length; i++) {
+      for (var k = 0; k < lanesWithResult.length; k++) {
+
+        if (dto.results[i].rf === lanesWithResult[k].rf) {
+
+          dto.results[i].score = lanesWithResult[k].score
+	}
+      }
     }
 
     logger.debug('Saving updated heat information to database')
