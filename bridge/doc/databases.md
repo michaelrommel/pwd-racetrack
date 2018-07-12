@@ -3,7 +3,7 @@ Pinewood Derby Bridge Database Structures
 
 | Key     | Value      |
 |---------|------------|
-| Version | 0.2        |
+| Version | 0.3        |
 | Date    | 2018-07-11 |
 
 ## Overview ##
@@ -20,6 +20,7 @@ Properties of the race are:
 
 | Property       | Type   | Description                                |
 |----------------|--------|--------------------------------------------|
+| description    | string | description of this race setup             |
 | lanes          | number | number of lanes of the race track          |
 | heatsQuali     | number | number of heats in the qualification round |
 | heatsFinals    | number | number of heats in the final round         |
@@ -40,6 +41,7 @@ Key:
   "2018-Race"
 Value:
   {
+    "description": "Demo race at the event xxx",
     "lanes": 4,
     "heatsQuali": 33,
     "heatsFinals": 14,
@@ -94,6 +96,13 @@ The key is the number of lanes followed by a minus sign and the number of cars/h
 The value of a raceconfig is just an array of \<noOfHeats\> heat config objects, consisting 
 of an arrays of 4 car numbers:
 
+Properties of a race configuration
+
+| Property       | Type   | Description                                    |
+|----------------|--------|------------------------------------------------|
+| description    | String | description of this configuration              |
+| heats          | Array  | contains a heat configu object array           |
+
 Properties of each heat config object are:
 
 | Property       | Type   | Description                                    |
@@ -113,44 +122,46 @@ Lane array members:
 Key:
   "4-36"
 Value:
-  [
-    { "1":  [  1,  3,  6, 10] },
-    { "2":  [  2,  4,  7, 11] },
-    { "3":  [ 12, 14, 17, 21] }, 
-    { "4":  [ 13, 15, 18, 22] },
-    { "5":  [ 23, 25, 28, 32] },
-    { "6":  [ 24, 26, 29, 33] },
-    { "7":  [ 25, 27, 30, 34] },
-    { "8":  [ 36,  2,  5,  9] },
-    { "9":  [ 11, 13, 16, 20] },
-    { "10": [ 26, 28, 31, 35] },
-    { "11": [  3,  5,  8, 12] },
-    { "12": [ 14, 16, 19, 23] },
-    { "13": [ 15, 17, 20, 24] },
-    { "14": [ 27, 29, 32, 36] },
-    { "15": [ 35,  1,  4,  8] },
-    { "16": [  5,  7, 10, 14] },
-    { "17": [  4,  6,  9, 13] },
-    { "18": [ 16, 18, 21, 25] },
-    { "19": [ 17, 19, 22, 26] },
-    { "20": [ 28, 30, 33,  1] },
-    { "21": [ 29, 31, 34,  2] },
-    { "22": [  6,  8, 11, 15] },
-    { "23": [ 18, 20, 23, 27] },
-    { "24": [ 30, 32, 35,  3] },
-    { "25": [  7,  9, 12, 16] },
-    { "26": [ 19, 21, 24, 28] },
-    { "27": [ 31, 33, 36,  4] },
-    { "28": [  8, 10, 13, 17] },
-    { "29": [ 20, 22, 25, 29] },
-    { "30": [ 32, 34,  1,  5] },
-    { "31": [  9, 11, 14, 18] },
-    { "32": [ 10, 12, 15, 19] },
-    { "33": [ 21, 23, 26, 30] },
-    { "34": [ 22, 24, 27, 31] },
-    { "35": [ 33, 35,  2,  6] },
-    { "36": [ 34, 36,  3,  7] }
-  ]
+  { "description": "Partial Perfect 4 Lanes, 36 cars config",
+    "heats" : [
+      { "1":  [  1,  3,  6, 10] },
+      { "2":  [  2,  4,  7, 11] },
+      { "3":  [ 12, 14, 17, 21] }, 
+      { "4":  [ 13, 15, 18, 22] },
+      { "5":  [ 23, 25, 28, 32] },
+      { "6":  [ 24, 26, 29, 33] },
+      { "7":  [ 25, 27, 30, 34] },
+      { "8":  [ 36,  2,  5,  9] },
+      { "9":  [ 11, 13, 16, 20] },
+      { "10": [ 26, 28, 31, 35] },
+      { "11": [  3,  5,  8, 12] },
+      { "12": [ 14, 16, 19, 23] },
+      { "13": [ 15, 17, 20, 24] },
+      { "14": [ 27, 29, 32, 36] },
+      { "15": [ 35,  1,  4,  8] },
+      { "16": [  5,  7, 10, 14] },
+      { "17": [  4,  6,  9, 13] },
+      { "18": [ 16, 18, 21, 25] },
+      { "19": [ 17, 19, 22, 26] },
+      { "20": [ 28, 30, 33,  1] },
+      { "21": [ 29, 31, 34,  2] },
+      { "22": [  6,  8, 11, 15] },
+      { "23": [ 18, 20, 23, 27] },
+      { "24": [ 30, 32, 35,  3] },
+      { "25": [  7,  9, 12, 16] },
+      { "26": [ 19, 21, 24, 28] },
+      { "27": [ 31, 33, 36,  4] },
+      { "28": [  8, 10, 13, 17] },
+      { "29": [ 20, 22, 25, 29] },
+      { "30": [ 32, 34,  1,  5] },
+      { "31": [  9, 11, 14, 18] },
+      { "32": [ 10, 12, 15, 19] },
+      { "33": [ 21, 23, 26, 30] },
+      { "34": [ 22, 24, 27, 31] },
+      { "35": [ 33, 35,  2,  6] },
+      { "36": [ 34, 36,  3,  7] }
+    ]
+  }
 
 ```
 
@@ -329,6 +340,10 @@ Value:
 
 
 ## Changelog ##
+
+0.3
+- added race description
+- added heat configuration description
 
 0.2
 - fixed typos

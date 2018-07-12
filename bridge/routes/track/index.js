@@ -1,13 +1,14 @@
-const MODULE_ID = 'ping'
+const MODULE_ID = 'track'
 const logger = require('../../utils/logger')
+const httpErr = require('restify-errors')
 
-function sendPing (req, res, next) {
+function getTrackHighscores (req, res, next) {
   logger.info('%s: request received', MODULE_ID)
-  res.send({ ping: 'OK' })
+  res.send({})
   logger.info('%s: response sent', MODULE_ID)
   return next()
 }
 
 module.exports = (server) => {
-  server.get('/ping', sendPing)
+  server.get('/track/highscores', getTrackHighscores)
 }

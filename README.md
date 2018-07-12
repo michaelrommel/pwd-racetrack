@@ -5,10 +5,6 @@ This software implements the firmware for a Pinewood Derby race track
 electronics. The race track receives commands, like the setup or start commands
 and sends back results, like the finishing times for each lane after a heat ends.
 
-The subdirectory platformio contains a PlatformIO project (https://platformio.org/).
-You should install the PlatformIO IDE based on the Atom Editor to work with this
-repo.
-
 The racetrack electronics in the subdirectory circuits consists of three main parts:
 - the main controller based on an Arduino Due with a protoype extension board.
   The extension board implements the connections to the finish line display

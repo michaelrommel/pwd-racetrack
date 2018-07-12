@@ -1,10 +1,10 @@
-module.exports = (server, plugins) => {
-  // unprotected routes
-  require('./ping')(server)
-  require('./register')(server)
-
-  // protected routes
-  require('./whoami')(server)
-  require('./home')(server, plugins)
-  require('./admin')(server)
+module.exports = (ctx) => {
+  require('./admin')(ctx.server)
+  require('./car')(ctx.server)
+  require('./heat')(ctx.server, ctx.serialCom)
+  require('./ping')(ctx.server)
+  require('./race')(ctx.server)
+  require('./raceconfig')(ctx.server)
+  require('./track')(ctx.server)
+  require('./user')(ctx.server)
 }
