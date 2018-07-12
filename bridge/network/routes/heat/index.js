@@ -1,5 +1,5 @@
 const MODULE_ID = 'heat'
-const logger = require('../../utils/logger')
+const logger = require('../../../utils/logger')
 const httpErr = require('restify-errors')
 var serialCom
 

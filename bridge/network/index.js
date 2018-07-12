@@ -1,8 +1,11 @@
 'use strict'
 
-const config = require('./utils/config')
-const logger = require('./utils/logger')
+const MODULE_ID = 'network'
+const config = require('../utils/config')
+const logger = require('../utils/logger')
 const jwt = require('restify-jwt-community')
+
+const util = require('util')
 
 var restify = require('restify')
 var plugins = require('restify').plugins
@@ -10,6 +13,9 @@ var plugins = require('restify').plugins
 var server = restify.createServer()
 
 function init (ctx) {
+  var db = ctx.db
+  var serial = ctx.serial
+  
   server.use(plugins.bodyParser())
 
   // authorization
@@ -25,8 +31,10 @@ function init (ctx) {
     ]
   }))
 
+  logger.debug(util.inspect(ctx))
+
   // configure routes
-  require('./routes')({server, plugins, ctx.db, ctx.serial})
+  require('./routes')({server, plugins, db, serial})
 
   // start server
   server.listen(config.PORT)
@@ -35,8 +43,4 @@ function init (ctx) {
 
 module.exports = {
   init: init,
-  startSetupRT: startSetupRT,
-  stopSetupRT: stopSetupRT,
-  initHeat: initHeat,
-  startHeat: startHeat
 }

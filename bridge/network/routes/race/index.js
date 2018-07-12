@@ -1,5 +1,5 @@
 const MODULE_ID = 'race'
-const logger = require('../../utils/logger')
+const logger = require('../../../utils/logger')
 const httpErr = require('restify-errors')
 
 function listRaces (req, res, next) {

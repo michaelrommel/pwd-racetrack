@@ -1,7 +1,7 @@
 module.exports = (ctx) => {
   require('./admin')(ctx.server)
   require('./car')(ctx.server)
-  require('./heat')(ctx.server, ctx.serialCom)
+  require('./heat')(ctx.server, ctx.serial)
   require('./ping')(ctx.server)
   require('./race')(ctx.server)
   require('./raceconfig')(ctx.server)

@@ -1,5 +1,5 @@
 const MODULE_ID = 'admin'
-const logger = require('../../utils/logger')
+const logger = require('../../../utils/logger')
 const httpErr = require('restify-errors')
 
 function adminAction (req, res, next) {
