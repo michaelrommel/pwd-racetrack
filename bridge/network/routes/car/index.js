@@ -8,13 +8,15 @@ function listCars (req, res, next) {
   logger.info('%s: request received', MODULE_ID)
 
   let cars = []
-  carDb.createValueStream()
+  carDb.createReadStream()
     .on('data', function (data) {
-      logger.debug('Received data: %s', data)
-      cars.push(data)
+      logger.debug('%s: Received data: %s', MODULE_ID, data)
+      let car = {}
+      car[data.key] = data.value
+      cars.push(car)
     })
     .on('error', function (err) {
-      logger.error('Error getting cars: %s', err)
+      logger.error('%s: Error getting cars: %s', MODULE_ID, err)
       return next(new httpErr.InternalServerError('Error retrieving car information'))
     })
     .on('end', function () {
@@ -31,7 +33,7 @@ async function importCars (req, res, next) {
     req.body === undefined ||
     req.body.cars === undefined
   ) {
-    logger.error('Received incomplete create car information')
+    logger.error('%s: Received incomplete create car information', MODULE_ID)
     return next(new httpErr.BadRequestError('Incomplete create car information.'))
   }
 
@@ -46,13 +48,13 @@ async function importCars (req, res, next) {
       cars[i].mn === undefined ||
       cars[i].sn === undefined
     ) {
-      logger.error('Skipping car with incomplete car information')
+      logger.error('%s: Skipping car with incomplete car information', MODULE_ID)
     } else {
       try {
         await carDb.put(cars[i].rf, cars[i])
         inserted++
       } catch (err) {
-        logger.error('Could not insert car #%d', i)
+        logger.error('%s: Could not insert car #%d', MODULE_ID, i)
       }
     }
   }
@@ -69,13 +71,13 @@ function getCar (req, res, next) {
     req.params === undefined ||
     req.params.id === undefined
   ) {
-    logger.error('Received incomplete get car information')
+    logger.error('%s: Received incomplete get car information', MODULE_ID)
     return next(new httpErr.BadRequestError('Incomplete get car information.'))
   } else {
     carDb.get(req.params.id, function (err, value) {
       if (err) {
         if (err.notFound) {
-          logger.error('Could not find specified car')
+          logger.error('%s: Could not find specified car', MODULE_ID)
           return next(new httpErr.BadRequestError('Could not retrieve car information.'))
         }
       }
@@ -100,7 +102,7 @@ function createCar (req, res, next) {
     req.body.mn === undefined ||
     req.body.sn === undefined
   ) {
-    logger.error('Received incomplete create car information')
+    logger.error('%s: Received incomplete create car information', MODULE_ID)
     return next(new httpErr.BadRequestError('Incomplete create car information.'))
   }
   carDb.put(req.params.id, req.body)
@@ -124,7 +126,7 @@ function updateCar (req, res, next) {
     req.body.mn === undefined ||
     req.body.sn === undefined
   ) {
-    logger.error('Received incomplete update car information')
+    logger.error('%s: Received incomplete update car information', MODULE_ID)
     return next(new httpErr.BadRequestError('Incomplete update car information.'))
   }
 
@@ -141,7 +143,7 @@ function deleteCar (req, res, next) {
     req.params === undefined ||
       req.params.id === undefined
   ) {
-    logger.error('Received incomplete delete car information')
+    logger.error('%s: Received incomplete delete car information', MODULE_ID)
     return next(new httpErr.BadRequestError('Incomplete delete car information.'))
   } else {
     let key = req.params.id
