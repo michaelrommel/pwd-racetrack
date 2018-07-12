@@ -3,7 +3,6 @@
 const logger = require('../utils/logger')
 const SerialPort = require('serialport')
 
-//const SERIAL_PORT = '/dev/cu.usbserial-AH02IXG1'
 const SERIAL_PORT = 'COM12'
 const MSG_ACK = 'a'
 const MSG_INIT_HEAT = 'i'
@@ -52,7 +51,7 @@ function init (ctx) {
   lanedb = ctx.db.lane
   leaderboarddb = ctx.db.leaderboard
   highscoredb = ctx.db.highscore
-  
+
   raceId = ctx.raceId
 }
 
@@ -234,7 +233,6 @@ var updateHighscore = function (heatId, lanes) {
     }
 
     if (value.length < NUM_HIGHSCORE_ENTRIES) { // if highscore does not exist yet or has less than 20 entries we need some dummy entries to compare against
-
       let startingElement = value.length
       for (let i = startingElement; i < startingElement + 4; i++) {
         value[i] = {}

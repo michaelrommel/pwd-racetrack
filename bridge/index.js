@@ -17,19 +17,18 @@ const network = require('./network')
 // get the modules for serial communication
 const serial = require('./serial')
 
-logger.debug('restoring running state' );
+logger.debug('restoring running state')
 db.checkpoint.get('raceId')
   .then((val) => {
-    logger.debug( 'restored raceId as %s', val )
+    logger.debug('restored raceId as %s', val)
     raceId = val
     // initialize Serial communication
     serial.init({db, raceId})
   })
-  .catch( (err) => {
+  .catch((err) => {
     logger.debug('Could not retrieve raceId')
     serial.init({db, raceId})
   })
 
 // initialize Network communication
-network.init({db, serial});
-
+network.init({db, serial})
