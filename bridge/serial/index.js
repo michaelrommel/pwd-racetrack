@@ -3,8 +3,6 @@
 const logger = require('../utils/logger')
 const SerialPort = require('serialport')
 
-const RACE_ID = '2018-Race'
-
 const MSG_ACK = 'a'
 const MSG_INIT_HEAT = 'i'
 const MSG_START_HEAT = 'g'
@@ -45,13 +43,15 @@ var lanedb
 var leaderboarddb
 var highscoredb
 
+var raceId
+
 function init (ctx) {
   heatdb = ctx.heatdb
   lanedb = ctx.lanedb
   leaderboarddb = ctx.leaderboarddb
   highscoredb = ctx.highscoredb
-
-  initLaneStatus()
+  
+  raceId = ctx.raceId
 }
 
 // function for sending message objects over the line
@@ -164,7 +164,7 @@ var updateLeaderboard = function (heatId, lanes) {
     logger.debug('Racer: %s, Score: %i', lanesSorted[i].ow, lanesSorted[i].points)
   }
 
-  leaderboarddb.get(RACE_ID, function (err, value) {
+  leaderboarddb.get(raceId, function (err, value) {
     if (err) {
       // error handling
       logger.error('Could not retrieve leaderboard information from database')
@@ -206,7 +206,7 @@ var updateLeaderboard = function (heatId, lanes) {
     }
 
     logger.debug('Saving leaderboard information to database')
-    leaderboarddb.put(RACE_ID, leadership)
+    leaderboarddb.put(raceId, leadership)
     logger.debug('Successfully saved leaderboard information to database')
     logger.debug('Closing database')
 
@@ -220,22 +220,20 @@ var updateLeaderboard = function (heatId, lanes) {
 //
 var updateHighscore = function (heatId, lanes) {
   logger.debug('Getting current highscore from database')
-  highscoredb.get(RACE_ID, function (err, value) {
-    let prepareHighscore = false
+  highscoredb.get(raceId, function (err, value) {
     if (err) {
       // error handling
       if (err.notFound) { // key not found, most likely the first heat, building mock highscore to compare against
-        prepareHighscore = true
+        value = []
       }
     } else {
       logger.error('Could not retrieve highscore information from database')
       throw err
     }
 
-    if (prepareHighscore || highscore.length < NUM_HIGHSCORE_ENTRIES) { // if highscore does not exist yet or has less than 20 entries we need some dummy entries to compare against
+    if (value.length < NUM_HIGHSCORE_ENTRIES) { // if highscore does not exist yet or has less than 20 entries we need some dummy entries to compare against
 
-      value = []
-      let startingElement = highscore.length || 0
+      let startingElement = value.length
       for (let i = startingElement; i < startingElement + 4; i++) {
         value[i] = {}
         value[i].rank = i + 1
@@ -252,7 +250,7 @@ var updateHighscore = function (heatId, lanes) {
         let laneInserted = false
         if (lanes[i].t < highscore[k].t) {
           logger.info('Found new highscore: Heat - %i, Racer - %s, Time - %ims, Rank - %i', heatId, lanes[i].ow, lanes[i].t, k + 1)
-          lanes[i].heat = RACE_ID + '-' + ('0' + heatId).splice(-2)
+          lanes[i].heat = raceId + '-' + ('0' + heatId).splice(-2)
           lanes[i].rank = k + 1
           highscore.splice(k, 0, lanes[i])
           laneInserted = true
@@ -269,7 +267,7 @@ var updateHighscore = function (heatId, lanes) {
       highscore[j].rank = j + 1
 
       logger.debug(JSON.stringify(highscore[j]))
-      if (highscore[j].t === 999999) { // remove interim entries
+      if (highscore[j].t === 999999) { // remove dummy entries
 
       }
     }
@@ -277,7 +275,7 @@ var updateHighscore = function (heatId, lanes) {
     highscore = highscore.slice(NUM_HIGHSCORE_ENTRIES)
 
     logger.debug('Saving highscore information to database')
-    highscoredb.put(RACE_ID, highscore)
+    highscoredb.put(raceId, highscore)
     logger.debug('Successfully saved highscore information to database')
     logger.debug('Closing database')
   })
@@ -338,7 +336,7 @@ var initHeat = function (heatId) {
   msg.l = []
 
   logger.debug('Retrieving heat information from the database')
-  let heatKey = RACE_ID + '-' + ('0' + heatId).splice(-2)
+  let heatKey = raceId + '-' + ('0' + heatId).splice(-2)
   heatdb.get(heatKey, function (err, value) {
     if (err) {
       logger.error('Unable to retrieve heat information from database')
@@ -427,7 +425,7 @@ var updateHeat = function (heatId, heatStatus, lanes) {
   }
 
   logger.debug('Saving updated heat information to database')
-  let heatKey = RACE_ID + '-' + ('0' + heatId).slice(-2)
+  let heatKey = raceId + '-' + ('0' + heatId).slice(-2)
   heatdb.put(heatKey, dto)
   logger.debug('Successfully saved updated heat information to database')
   logger.debug('Closing database')
@@ -444,7 +442,7 @@ var carDetected = function (heatId, msgState, lanes) {
   dto.heat = heatId
   dto.lanes = []
 
-  let lanesKey = RACE_ID
+  let lanesKey = raceId
   logger.debug('Retrieving lane status information from database')
   lanedb.get(lanesKey, function (err, value) {
     let lanesDb = value
@@ -507,12 +505,12 @@ var heatSetupComplete = function (heatId, lanes) {
   logger.debug('Successfully saved heat setup complete data to database')
 }
 
-// function for pushin lane status to database
+// function for pushing lane status to database
 // -----------
 // params
 //
 var saveLaneStatus = function (laneDto) {
-  var laneKey = RACE_ID
+  var laneKey = raceId
   logger.debug('Pushing lane status to database')
   lanedb.put(laneKey, laneDto)
 }
@@ -541,7 +539,7 @@ var port = new SerialPort('/dev/cu.usbserial-AH02IXG1',
   }
 )
 
-// event listener for incomming data from race track
+// event listener for incoming data from race track
 port.on('readable', function () {
   let newdata = port.read().toString('utf8')
   logger.info('got serial data: %s', newdata)
@@ -594,7 +592,7 @@ port.on('readable', function () {
         break
       }
     }
-  } else if (messageCc === MSG_PROG_HEAT) { // we have received a progess update
+  } else if (messageCc === MSG_PROG_HEAT) { // we have received a progress update
     logger.info('Received a progress update message for a heat')
     let messageHeat = data.h
     let messageState = data.s
