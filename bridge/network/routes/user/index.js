@@ -1,6 +1,6 @@
 const MODULE_ID = 'user'
 const logger = require('../../utils/logger')
-const config = require('../../config')
+const config = require('../../utils/config')
 const errors = require('restify-errors')
 
 function loginUser (req, res, next) {
