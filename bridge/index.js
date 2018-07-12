@@ -1,46 +1,35 @@
 const MODULE_ID = 'main'
-const config = require('./config')
+const config = require('./utils/config')
 const logger = require('./utils/logger')
-const jwt = require('restify-jwt-community')
 const level = require('level')
+const util = require('util')
 
 logger.info('%s: initializing', MODULE_ID)
 
-var restify = require('restify')
-var plugins = require('restify').plugins
+// variable that holds the current raceID
+var raceId = '2018-Race'
 
-var racedb = level('./db/racedb', ({valueEncoding: 'json'}))
-var cardb = level('./db/cardb', ({valueEncoding: 'json'}))
-var lanedb = level('./db/lanedb', ({valueEncoding: 'json'}))
-var heatdb = level('./db/heatdb', ({valueEncoding: 'json'}))
-var leaderboarddb = level('./db/leaderboard', ({valueEncoding: 'json'}))
-var highscoredb = level('./db/highscore', ({valueEncoding: 'json'}))
+// get all databases
+var db = require('./db')
 
-const serialCom = require('./serial')
+// get the modules for network communication
+const network = require('./network')
+// get the modules for serial communication
+const serial = require('./serial')
 
-var server = restify.createServer()
+logger.debug('restoring running state' );
+db.checkpoint.get('raceId')
+  .then((val) => {
+    logger.debug( 'restored raceId as %s', val )
+    raceId = val
+    // initialize Serial communication
+    serial.init({db, raceId})
+  })
+  .catch( (err) => {
+    logger.debug('Could not retrieve raceId')
+    serial.init({db, raceId})
+  })
 
-server.use(plugins.bodyParser())
+// initialize Network communication
+network.init({db, serial});
 
-// Auth
-var jwtConfig = {
-  secret: config.JWT_SECRET
-}
-
-// secure all routes. except /ping
-server.use(jwt(jwtConfig).unless({
-  path: [
-    '/ping',
-    '/user/login'
-  ]
-}))
-
-// Routes
-require('./routes')({server, plugins, racedb, cardb, heatdb, leaderboarddb, highscoredb, serialCom})
-
-// Serve
-server.listen(config.PORT)
-logger.info('%s: ready. listening on port %d', MODULE_ID, config.PORT)
-
-// initialize Serial communication
-serialCom.init({lanedb, heatdb, leaderboarddb, highscoredb})

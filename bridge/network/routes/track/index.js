@@ -1,5 +1,5 @@
 const MODULE_ID = 'track'
-const logger = require('../../utils/logger')
+const logger = require('../../../utils/logger')
 const httpErr = require('restify-errors')
 
 function getTrackHighscores (req, res, next) {

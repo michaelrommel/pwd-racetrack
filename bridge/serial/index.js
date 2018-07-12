@@ -3,6 +3,7 @@
 const logger = require('../utils/logger')
 const SerialPort = require('serialport')
 
+const SERIAL_PORT = 'COM12'
 const MSG_ACK = 'a'
 const MSG_INIT_HEAT = 'i'
 const MSG_START_HEAT = 'g'
@@ -46,10 +47,10 @@ var highscoredb
 var raceId
 
 function init (ctx) {
-  heatdb = ctx.heatdb
-  lanedb = ctx.lanedb
-  leaderboarddb = ctx.leaderboarddb
-  highscoredb = ctx.highscoredb
+  heatdb = ctx.db.heat
+  lanedb = ctx.db.lane
+  leaderboarddb = ctx.db.leaderboard
+  highscoredb = ctx.db.highscore
   
   raceId = ctx.raceId
 }
@@ -526,7 +527,7 @@ var laserSetup = function (laserData) {
 }
 
 // initialize the serial port
-var port = new SerialPort('/dev/cu.usbserial-AH02IXG1',
+var port = new SerialPort(SERIAL_PORT,
   { 'baudRate': 57600,
     'dataBits': 8,
     'parity': 'none',
