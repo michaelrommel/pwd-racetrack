@@ -5,6 +5,7 @@ const errors = require('restify-errors')
 
 function loginUser (req, res, next) {
   logger.info('%s: request received', MODULE_ID)
+  logger.debug(req.body)
 
   let resp = {}
   if (

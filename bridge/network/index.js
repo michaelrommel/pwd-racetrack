@@ -15,7 +15,7 @@ var server = restify.createServer()
 function init (ctx) {
   var db = ctx.db
   var serial = ctx.serial
-  
+
   server.use(plugins.bodyParser())
 
   // authorization
@@ -42,5 +42,5 @@ function init (ctx) {
 }
 
 module.exports = {
-  init: init,
+  init: init
 }

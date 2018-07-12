@@ -11,11 +11,11 @@ var highscore = level('./databases/highscore', {valueEncoding: 'json'})
 var checkpoint = level('./databases/checkpoint', {valueEncoding: 'json'})
 
 module.exports = {
-  race: race, 
-  car: car, 
-  lane: lane, 
-  heat: heat, 
-  leaderboard: leaderboard, 
+  race: race,
+  car: car,
+  lane: lane,
+  heat: heat,
+  leaderboard: leaderboard,
   highscore: highscore,
   checkpoint: checkpoint
 }
