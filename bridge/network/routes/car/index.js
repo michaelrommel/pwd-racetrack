@@ -24,24 +24,40 @@ function listCars (req, res, next) {
     })
 }
 
-function importCars (req, res, next) {
+async function importCars (req, res, next) {
   logger.info('%s: request received', MODULE_ID)
 
   if (
     req.body === undefined ||
-    req.body.rf === undefined ||
-    req.body.ow === undefined ||
-    req.body.name === undefined ||
-    req.body.country === undefined ||
-    req.body.mn === undefined ||
-    req.body.sn === undefined
+    req.body.cars === undefined
   ) {
     logger.error('Received incomplete create car information')
     return next(new httpErr.BadRequestError('Incomplete create car information.'))
   }
-  carDb.put(req.body.rf, req.body)
 
-  res.send(201, req.body)
+  let cars = req.body.cars
+  let inserted = 0
+  for (let i = 0; i < cars.length; i++) {
+    if (
+      cars[i].rf === undefined ||
+      cars[i].ow === undefined ||
+      cars[i].name === undefined ||
+      cars[i].country === undefined ||
+      cars[i].mn === undefined ||
+      cars[i].sn === undefined
+    ) {
+      logger.error('Skipping car with incomplete car information')
+    } else {
+      try {
+        await carDb.put(cars[i].rf, cars[i])
+        inserted++
+      } catch (err) {
+        logger.error('Could not insert car #%d', i)
+      }
+    }
+  }
+
+  res.json(200, {'inserted': inserted})
   logger.info('%s: response sent', MODULE_ID)
   return next()
 }

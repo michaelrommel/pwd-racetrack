@@ -13,9 +13,10 @@ The racetrack electronics in the subdirectory circuits consists of three main pa
   place in the heat and the display of the time in milliseconds. Also the LDR
   (Light Dependent Resistor) needed to detect the interruption of the laser
   beam is implemented on this module.
-- the start gate electronics. This part is a separate Arduino Pro Mini
-  controlling four RFID readers to detect the cars on each track and the
-  solenoid for opening the start gate.
+- the start gate electronics. This part is a separate Arduino Mega 2560
+  controlling four RFID readers to detect the cars on each track, four OLED
+  displays to shoe the car owner names and the solenoid for opening the start
+  gate.
 
 If you commit to this repo, please use descriptive commit messages. A good guide
 can be found at: https://chris.beams.io/posts/git-commit/
