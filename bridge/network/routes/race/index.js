@@ -30,6 +30,31 @@ function listRaces (req, res, next) {
     })
 }
 
+async function initRace (req, res, next) {
+  logger.info('%s: request received', MODULE_ID)
+
+  if (req.params === undefined ||
+      req.params.id === undefined 
+  ) {
+    logger.error('%s: Received incomplete create race information', MODULE_ID)
+    return next(new httpErr.BadRequestError('Incomplete create race information.'))
+  }
+
+  let raceKey = req.params.id
+  serial.initRace(raceKey)
+
+  try {
+    race = await raceDb.get(raceKey)
+    initializeHeats(raceKey, race['lanes'], race['cars'].length, race['cars'])
+    res.send(200, race)
+    logger.info('%s: response sent', MODULE_ID)
+    return next()
+  } catch (err) {
+    logger.error('%s: Unable to insert race information into database', MODULE_ID)
+    return next(new httpErr.InternalServerError('Could not create race'))
+  }
+}
+
 async function createRace (req, res, next) {
   logger.info('%s: request received', MODULE_ID)
 
@@ -160,7 +185,7 @@ function getHighscores (req, res, next) {
   })
 }
 
-module.exports = (server, db) => {
+module.exports = (server, db, serial) => {
   raceDb = db.race
   heatDb = db.heat
   raceConfigDb = db.raceconfig
@@ -169,6 +194,7 @@ module.exports = (server, db) => {
   highscoreDb = db.highscoreDb
   server.get('/race', listRaces)
   server.post('/race/:id', createRace)
+  server.post('/race/init/:id', initRace)
   server.get('/race/leaderboard/:id', getLeaderboard)
   server.get('/race/highscores/:id', getHighscores)
 }

@@ -47,6 +47,7 @@ var highscoredb
 
 var raceId
 
+// initializes all database objects and global variables
 function init (ctx) {
   heatdb = ctx.db.heat
   lanedb = ctx.db.lane
@@ -57,6 +58,12 @@ function init (ctx) {
 
   initLaneStatus(0)
 }
+
+// sets the global variable
+function initRace (id) {
+  raceId = id
+}
+
 
 // function for sending message objects over the line
 // -----------------
@@ -627,10 +634,9 @@ port.on('readable', function () {
 
 module.exports = {
   init: init,
-  startSetupRT: startSetupRT,
-  stopSetupRT: stopSetupRT,
+  initRace: initRace,
   initHeat: initHeat,
   startHeat: startHeat,
-  saveLaneStatus: saveLaneStatus,
-  initLaneStatus: initLaneStatus
+  startSetupRT: startSetupRT,
+  stopSetupRT: stopSetupRT,
 }

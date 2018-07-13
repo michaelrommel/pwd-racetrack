@@ -260,9 +260,9 @@ function startHeat (req, res, next) {
     logger.error('Received incomplete put heat information')
     return next(new httpErr.BadRequestError('Incomplete start heat information'))
   }
-  let heatNumber = parseInt(req.params.id.replace('.*-([0-9][0-9])$', '\1'))
+  let heatNumber = parseInt(req.params.id.slice(-2))
   serialCom.startHeat(heatNumber)
-  res.send({})
+  res.send({"heat":heatNumber})
   logger.info('%s: response sent', MODULE_ID)
   return next()
 }
