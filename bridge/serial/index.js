@@ -4,7 +4,7 @@ const MODULE_ID = 'serial'
 const logger = require('../utils/logger')
 const SerialPort = require('serialport')
 
-const SERIAL_PORT = 'COM12'
+const SERIAL_PORT = 'COM6'
 const MSG_ACK = 'a'
 const MSG_INIT_HEAT = 'i'
 const MSG_START_HEAT = 'g'

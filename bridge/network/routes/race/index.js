@@ -7,6 +7,7 @@ var raceConfigDb
 var carDb
 var leaderboardDb
 var highscoreDb
+var serial
 
 function listRaces (req, res, next) {
   logger.info('%s: request received', MODULE_ID)
@@ -186,6 +187,7 @@ function getHighscores (req, res, next) {
 }
 
 module.exports = (server, db, serial) => {
+  serial = serial
   raceDb = db.race
   heatDb = db.heat
   raceConfigDb = db.raceconfig
