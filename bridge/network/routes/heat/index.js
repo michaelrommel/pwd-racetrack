@@ -27,6 +27,28 @@ function getHeat (req, res, next) {
   })
 }
 
+function getAllHeats (req, res, next) {
+  logger.info('%s: request received', MODULE_ID)
+
+  let heats = []
+  heatDb.createReadStream()
+    .on('data', function (data) {
+      logger.debug('%s: Received data: %s', MODULE_ID, data)
+      let heat = {}
+      heat[data.key] = data.value
+      heats.push(heat)
+    })
+    .on('error', function (err) {
+      logger.error('%s: Error getting cars: %s', MODULE_ID, err)
+      return next(new httpErr.InternalServerError('Error retrieving heat information'))
+    })
+    .on('end', function () {
+      res.send(200, heats)
+      logger.info('%s: response sent', MODULE_ID)
+      return next()
+    })
+}
+
 async function createHeat (req, res, next) {
   logger.info('%s: request received', MODULE_ID)
   let complete = true
@@ -237,8 +259,8 @@ function startHeat (req, res, next) {
     logger.error('Received incomplete put heat information')
     return next(new httpErr.BadRequestError('Incomplete start heat information'))
   }
-  
-  serialCom.startHeat(req.params.id)
+  let heatNumber = parseInt(req.params.id.replace('.*-([0-9][0-9])$', '\1'))
+  serialCom.startHeat(heatNumber)
   res.send({})
   logger.info('%s: response sent', MODULE_ID)
   return next()
@@ -247,6 +269,7 @@ function startHeat (req, res, next) {
 module.exports = (server, db, serial) => {
   heatDb = db.heat
   serialCom = serial
+  server.get('/heat/', getAllHeats)
   server.get('/heat/:id', getHeat)
   server.post('/heat/:id', createHeat)
   server.get('/heat/current', getCurrentHeat)

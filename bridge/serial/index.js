@@ -1,5 +1,6 @@
 'use strict'
 
+const MODULE_ID = 'serial'
 const logger = require('../utils/logger')
 const SerialPort = require('serialport')
 
@@ -53,6 +54,8 @@ function init (ctx) {
   highscoredb = ctx.db.highscore
 
   raceId = ctx.raceId
+
+  initLaneStatus(0)
 }
 
 // function for sending message objects over the line
@@ -326,17 +329,17 @@ var stopSetupRT = function () {
 
 // function for initializing a heat
 // ----------------
-// params
+// heatId is here a single numeric value
 //
 var initHeat = function (heatId) {
-  logger.debug('Building init heat message')
+  logger.debug('%s: Building init heat message', MODULE_ID)
   let msg = {}
   msg.c = MSG_INIT_HEAT
   msg.h = heatId
   msg.l = []
 
   logger.debug('Retrieving heat information from the database')
-  let heatKey = raceId + '-' + ('0' + heatId).splice(-2)
+  let heatKey = raceId + '-' + ('0' + heatId).slice(-2)
   heatdb.get(heatKey, function (err, value) {
     if (err) {
       logger.error('Unable to retrieve heat information from database')
@@ -357,7 +360,7 @@ var initHeat = function (heatId) {
 
 // function for initializing lane status information in database
 // ----------------
-// params
+// heatId is here a single numeric value
 //
 var initLaneStatus = function (heatId) {
   logger.debug('Building initial lane status data')
@@ -627,5 +630,7 @@ module.exports = {
   startSetupRT: startSetupRT,
   stopSetupRT: stopSetupRT,
   initHeat: initHeat,
-  startHeat: startHeat
+  startHeat: startHeat,
+  saveLaneStatus: saveLaneStatus,
+  initLaneStatus: initLaneStatus
 }
