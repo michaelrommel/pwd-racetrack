@@ -53,7 +53,7 @@ function startHeat (req, res, next) {
   return next()
 }
 
-module.exports = (server, serial) => {
+module.exports = (server, db, serial) => {
   serialCom = serial
   server.get('/heat/:id', getHeat)
   server.get('/heat/current', getCurrentHeat)
