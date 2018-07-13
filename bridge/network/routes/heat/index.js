@@ -58,9 +58,12 @@ async function createHeat (req, res, next) {
     return next(new httpErr.BadRequestError('Incomplete create heat information.'))
   }
   // all was successful
+  // reset time and score
+  for (let n = 0; n < 4; n++ ) {
+    req.body.results[n].t = 0
+    req.body.results[n].score = 0
+  }
   try {
-    req.body.results.t = 0
-    req.body.results.score = 0
     await heatDb.put(req.params.id, req.body)
     res.json(201, {'inserted': 1})
     logger.info('%s: response sent', MODULE_ID)
