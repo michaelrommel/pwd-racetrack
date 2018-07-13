@@ -27,6 +27,50 @@ function getHeat (req, res, next) {
   })
 }
 
+async function createHeat (req, res, next) {
+  logger.info('%s: request received', MODULE_ID)
+  let complete = true
+  // check the base properties
+  if (
+    req.params === undefined ||
+    req.params.id === undefined ||
+    req.body === undefined ||
+    req.body.heat === undefined ||
+    req.body.status === undefined ||
+    req.body.results === undefined 
+  ) {
+    complete = false
+  }
+  // check the properties of each array
+  for (let n = 0; n < 4; n++ ) {
+    if ( 
+      req.body.results[n].rf === undefined ||
+      req.body.results[n].ow === undefined ||
+      req.body.results[n].mn === undefined ||
+      req.body.results[n].sn === undefined
+    ) {
+      complete = false
+    }
+  }
+  // if any of these were missing
+  if ( complete === false ) {
+    logger.error('%s: Received incomplete create heat information', MODULE_ID)
+    return next(new httpErr.BadRequestError('Incomplete create heat information.'))
+  }
+  // all was successful
+  try {
+    req.body.results.t = 0
+    req.body.results.score = 0
+    await heatDb.put(req.params.id, req.body)
+    res.json(201, {'inserted': 1})
+    logger.info('%s: response sent', MODULE_ID)
+    return next()
+  } catch (err) {
+    logger.error('%s: error creating heat with id: %s', MODULE_ID, req.params.id)
+    return next(new httpErr.InternalServerError('raceconfig could not be savesd'))
+  }
+}
+
 function getCurrentHeat (req, res, next) {
   logger.info('%s: request received', MODULE_ID)
 
@@ -201,6 +245,7 @@ module.exports = (server, db, serial) => {
   heatDb = db.heat
   serialCom = serial
   server.get('/heat/:id', getHeat)
+  server.post('/heat/:id', createHeat)
   server.get('/heat/current', getCurrentHeat)
   server.get('/heat/next', getNextHeat)
   server.put('/heat/current/:id', markCurrentHeat)
