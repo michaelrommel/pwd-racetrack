@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define FINISHLINE_VERSION "0.1.0"
+#define FINISHLINE_VERSION "0.1.1"
 
 #define TM1637_DATA 24
 #define TM1637_CLOCK 26
@@ -24,7 +24,10 @@
 #define LDR_PIN A7
 #define LDR_THRESHOLD 400
 
+// number of lanes of the track
 #define LANES 4
+// after this many millis, a car times out
+#define MAXRACETIME 8000
 
 // variables needed to display free memory
 extern char _end;
@@ -189,6 +192,11 @@ bool checkOrSetFinishers( uint8_t setFinishLane = 0xFF ) {
     // if the lane has not finished and should have a car on it
     // loop iteration, then update the millis display
     if( ! (lane_status & (1 << n)) && (strlen(heat.lane[n]->rfid) > 0) ) {
+      if( elapsed >= MAXRACETIME ) {
+        // this lane has not finished but exceeded the maximum race time
+        // force finishing of this lane
+        setFinishLane = n;
+      }
       // select lane chip
       select_laneDisplay( n );
       laneDisplay[n].showNumber( elapsed );
@@ -426,6 +434,9 @@ void loop() {
           // clear all data structures from a previous heat
           clearHeat( &heat );
           clearHeat( &setupHeat );
+          // state changed
+          SerialUSB.print("State changed to: " );
+          SerialUSB.println( heat.state );
         }
         // check connection to startgate
         if( comsg.available() ) {
@@ -451,7 +462,7 @@ void loop() {
           bool res = combr.receiveCommand( &heat );
           if( res ) {
             // state changed
-            SerialUSB.print("State changed to: " );
+            SerialUSB.print("bridge requested state change to: " );
             SerialUSB.println( heat.state );
             // cancel watchdog
             emitterWatchdog = 0;
@@ -494,6 +505,9 @@ void loop() {
           heat.status =  PWDProtocol::STATUS_OK;
           // send the setup to the startgate
           comsg.sendSkinnyInit( &heat );
+          // state changed
+          SerialUSB.print("State changed to: " );
+          SerialUSB.println( heat.state );
         }
         // check connection to startgate
         if( comsg.available() ) {
@@ -530,8 +544,8 @@ void loop() {
           // read and process the serial command
           bool res = combr.receiveCommand( &heat );
           if( res ) {
-            // state changed
-            SerialUSB.print("State changed to: " );
+            // state change
+            SerialUSB.print("bridge requested state change to: " );
             SerialUSB.println( heat.state );
             stateInitNeeded = true;
             // cancel watchdog
@@ -661,6 +675,11 @@ void loop() {
             emitterWatchdog = 0;
             // return to idle state
             heat.state = PWDProtocol::STATE_IDLE;
+            // clear heat
+            stateInitNeeded = true;
+          } else {
+            // we must check if cars time out
+
           }
           // create the car progress message
           combr.sendCompleteOrProgress( PWDProtocol::CODE_PROGRESS, &heat );
@@ -675,6 +694,9 @@ void loop() {
           stateInitNeeded = false;
           clearDisplays();
           digitalWrite( LASER_PIN, HIGH );
+          // state changed
+          SerialUSB.print("State changed to: " );
+          SerialUSB.println( heat.state );
         }
         // check connection to startgate
         if( comsg.available() ) {
@@ -689,8 +711,8 @@ void loop() {
           // read and process the serial command
           bool res = combr.receiveCommand( &heat );
           if( res ) {
-            // state changed
-            SerialUSB.print("State changed to: " );
+            // state change
+            SerialUSB.print("bridge requested state change to: " );
             SerialUSB.println( heat.state );
             stateInitNeeded = true;
             // cancel watchdog
