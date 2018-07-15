@@ -1,8 +1,5 @@
 const MODULE_ID = 'main'
-const config = require('./utils/config')
 const logger = require('./utils/logger')
-const level = require('level')
-const util = require('util')
 
 logger.info('%s: initializing', MODULE_ID)
 
@@ -17,16 +14,16 @@ const network = require('./network')
 // get the modules for serial communication
 const serial = require('./serial')
 
-logger.debug('restoring running state')
+logger.debug('%s: restoring running state', MODULE_ID)
 db.checkpoint.get('raceId')
   .then((val) => {
-    logger.debug('restored raceId as %s', val)
+    logger.debug('%s: restored raceId as %s', MODULE_ID, val)
     raceId = val
     // initialize Serial communication
     serial.init({db, raceId})
   })
   .catch((err) => {
-    logger.debug('Could not retrieve raceId')
+    logger.debug('%s: Could not retrieve raceId, error: %s', MODULE_ID, err)
     serial.init({db, raceId})
   })
 

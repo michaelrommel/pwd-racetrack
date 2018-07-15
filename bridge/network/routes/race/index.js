@@ -1,58 +1,99 @@
 const MODULE_ID = 'race'
 const logger = require('../../../utils/logger')
 const httpErr = require('restify-errors')
-var raceDb
-var heatDb
-var raceConfigDb
-var carDb
-var leaderboardDb
-var highscoreDb
+const saveHeat = require('../heat/saveHeat')
+
 var serial
 
+var raceDb
+var leaderboardDb
+var highscoreDb
+var checkpointDb
+
 function listRaces (req, res, next) {
-  logger.info('%s: request received', MODULE_ID)
+  logger.info('%s::listRaces: request received', MODULE_ID)
 
   let races = []
-  carDb.createReadStream()
+  raceDb.createReadStream()
     .on('data', function (data) {
-      logger.debug('%s: Received data: %s', MODULE_ID, data)
+      logger.debug('%s::listRaces: Received data: %s', MODULE_ID, data)
       let race = {}
       race[data.key] = data.value
       races.push(race)
     })
     .on('error', function (err) {
-      logger.error('%s: Error getting races: %s', MODULE_ID, err)
+      logger.error('%s::listRaces: Error getting races: %s', MODULE_ID, err)
       return next(new httpErr.InternalServerError('Error retrieving race information'))
     })
     .on('end', function () {
       res.send(200, races)
-      logger.info('%s: response sent', MODULE_ID)
+      logger.info('%s::listRaces: response sent', MODULE_ID)
       return next()
     })
 }
 
-async function initRace (req, res, next) {
-  logger.info('%s: request received', MODULE_ID)
+async function getRace (req, res, next) {
+  logger.info('%s::getRace: request received', MODULE_ID)
 
   if (req.params === undefined ||
-      req.params.id === undefined 
+      req.params.id === undefined
   ) {
-    logger.error('%s: Received incomplete create race information', MODULE_ID)
-    return next(new httpErr.BadRequestError('Incomplete create race information.'))
+    logger.error('%s::getRace: No raceId provided', MODULE_ID)
+    return next(new httpErr.BadRequestError('No raceId provided'))
   }
 
-  let raceKey = req.params.id
-  serial.initRace(raceKey)
-
+  let raceId = req.params.id
+  // initialize the heats
   try {
-    race = await raceDb.get(raceKey)
-    initializeHeats(raceKey, race['lanes'], race['cars'].length, race['cars'])
+    var race = await raceDb.get(raceId)
     res.send(200, race)
-    logger.info('%s: response sent', MODULE_ID)
+    logger.info('%s::GetRace: response sent', MODULE_ID)
     return next()
   } catch (err) {
-    logger.error('%s: Unable to insert race information into database', MODULE_ID)
-    return next(new httpErr.InternalServerError('Could not create race'))
+    if (race === undefined) {
+      // we did not find the race
+      logger.error('%s::GetRace: could not find race in database: %s', MODULE_ID, err)
+    }
+    return next(new httpErr.InternalServerError('Could not find race'))
+  }
+}
+
+async function initRace (req, res, next) {
+  logger.info('%s::intRace: request received', MODULE_ID)
+
+  if (req.params === undefined ||
+      req.params.id === undefined
+  ) {
+    logger.error('%s::intRace: no raceId provided', MODULE_ID)
+    return next(new httpErr.BadRequestError('no raceId provided'))
+  }
+
+  let raceId = req.params.id
+  // initialize the heats
+  try {
+    var race = await raceDb.get(raceId)
+
+    // save the current active race in case of restarts of the bridge
+    try {
+      await checkpointDb.put('raceId', raceId)
+      logger.debug('%s::initRace: saved raceId %s as checkpoint', MODULE_ID, raceId)
+    } catch (err) {
+      logger.error('%s::initRace: could not save raceId %s as checkpoint', MODULE_ID, raceId)
+    }
+
+    // the serial module deals with all messsages in one heat, this heat must
+    // be initialized
+    serial.initRace(raceId)
+
+    res.send(200, race)
+    logger.info('%s::intRace: response sent', MODULE_ID)
+    return next()
+  } catch (err) {
+    if (race === undefined) {
+      // we did not find the race
+      logger.error('%s::intRace: could not find race in database: %s', MODULE_ID, err)
+    }
+    return next(new httpErr.InternalServerError('Could not find race'))
   }
 }
 
@@ -64,13 +105,13 @@ async function createRace (req, res, next) {
       req.body.description === undefined ||
       req.body.lanes === undefined ||
       req.body.cars === undefined ||
-      req.body.cars.length < 20) {
+      Object.keys(req.body.cars).length < 15) {
     logger.error('%s: Received incomplete create race information', MODULE_ID)
     return next(new httpErr.BadRequestError('Incomplete create race information.'))
   }
 
-  let raceKey = req.params.id
-  let countCars = req.body.cars.length
+  let raceId = req.params.id
+  let countCars = Object.keys(req.body.cars).length
   let race = {}
   race['description'] = req.body.description
   race['lanes'] = req.body.lanes
@@ -80,59 +121,24 @@ async function createRace (req, res, next) {
   race['finalCarCount'] = 7
 
   try {
-    await raceDb.put(raceKey, race)
-    initializeHeats(raceKey, race['lanes'], countCars, race['cars'])
-
+    await raceDb.put(raceId, race)
+    try {
+      await saveHeat.initializeHeats(raceId, 'all')
+    } catch (err) {
+      if (err.id === 'heaterror') {
+        logger.error('%s: Unable to insert heat %s into heat database', MODULE_ID, err.msg)
+        return next(new httpErr.InternalServerError('Could not insert heat'))
+      } else if (err.id === 'raceconfigerror') {
+        logger.error('%s: Unable to retrieve race configuration %s from raceconfig database', MODULE_ID, err.msg)
+        return next(new httpErr.InternalServerError('Could not get reaceconfig'))
+      }
+    }
     res.send(201, race)
     logger.info('%s: response sent', MODULE_ID)
     return next()
   } catch (err) {
     logger.error('%s: Unable to insert race information into database', MODULE_ID)
     return next(new httpErr.InternalServerError('Could not create race'))
-  }
-}
-
-async function initializeHeats (raceKey, countLanes, countCars, raceCars) {
-  let raceConfigKey = '' + countLanes + '-' + countCars
-
-  try {
-    let raceConfig = await raceConfigDb.get(raceConfigKey)
-
-    let heatsConfig = raceConfig.heats
-
-    for (var i = 0; i < heatsConfig.length; i++) { // iterate through configuration of heats in race config
-      let heat = {}
-      let heatConfig = heatsConfig[i]
-      let heatId = heatsConfig[i].keys()[0]
-      heat.heat = parseInt(heatId)
-      heat.status = ''
-      heat.results = []
-      for (var k = 0; k < heatConfig[heatId].length; k++) { // iterate through lane/car config in individual heat config
-        for (var m = 0; m < raceCars.length; m++) { // iterate through cars in specific race to find the corresponding rfid for race car number
-          let raceCarKey = raceCars[m].keys()[0]
-          if (raceCarKey === ('' + heatConfig[heatId])) {
-            let rf = raceCars[raceCarKey]
-            let car = await carDb.get(rf) // getting car information from car db for given rfid
-            let result = {}
-            result.rf = car.rf
-            result.ow = car.ow
-            result.mn = car.mn
-            result.sn = car.sn
-            result.t = 0
-            result.score = 0
-
-            heat.results.push(result)
-
-            break
-          }
-        }
-      }
-
-      let heatKey = raceKey + '-' + ('0' + heatId).slice(-2)
-      await heatDb.put(heatKey, heat)
-    }
-  } catch (err) {
-    throw err
   }
 }
 
@@ -186,15 +192,15 @@ function getHighscores (req, res, next) {
   })
 }
 
-module.exports = (server, db, serial) => {
-  serial = serial
+module.exports = (server, db, ser) => {
+  serial = ser
   raceDb = db.race
-  heatDb = db.heat
-  raceConfigDb = db.raceconfig
-  carDb = db.car
   leaderboardDb = db.leaderboard
   highscoreDb = db.highscoreDb
+  checkpointDb = db.checkpoint
+  saveHeat.setContext(db)
   server.get('/race', listRaces)
+  server.get('/race/:id', getRace)
   server.post('/race/:id', createRace)
   server.post('/race/init/:id', initRace)
   server.get('/race/leaderboard/:id', getLeaderboard)

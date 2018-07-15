@@ -1,16 +1,17 @@
 const MODULE_ID = 'heat'
 const logger = require('../../../utils/logger')
 const httpErr = require('restify-errors')
+const saveHeat = require('./saveHeat')
+
 var serialCom
+
 var heatDb
 
 function getHeat (req, res, next) {
   logger.info('%s: request received', MODULE_ID)
 
-
-  if ( req.params === undefined ||
-       req.params.id === undefined ) {
-
+  if (req.params === undefined ||
+    req.params.id === undefined) {
     logger.error('Received incomplete get heat information')
     return next(new httpErr.BadRequestError('Incomplete get heat information'))
   }
@@ -40,7 +41,7 @@ function getAllHeats (req, res, next) {
       heats.push(heat)
     })
     .on('error', function (err) {
-      logger.error('%s: Error getting cars: %s', MODULE_ID, err)
+      logger.error('%s: Error getting heat: %s', MODULE_ID, err)
       return next(new httpErr.InternalServerError('Error retrieving heat information'))
     })
     .on('end', function () {
@@ -60,13 +61,13 @@ async function createHeat (req, res, next) {
     req.body === undefined ||
     req.body.heat === undefined ||
     req.body.status === undefined ||
-    req.body.results === undefined 
+    req.body.results === undefined
   ) {
     complete = false
   }
   // check the properties of each array
-  for (let n = 0; n < 4; n++ ) {
-    if ( 
+  for (let n = 0; n < 4; n++) {
+    if (
       req.body.results[n].rf === undefined ||
       req.body.results[n].ow === undefined ||
       req.body.results[n].mn === undefined ||
@@ -76,13 +77,13 @@ async function createHeat (req, res, next) {
     }
   }
   // if any of these were missing
-  if ( complete === false ) {
+  if (complete === false) {
     logger.error('%s: Received incomplete create heat information', MODULE_ID)
     return next(new httpErr.BadRequestError('Incomplete create heat information.'))
   }
   // all was successful
   // reset time and score
-  for (let n = 0; n < 4; n++ ) {
+  for (let n = 0; n < 4; n++) {
     req.body.results[n].t = 0
     req.body.results[n].score = 0
   }
@@ -101,59 +102,51 @@ function getCurrentHeat (req, res, next) {
   logger.info('%s: request received', MODULE_ID)
 
   heatDb.getValueStream()
-  .on('data', function (data) {
-    logger.debug('Received data: %s', data)
-    
-    if (data.status === 'current' || data.status === 'running') {
-
-      
-      res.send(data)
-      logger.info('%s: response sent', MODULE_ID)
-      return next()
-    }
-  })
-  .on('error', function (err) {
-    logger.error('Error getting heats: %s', err)
-    return next(new httpErr.InternalServerError('Error retrieving heat information'))
-  })
-  .on('end', function () {
-    logger.error('Did not find current heat')
-    return next(new httpErr.InternalServerError('Could not find current heat'))
-  })
-
+    .on('data', function (data) {
+      logger.debug('Received data: %s', data)
+      if (data.status === 'current' || data.status === 'running') {
+        res.send(data)
+        logger.info('%s: response sent', MODULE_ID)
+        return next()
+      }
+    })
+    .on('error', function (err) {
+      logger.error('Error getting heats: %s', err)
+      return next(new httpErr.InternalServerError('Error retrieving heat information'))
+    })
+    .on('end', function () {
+      logger.error('Did not find current heat')
+      return next(new httpErr.InternalServerError('Could not find current heat'))
+    })
 }
 
 function getNextHeat (req, res, next) {
   logger.info('%s: request received', MODULE_ID)
 
   heatDb.getValueStream()
-  .on('data', function (data) {
-    logger.debug('Received data: %s', data)
-    
-    if (data.status === 'next') {
-
-      
-      res.send(data)
-      logger.info('%s: response sent', MODULE_ID)
-      return next()
-    }
-  })
-  .on('error', function (err) {
-    logger.error('Error getting heats: %s', err)
-    return next(new httpErr.InternalServerError('Error retrieving heat information'))
-  })
-  .on('end', function () {
-    logger.error('Did not find next heat')
-    return next(new httpErr.InternalServerError('Could not find next heat'))
-  })
+    .on('data', function (data) {
+      logger.debug('Received data: %s', data)
+      if (data.status === 'next') {
+        res.send(data)
+        logger.info('%s: response sent', MODULE_ID)
+        return next()
+      }
+    })
+    .on('error', function (err) {
+      logger.error('Error getting heats: %s', err)
+      return next(new httpErr.InternalServerError('Error retrieving heat information'))
+    })
+    .on('end', function () {
+      logger.error('Did not find next heat')
+      return next(new httpErr.InternalServerError('Could not find next heat'))
+    })
 }
 
 function markCurrentHeat (req, res, next) {
   logger.info('%s: request received', MODULE_ID)
-  
+
   if (req.params === undefined ||
-      req.params.id === undefined) {
-          
+    req.params.id === undefined) {
     logger.error('Received incomplete put heat information')
     return next(new httpErr.BadRequestError('Incomplete mark current heat information'))
   }
@@ -173,26 +166,22 @@ function markCurrentHeat (req, res, next) {
         if (err.notFound) {
           logger.error('Could not find specified heat')
           return next(new httpErr.BadRequestError('Could not mark current heat'))
-	}
-	logger.error('Could not update current heat')
-	return next(new httpErr.InternalServerError('Could not mark current heat'))
+        }
+        logger.error('Could not update current heat')
+        return next(new httpErr.InternalServerError('Could not mark current heat'))
       }
       logger.info('Successfully marked current heat')
       res.send(202, value)
       logger.info('%s: response sent', MODULE_ID)
       return next()
     })
-
   })
-  
 }
 
 function markNextHeat (req, res, next) {
   logger.info('%s: request received', MODULE_ID)
-  
   if (req.params === undefined ||
-      req.params.id === undefined) {
-
+    req.params.id === undefined) {
     logger.error('Received incomplete put heat information')
     return next(new httpErr.BadRequestError('Incomplete mark next heat information'))
   }
@@ -212,9 +201,9 @@ function markNextHeat (req, res, next) {
         if (err.notFound) {
           logger.error('Could not find specified heat')
           return next(new httpErr.BadRequestError('Could not mark next heat'))
-	}
-	logger.error('Could not update current heat')
-	return next(new httpErr.InternalServerError('Could not mark next heat'))
+        }
+        logger.error('Could not update current heat')
+        return next(new httpErr.InternalServerError('Could not mark next heat'))
       }
       logger.info('Successfully marked next heat')
       res.send(202, value)
@@ -224,52 +213,67 @@ function markNextHeat (req, res, next) {
   })
 }
 
-function initHeat (req, res, next) {
-  logger.info('%s: request received', MODULE_ID)
-  
-  if (req.params === undefined ||
-      req.params.id === undefined) {
+async function initHeat (req, res, next) {
+  logger.info('%s::initHeat: request received', MODULE_ID)
 
-    logger.error('Received incomplete put heat information')
+  if (req.params === undefined ||
+    req.params.id === undefined) {
+    logger.error('%s::initHeat: Received incomplete init heat information', MODULE_ID)
     return next(new httpErr.BadRequestError('Incomplete init heat information'))
   }
 
-  heatDb.get(req.params.id, function (err, value) {
+  let raceId = req.params.id.slice(0, -3)
+  let heatNumber = parseInt(req.params.id.slice(-2))
+  let heat
+  try {
+    heat = await heatDb.get(req.params.id)
+    try {
+      serialCom.initHeat(heat.heat)
+      logger.info('%s::initHeat: Successfully initialized specified heat %s', MODULE_ID, req.params.id)
+      res.send(202, heat)
+      logger.info('%s::initHeat: response sent', MODULE_ID)
+      return next()
+    } catch (err) {
+      if (err.id === 'noheat') {
+        logger.error('%s::initHeat: serial module returned heat not found', MODULE_ID)
+      } else if (err.id === 'noresetheat') {
+        logger.error('%s::initHeat: serial module returned heat not be resetted', MODULE_ID)
+      }
+      return next(new httpErr.InternalServer('Could not initialize heat'))
+    }
+  } catch (err) {
     if (err) {
-      if (err.notFound) {
-        logger.error('Could not find specified heat')
-        return next(new httpErr.BadRequestError('Could not initialize specified heat'))
+      logger.error('%s::initHeat: Could not find specified heat %s', MODULE_ID, req.params.id)
+      // somehow the heat is missing, try to reconstruct it from the race config
+      try {
+        saveHeat.initializeHeats(raceId, heatNumber)
+        res.send(503, 'heat re-initialized, please retry')
+      } catch (err) {
+        return next(new httpErr.InternalServer('Could not re-initialize heat'))
       }
     }
-    
-    serialCom.initHeat(value.heat)
-    
-    logger.info('Successfully initialized specified heat')
-    res.send(202, value)
-    logger.info('%s: response sent', MODULE_ID)
-    return next()
-  })
+  }
 }
 
 function startHeat (req, res, next) {
-  logger.info('%s: request received', MODULE_ID)
-  
-  if (req.params === undefined ||
-      req.params.id === undefined) {
+  logger.info('%s::startHeat: request received', MODULE_ID)
 
-    logger.error('Received incomplete put heat information')
+  if (req.params === undefined ||
+    req.params.id === undefined) {
+    logger.error('%s::startHeat: incomplete start heat information', MODULE_ID)
     return next(new httpErr.BadRequestError('Incomplete start heat information'))
   }
   let heatNumber = parseInt(req.params.id.slice(-2))
   serialCom.startHeat(heatNumber)
-  res.send({"heat":heatNumber})
-  logger.info('%s: response sent', MODULE_ID)
+  res.send({'heat': heatNumber})
+  logger.info('%s::startHeat: response sent', MODULE_ID)
   return next()
 }
 
 module.exports = (server, db, serial) => {
   heatDb = db.heat
   serialCom = serial
+  saveHeat.setContext(db)
   server.get('/heat/', getAllHeats)
   server.get('/heat/:id', getHeat)
   server.post('/heat/:id', createHeat)

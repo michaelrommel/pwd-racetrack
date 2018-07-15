@@ -25,9 +25,9 @@ Properties of the race are:
 | heatsQuali     | number | number of heats in the qualification round |
 | heatsFinals    | number | number of heats in the final round         |
 | finalCarCount  | number | how many cars are in the final round       |
-| cars           | array  | array of car objecfs in this race          |
+| cars           | object | car object with all cars in this race      |
 
-Properties of the car arrays are:
+Properties of the car object are:
 
 | Property        | Type   | Description                                         |
 |-----------------|--------|-----------------------------------------------------|
@@ -46,11 +46,12 @@ Value:
     "heatsQuali": 33,
     "heatsFinals": 14,
     "finalCarCount": 7,
-    "cars" : [
-      { "1": "043E57A22D4D80" },
-      { "2": "048756A22D4D80" },
-      { "3": "048F56A22D4D80" }
-    ]
+    "cars" : {
+      "1": "043E57A22D4D80",
+      "2": "048756A22D4D80",
+      "3": "048F56A22D4D80"
+      ...
+    }
   }
 ```
 
@@ -226,8 +227,8 @@ Value:
 ### Leaderboard Database ###
 
 The database shall hold information about all the participants in the race.
-The value is an array of all participants as Objects.  It is not sorted in any
-way, but each participant has fields for the score and cumulated time during
+The value is an dictionary of all participants as Objects with the car ID
+as key. Each participant has fields for the score and cumulated time during
 the qualification round and the finals. The key is the ID from the race.
  
 Properties of each race entry are car objects:
@@ -256,7 +257,7 @@ Properties of a car object:
 Key:
   "2018-Race"
 Value:
-  [
+  {
     { "04A256A22D4D": {
         "rf":"04A256A22D4D",
         "ow":"Louanne Katraine",
@@ -280,7 +281,7 @@ Value:
     { "045B56A22D4D": {
         "rf":"045B56A22D4D",
       ... }
-  ]      
+  }      
   
 ```
 

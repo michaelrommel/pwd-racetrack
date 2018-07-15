@@ -31,7 +31,7 @@ function init (ctx) {
     ]
   }))
 
-  logger.debug(util.inspect(ctx))
+  // logger.debug(util.inspect(ctx))
 
   // configure routes
   require('./routes')({server, plugins, db, serial})

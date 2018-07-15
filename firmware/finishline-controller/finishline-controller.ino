@@ -480,11 +480,11 @@ void loop() {
               combr.sendCarDetection( detectlane, setupHeat.lane[detectlane]->rfid );
               compi.sendCarDetection( detectlane, setupHeat.lane[detectlane]->rfid );
               // renew watchdog
-              emitterWatchdog = millis() + random(3000, 8000);
+              emitterWatchdog = millis() + random(30000, 60000);
             }
           } else {
             // shall now set the watchdog
-            emitterWatchdog = millis() + random(1000, 4000);
+            emitterWatchdog = millis() + random(4000, 8000);
           } 
         } else {
           // production code

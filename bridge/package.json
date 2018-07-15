@@ -8,7 +8,9 @@
     "pretest": "standard",
     "test": "cross-env LOG_LEVEL=error mocha --recursive --reporter spec --exit ./test/specs/",
     "debug": "cross-env LOG_LEVEL=debug node index.js",
-    "start": "node index.js"
+    "start": "node index.js",
+    "dev": "pm2 start ecosystem.config.js",
+    "update_env": "pm2 restart ecosystem.config.js --update-env"
   },
   "repository": {
     "type": "git",
