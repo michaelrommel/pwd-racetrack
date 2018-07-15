@@ -1,4 +1,4 @@
-const MODULE_ID = 'initHeat'
+const MODULE_ID = 'heatUtils'
 const logger = require('../../../utils/logger')
 
 let heatDb
@@ -18,6 +18,8 @@ function UserException (id, msg) {
   this.msg = msg
 }
 
+// This function gets the race configuration of a given race and retrieves the raceconfig
+// and creates the necessary heat database entries
 async function initializeHeats (raceId, heatSpec) {
   let race
   try {
@@ -101,7 +103,33 @@ async function initializeHeats (raceId, heatSpec) {
   }
 }
 
+// This function retrieves the raceconfig for a given race
+async function getRaceConfigAndCars (raceId) {
+  let race
+  try {
+    race = await raceDb.get(raceId)
+    let countLanes = race.lanes
+    let heatsQuali = race.heatsQuali
+    let raceConfigKey = '' + countLanes + '-' + heatsQuali
+    let raceConfig
+    try {
+      raceConfig = await raceConfigDb.get(raceConfigKey)
+      return {'raceconfig': raceConfig, 'cars': race.cars}
+    } catch (err) {
+      // we could not find a suitable race configuration in the database
+      logger.error('%s::getRaceConfig: no suitable race configuration %s found', MODULE_ID, raceConfigKey)
+      logger.error('%s::getRaceConfig: error was: %s', MODULE_ID, err)
+      throw new UserException('raceconfigerror', raceConfigKey)
+    }
+  } catch (err) {
+    // could not find race
+    logger.error('%s::getRaceConfig: could not find race %s', MODULE_ID, raceId)
+    throw new UserException('raceerror', raceId)
+  }
+}
+
 module.exports = {
   setContext: setContext,
-  initializeHeats: initializeHeats
+  initializeHeats: initializeHeats,
+  getRaceConfigAndCars: getRaceConfigAndCars
 }

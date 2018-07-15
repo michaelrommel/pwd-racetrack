@@ -1,7 +1,7 @@
 const MODULE_ID = 'heat'
 const logger = require('../../../utils/logger')
 const httpErr = require('restify-errors')
-const saveHeat = require('./saveHeat')
+const heatUtils = require('./heatUtils')
 
 var serialCom
 
@@ -246,7 +246,7 @@ async function initHeat (req, res, next) {
       logger.error('%s::initHeat: Could not find specified heat %s', MODULE_ID, req.params.id)
       // somehow the heat is missing, try to reconstruct it from the race config
       try {
-        saveHeat.initializeHeats(raceId, heatNumber)
+        heatUtils.initializeHeats(raceId, heatNumber)
         res.send(503, 'heat re-initialized, please retry')
       } catch (err) {
         return next(new httpErr.InternalServer('Could not re-initialize heat'))
@@ -273,7 +273,7 @@ function startHeat (req, res, next) {
 module.exports = (server, db, serial) => {
   heatDb = db.heat
   serialCom = serial
-  saveHeat.setContext(db)
+  heatUtils.setContext(db)
   server.get('/heat/', getAllHeats)
   server.get('/heat/:id', getHeat)
   server.post('/heat/:id', createHeat)

@@ -3,6 +3,7 @@
 const MODULE_ID = 'serial'
 const logger = require('../utils/logger')
 const SerialPort = require('serialport')
+const heatUtils = require('../network/routes/heat/heatUtils')
 
 const MSG_ACK = 'a'
 const MSG_INIT_HEAT = 'i'
@@ -62,6 +63,8 @@ function init (ctx) {
   leaderboardDb = ctx.db.leaderboard
   highscoreDb = ctx.db.highscore
 
+  heatUtils.setContext(ctx.db)
+
   raceId = ctx.raceId
   logger.debug('%s::init: initialized global raceID to %s', MODULE_ID, raceId)
 
@@ -87,7 +90,7 @@ var sendMsg = function (msg, msgId) {
   msgId = msgId || -1
 
   if (msgId === -1) { // new message that is not yet in queue
-    logger.debug('%s::sendMsg: Received new message to send on line', MODULE_ID)
+    logger.debug('%s::sendMsg: Received new message to send over the serial line', MODULE_ID)
 
     msgId = ++msgIdCounter // generating new unique msg id
 
@@ -113,9 +116,9 @@ var sendMsg = function (msg, msgId) {
 
   port.write(JSON.stringify(msg), function (err) {
     if (err) {
-      return logger.error('%s::sendMsg: Error on writing on line: %s', MODULE_ID, err.message)
+      return logger.error('%s::sendMsg: Error on writing over the serial line: %s', MODULE_ID, err.message)
     }
-    logger.info('%s::sendMsg: Message written successfully on line: %s', MODULE_ID, JSON.stringify(msg))
+    logger.info('%s::sendMsg: Message written successfully over the serial line: %s', MODULE_ID, JSON.stringify(msg))
   })
 }
 
@@ -175,66 +178,81 @@ var sortByTimeDesc = function (a, b) {
 
 // function for updating the race leaderboard
 // -----------------
-// params
+// param: a heat with racers that need to be updated
 //
-var updateLeaderboard = function (heatId, lanes) {
-  logger.debug('%s::updateLeaderboard: Sorting current heat by time', MODULE_ID)
-  let lanesSorted = lanes.sort(sortByTimeAsc)
-
-  logger.debug('%s::updateLeaderboard: Calculating score for current heat', MODULE_ID)
-  for (var i = 0; i < lanesSorted.length; i++) {
-    lanesSorted[i].score = scoreTable[i]
-    logger.debug('%s::updateLeaderboard: Racer: %s, Score: %i', MODULE_ID, lanesSorted[i].ow, lanesSorted[i].score)
+var updateLeaderboard = async function (heat) {
+  logger.debug('%s::updateLeaderboard: get whole leaderboard', MODULE_ID)
+  let leaderboard
+  try {
+    leaderboard = await leaderboardDb.get(raceId)
+  } catch (err) {
+    logger.error('%s::updateLeaderboard: could not find leaderboard for race %s', MODULE_ID, raceId)
+    leaderboard = {}
   }
 
-  leaderboardDb.get(raceId, function (err, value) {
-    if (err) {
-      // error handling
-      logger.error('%s::updateLeaderboard: Could not retrieve leaderboard information from database', MODULE_ID)
-      // no big error, as we could gradually build up the leaderboard anyway
-    }
-
-    let leadership = value
-
-    // logger.debug('%s::updateLeaderboard: Leadership: %s', leadership)
-
-    for (var i = 0; i < lanesSorted.length; i++) {
-      // we get an entry for each lane
-      let laneRfid = lanesSorted[i].rf
-      logger.debug('%s::updateLeaderboard: Got RFID: %s', laneRfid)
-
-      if (laneRfid === undefined) {
+  // retrieve the race configuration, to see, in which other heats
+  try {
+    // these cars were in to calculate the complete score
+    let confAndCars = await heatUtils.getRaceConfigAndCars(raceId)
+    for (let i = 0; i < heat.results.length; i++) {
+      // get the car RFID
+      let rfid = heat.results[i].rf
+      // get the car's startnumber
+      let startNumber = 0
+      for (let s = 0; s < Object.keys(confAndCars.cars).length; s++) {
+        if (confAndCars.cars[s] === rfid) {
+          // we found the startnumber
+          startNumber = s
+        }
+      }
+      if (startNumber === 0) {
+        // we strangely did not find this rfid in this race
+        logger.error('%s::updateLeaderboard: could not find car %s in race %s', MODULE_ID, rfid, raceId)
+        // we skip this car and continue with the rest
         continue
       }
-
-      for (var k = 0; k < leadership.length; k++) {
-        if (leadership[k].rf !== laneRfid) {
-          continue
-        }
-        if (heatId <= 40) {
-          logger.debug('%s::updateLeaderboard: Still in qualifying, writing information to qualifying data', MODULE_ID)
-          leadership[k].cumScoreQuali += lanesSorted[i].score
-          leadership[k].cumTimeQuali += lanesSorted[i].t
-        } else {
-          logger.debug('%s::updateLeaderboard: Already in finals, writing information to finals data', MODULE_ID)
-          leadership[k].cumScoreFinals += lanesSorted[i].score
-          leadership[k].cumTimeFinals += lanesSorted[i].t
+      let cumulatedScore = 0
+      let cumulatedTime = 0
+      // get all heats where this car was in, note that heatnumbers start with 1 and we are
+      // using object keys here, not array indices
+      for (let h = 1; h <= Object.keys(confAndCars.raceconfig.heats).length; h++) {
+        for (let l = 0; l < confAndCars.raceconfig.heats[h].length; l++) {
+          if (confAndCars.raceconfig.heats[h][l] === startNumber) {
+            // we found a heat
+            // heatNumber = h
+            // laneNumber = l
+            // get the score for that heat
+            let otherHeatKey = raceId + '-' + ('0' + h).slice(-2)
+            try {
+              let otherHeat = await heatDb.get(otherHeatKey)
+              let score = otherHeat.results[l].score
+              let time = otherHeat.results[l].t
+              logger.debug('%s::updateLeaderboard: car %s scored %d in heat %d on lane %d with time %d', MODULE_ID,
+                rfid, score, h, l, time)
+              cumulatedScore = cumulatedScore + score
+              cumulatedTime = cumulatedTime + time
+            } catch (err) {
+              logger.error('%s::updateLeaderboard: could not find heat %s in db', MODULE_ID, otherHeatKey)
+              continue
+            }
+          }
         }
       }
+      // we now have iterated over all heats this car was in and can now update the leaderboard
+      leaderboard[rfid] = {...heat.results[i]}
+      leaderboard[rfid].cumulatedScore = cumulatedScore
+      leaderboard[rfid].cumulatedTime = cumulatedTime
     }
-
-    logger.debug('%s::updateLeaderboard: Current Leaderboard:', MODULE_ID)
-    for (var j = 0; j < leadership.length; j++) {
-      logger.debug('%s::updateLeaderboard:   %d: %s', MODULE_ID, j, JSON.stringify(leadership[j]))
+    // now we updated the whole leaderboard
+    try {
+      await leaderboardDb.put(raceId, leaderboard)
+      return
+    } catch (err) {
+      logger.error('%s::updateLeaderboard: could not save leaderboard for race %s', MODULE_ID, raceId)
     }
-
-    logger.debug('%s::updateLeaderboard: Saving leaderboard information to database', MODULE_ID)
-    leaderboardDb.put(raceId, leadership)
-    logger.debug('%s::updateLeaderboard: Successfully saved leaderboard information to database', MODULE_ID)
-    logger.debug('%s::updateLeaderboard: Closing database', MODULE_ID)
-
-    return lanesSorted
-  })
+  } catch (err) {
+    logger.error('%s::updateLeaderboard: could not get race config and cars', MODULE_ID)
+  }
 }
 
 // function for updating the race highscore
@@ -319,7 +337,7 @@ var ack = function (id, state) {
     logger.debug('%s::ack: Message status is error', MODULE_ID)
     msg.s = ST_ERROR
   }
-  logger.debug('%s::ack: Sending acknowledge message over the line', MODULE_ID)
+  logger.debug('%s::ack: Sending acknowledge message over the serial line', MODULE_ID)
   sendMsg(msg, id)
 }
 
@@ -329,7 +347,7 @@ var startSetupRT = function () {
   let msg = {}
   msg.c = MSG_SET_TRACK
   msg.s = ST_TR_SET_START
-  logger.debug('%s::startSetupRT: Sending setup race track message over the line', MODULE_ID)
+  logger.debug('%s::startSetupRT: Sending setup race track message over the serial line', MODULE_ID)
   sendMsg(msg)
 }
 
@@ -339,7 +357,7 @@ var stopSetupRT = function () {
   let msg = {}
   msg.c = MSG_SET_TRACK
   msg.s = ST_TR_SET_STOP
-  logger.debug('%s::stopSetupRT: Sending stop setup race track message over the line', MODULE_ID)
+  logger.debug('%s::stopSetupRT: Sending stop setup race track message over the serial line', MODULE_ID)
   sendMsg(msg)
 }
 
@@ -360,7 +378,7 @@ var initHeat = async function (heatId) {
   try {
     heat = await heatDb.get(heatKey)
     msg.l = heat.results
-    logger.debug('%s::initHeat: Sending init heat message over the line: %s', MODULE_ID, JSON.stringify(msg))
+    logger.debug('%s::initHeat: Sending init heat message over the serial line: %s', MODULE_ID, JSON.stringify(msg))
     sendMsg(msg)
     // reset the lane status
     initLaneStatus(heatId)
@@ -375,7 +393,7 @@ var initHeat = async function (heatId) {
       await heatDb.put(heatKey, heat)
       logger.debug('%s::initHeat: resetted score and time of heat %s', MODULE_ID, heatKey)
     } catch (err) {
-      logger.errorr('%s::initHeat: could not put back heat %s', MODULE_ID, heatKey)
+      logger.errorr('%s::initHeat: could not put back resetted heat %s', MODULE_ID, heatKey)
       throw new UserException('noresetheat', 'could not save resetted heat')
     }
   } catch (err) {
@@ -411,7 +429,7 @@ var initLaneStatus = function (heatId) {
 
 // function for starting a heat
 // ----------------
-// params
+// heatId is here a single numeric value
 //
 var startHeat = function (heatId) {
   logger.debug('%s::startHeat: Building start heat message for heat %d', MODULE_ID, heatId)
@@ -419,7 +437,7 @@ var startHeat = function (heatId) {
   msg.c = MSG_START_HEAT
   msg.h = heatId
 
-  logger.debug('%s::startHeat: Sending start heat message over the line', MODULE_ID)
+  logger.debug('%s::startHeat: Sending start heat %s message over the serial line', MODULE_ID, heatId)
   sendMsg(msg)
 }
 
@@ -439,6 +457,19 @@ var updateHeat = async function (heatId, heatStatus, lanes) {
     // there is not much we can do...
     return
   }
+  let consistent = true
+  for (let h = 0; h < heat.results.length; h++) {
+    // consistency check
+    if ((lanes[h].rf !== undefined) && (heat.results[h].rf !== lanes[h].rf)) {
+      // there is something wrong, the track has a different
+      // view of the lane setup than the bridge!
+      logger.error('%s::updateHeat: bridge: %s and track: %s differ', MODULE_ID, heat.results[h].rf, lanes[h].rf)
+      consistent = false
+    }
+  }
+  // rather return, than possibly calculate a wrong score
+  if (!consistent) return
+
   // make a copy, as sort works on the original array
   let lanesSorted = [ ...lanes ]
   logger.debug('%s::updateheat: Sorting current heat by time', MODULE_ID)
@@ -450,14 +481,6 @@ var updateHeat = async function (heatId, heatStatus, lanes) {
       // on this lane of the results from the track, there is a car reported
       // now find in the heat from the db, the correct entry
       for (let h = 0; h < heat.results.length; h++) {
-        // consistency check
-        if ((lanes[h].rf !== undefined) &&
-          (heat.results[h].rf !== lanes[h].rf)) {
-          // there is something wrong, the track has a different
-          // view of the lane setup than the bridge!
-          logger.error('%s::updateHeat: FATAL ERROR: track and bridge differ!!', MODULE_ID)
-          logger.error('%s::updateHeat: bridge: %s, track: %s', MODULE_ID, heat.results[h].rf, lanes[h].rf)
-        }
         // make sure that there is information in the lanes
         if (heat.results[h].rf !== undefined) {
           // this heat has a car in this heat on it
@@ -486,8 +509,8 @@ var updateHeat = async function (heatId, heatStatus, lanes) {
   try {
     await heatDb.put(heatKey, heat)
     logger.debug('%s::updateHeat: Successfully saved updated heat information to database', MODULE_ID)
-    // logger.debug('%s::updateHeat: Update leaderboard with new data', MODULE_ID)
-    // lanesWithResult = updateLeaderboard(heatId, lanes)
+    logger.debug('%s::updateHeat: Update leaderboard with new data', MODULE_ID)
+    updateLeaderboard(heat)
     // logger.debug('%s::updateHeat: Update highscore with new data', MODULE_ID)
     // updateHighscore(heatId, lanes)
   } catch (err) {

@@ -1,7 +1,7 @@
 const MODULE_ID = 'race'
 const logger = require('../../../utils/logger')
 const httpErr = require('restify-errors')
-const saveHeat = require('../heat/saveHeat')
+const heatUtils = require('../heat/heatUtils')
 
 var serial
 
@@ -123,7 +123,7 @@ async function createRace (req, res, next) {
   try {
     await raceDb.put(raceId, race)
     try {
-      await saveHeat.initializeHeats(raceId, 'all')
+      await heatUtils.initializeHeats(raceId, 'all')
     } catch (err) {
       if (err.id === 'heaterror') {
         logger.error('%s: Unable to insert heat %s into heat database', MODULE_ID, err.msg)
@@ -142,26 +142,44 @@ async function createRace (req, res, next) {
   }
 }
 
+// function for sorting leaderboard
+var sortByCumScoreAndTime = function (a, b) {
+  if ((a.cumulatedScore < b.cumulatedScore) || (b.cumulatedScore === undefined)) {
+    return 1
+  } else if ((a.cumulatedScore > b.cumulatedScore) || (a.cumulatedScore === undefined)) {
+    return -1
+  }
+  // now we have to sort by ascending cumulated time
+  if ((a.cumulatedTime < b.cumulatedTime) || (b.cumulatedTime === undefined)) {
+    return -1
+  } else if ((a.cumulatedTime > b.cumulatedTime) || (a.cumulatedTime === undefined)) {
+    return 1
+  }
+  return 0
+}
+
 function getLeaderboard (req, res, next) {
-  logger.info('%s: request received', MODULE_ID)
+  logger.info('%s::getLeaderboard: request received', MODULE_ID)
 
   if (req.params === undefined ||
       req.params.id === undefined) {
-    logger.error('%s: Received incomplete get leaderboard request', MODULE_ID)
+    logger.error('%s::getLeaderboard: Received incomplete get leaderboard request', MODULE_ID)
     return next(new httpErr.BadRequestError('Incomplete get leader board request.'))
   }
 
-  leaderboardDb.get(req.params.id, function (err, value) {
+  leaderboardDb.get(req.params.id, function (err, leaderboard) {
     if (err) {
       if (err.notFound) {
-        logger.error('%s: Received incorrect get leaderboard request', MODULE_ID)
+        logger.error('%s::getLeaderboard: could not find leaderboard for race %s', MODULE_ID, req.params.id)
         return next(new httpErr.BadRequestError('Incorrect get leader board request.'))
       }
-      logger.error('%s: Error retrieving leaderboard from database', MODULE_ID)
+      logger.error('%s::getLeaderboard: Error retrieving leaderboard for race %s from db', MODULE_ID, req.params.id)
       return next(new httpErr.BadRequestError('Unable to process get leaderboard request.'))
     }
-
-    res.send(value)
+    // sort the whole leaderboard
+    let top = Object.values(leaderboard)
+    top.sort(sortByCumScoreAndTime)
+    res.send(top)
     logger.info('%s: response sent', MODULE_ID)
     return next()
   })
@@ -198,7 +216,7 @@ module.exports = (server, db, ser) => {
   leaderboardDb = db.leaderboard
   highscoreDb = db.highscoreDb
   checkpointDb = db.checkpoint
-  saveHeat.setContext(db)
+  heatUtils.setContext(db)
   server.get('/race', listRaces)
   server.get('/race/:id', getRace)
   server.post('/race/:id', createRace)

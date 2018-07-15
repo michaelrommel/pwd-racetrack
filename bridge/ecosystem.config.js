@@ -11,7 +11,8 @@ module.exports = {
       'databases',
       'node_modules',
       '*.swp',
-      '.*.swp'
+      '.*.swp',
+      '*.md'
     ],
     env: {
       LOG_LEVEL: 'debug',
