@@ -27,6 +27,10 @@ function init (ctx) {
   server.use(jwt(jwtConfig).unless({
     path: [
       '/ping',
+      '/race/leaderboard',
+      '/race/highscore',
+      '/heat/current',
+      '/heat/next',
       '/user/login'
     ]
   }))
