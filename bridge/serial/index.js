@@ -194,7 +194,7 @@ var updateLeaderboard = async function (heat) {
         continue
       } else {
         // we got the index, now get the key
-        startNumber = Object.keys(confAndCars.cars)[index]
+        startNumber = parseInt(Object.keys(confAndCars.cars)[index])
       }
       let cumulatedScore = 0
       let cumulatedTime = 0
@@ -227,6 +227,7 @@ var updateLeaderboard = async function (heat) {
       leaderboard[rfid] = {...heat.results[i]}
       leaderboard[rfid].cumulatedScore = cumulatedScore
       leaderboard[rfid].cumulatedTime = cumulatedTime
+      delete(leaderboard[rfid].score)
     }
     // now we updated the whole leaderboard
     try {

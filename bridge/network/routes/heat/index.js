@@ -101,13 +101,12 @@ async function createHeat (req, res, next) {
 function getCurrentHeat (req, res, next) {
   logger.info('%s: request received', MODULE_ID)
 
-  heatDb.getValueStream()
+  let currentHeat = {}
+
+  heatDb.createValueStream()
     .on('data', function (data) {
-      logger.debug('Received data: %s', data)
       if (data.status === 'current' || data.status === 'running') {
-        res.send(data)
-        logger.info('%s: response sent', MODULE_ID)
-        return next()
+        currentHeat = {...data}
       }
     })
     .on('error', function (err) {
@@ -115,21 +114,26 @@ function getCurrentHeat (req, res, next) {
       return next(new httpErr.InternalServerError('Error retrieving heat information'))
     })
     .on('end', function () {
-      logger.error('Did not find current heat')
-      return next(new httpErr.InternalServerError('Could not find current heat'))
+      if (currentHeat.length === 0) {
+        logger.error('Did not find current heat')
+        return next(new httpErr.InternalServerError('Could not find current heat'))
+      } else {
+        res.send(currentHeat)
+        logger.info('%s: response sent', MODULE_ID)
+        return next()
+      }
     })
 }
 
 function getNextHeat (req, res, next) {
   logger.info('%s: request received', MODULE_ID)
 
-  heatDb.getValueStream()
+  let nextHeat = {}
+
+  heatDb.createValueStream()
     .on('data', function (data) {
-      logger.debug('Received data: %s', data)
       if (data.status === 'next') {
-        res.send(data)
-        logger.info('%s: response sent', MODULE_ID)
-        return next()
+        nextHeat = {...data}
       }
     })
     .on('error', function (err) {
@@ -137,8 +141,14 @@ function getNextHeat (req, res, next) {
       return next(new httpErr.InternalServerError('Error retrieving heat information'))
     })
     .on('end', function () {
-      logger.error('Did not find next heat')
-      return next(new httpErr.InternalServerError('Could not find next heat'))
+      if (nextHeat.length === 0) {
+        logger.error('Did not find current heat')
+        return next(new httpErr.InternalServerError('Could not find current heat'))
+      } else {
+        res.send(nextHeat)
+        logger.info('%s: response sent', MODULE_ID)
+        return next()
+      }
     })
 }
 
@@ -239,7 +249,7 @@ async function initHeat (req, res, next) {
       } else if (err.id === 'noresetheat') {
         logger.error('%s::initHeat: serial module returned heat not be resetted', MODULE_ID)
       }
-      return next(new httpErr.InternalServer('Could not initialize heat'))
+      return next(new httpErr.InternalServerError('Could not initialize heat'))
     }
   } catch (err) {
     if (err) {
@@ -249,7 +259,7 @@ async function initHeat (req, res, next) {
         heatUtils.initializeHeats(raceId, heatNumber)
         res.send(503, 'heat re-initialized, please retry')
       } catch (err) {
-        return next(new httpErr.InternalServer('Could not re-initialize heat'))
+        return next(new httpErr.InternalServerError('Could not re-initialize heat'))
       }
     }
   }

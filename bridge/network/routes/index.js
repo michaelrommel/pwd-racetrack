@@ -5,6 +5,5 @@ module.exports = (ctx) => {
   require('./ping')(ctx.server)
   require('./race')(ctx.server, ctx.db, ctx.serial)
   require('./raceconfig')(ctx.server, ctx.db)
-  require('./track')(ctx.server, ctx.db)
   require('./user')(ctx.server, ctx.db)
 }

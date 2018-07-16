@@ -5,6 +5,7 @@ const heatUtils = require('../heat/heatUtils')
 
 var serial
 
+var laneDb
 var raceDb
 var leaderboardDb
 var highscoreDb
@@ -100,18 +101,18 @@ function getLeaderboard (req, res, next) {
 
   if (req.params === undefined ||
       req.params.id === undefined) {
-    logger.error('%s::getLeaderboard: Received incomplete get leaderboard request', MODULE_ID)
-    return next(new httpErr.BadRequestError('Incomplete get leader board request.'))
+    logger.error('%s::getLeaderboard: received incomplete get leaderboard request', MODULE_ID)
+    return next(new httpErr.BadRequestError('incomplete get leader board request.'))
   }
 
   leaderboardDb.get(req.params.id, function (err, leaderboard) {
     if (err) {
       if (err.notFound) {
         logger.error('%s::getLeaderboard: could not find leaderboard for race %s', MODULE_ID, req.params.id)
-        return next(new httpErr.BadRequestError('Incorrect get leader board request.'))
+        return next(new httpErr.InternalServerError('could not find leaderboard.'))
       }
-      logger.error('%s::getLeaderboard: Error retrieving leaderboard for race %s from db', MODULE_ID, req.params.id)
-      return next(new httpErr.BadRequestError('Unable to process get leaderboard request.'))
+      logger.error('%s::getLeaderboard: error retrieving leaderboard for race %s from db', MODULE_ID, req.params.id)
+      return next(new httpErr.InternalServerError('Unable to process get leaderboard request.'))
     }
     // sort the whole leaderboard
     let top = Object.values(leaderboard)
@@ -137,19 +138,45 @@ async function getHighscore (req, res, next) {
   } catch (err) {
     if (err.notFound) {
       logger.error('%s::getHighscore: could not find highscore for race %d', MODULE_ID, req.params.id)
-      return next(new httpErr.InternalServer('could not find highscore'))
+      return next(new httpErr.InternalServerError('could not find highscore'))
     }
     logger.error('%s::getHighscore: error retrieving highscore from database', MODULE_ID)
-    return next(new httpErr.InternalServer('error retrieving highscore from database'))
+    return next(new httpErr.InternalServerError('error retrieving highscore from database'))
   }
   res.send(highscore)
   logger.info('%s::getHighscore: response sent', MODULE_ID)
   return next()
 }
 
+function getLaneStatus (req, res, next) {
+  logger.info('%s: request received', MODULE_ID)
+
+  if (
+    req.params === undefined ||
+    req.params.id === undefined
+  ) {
+    logger.error('%s: Received incomplete get car information', MODULE_ID)
+    return next(new httpErr.BadRequestError('Incomplete get car information.'))
+  } else {
+    laneDb.get(req.params.id, function (err, value) {
+      if (err) {
+        if (err.notFound) {
+          logger.error('%s: Could not find specified raceId', MODULE_ID)
+          return next(new httpErr.BadRequestError('Could not retrieve lane information.'))
+        }
+      }
+      res.send(value)
+      logger.info('%s: response sent', MODULE_ID)
+      return next()
+    })
+  }
+}
+
+
 module.exports = (server, db, ser) => {
   serial = ser
   raceDb = db.race
+  laneDb = db.lane
   leaderboardDb = db.leaderboard
   highscoreDb = db.highscore
   checkpointDb = db.checkpoint
@@ -160,4 +187,5 @@ module.exports = (server, db, ser) => {
   server.post('/race/init/:id', initRace)
   server.get('/race/leaderboard/:id', getLeaderboard)
   server.get('/race/highscore/:id', getHighscore)
+  server.get('/race/lanes/:id', getLaneStatus)
 }
