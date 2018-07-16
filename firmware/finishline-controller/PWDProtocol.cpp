@@ -306,9 +306,9 @@ bool PWDProtocol::receiveCommand( PWDHeat* heat )
       const char code = codePtr[0];
       SerialUSB.print("Code was: ");
       SerialUSB.println( code );
+      // get ID
+      uint8_t theirId = root["id"];
       if( checkWhitelist( heat->state, code ) ) {
-        // get ID
-        uint8_t theirId = root["id"];
         // try to initialize the lanes array before switch to keep
         // the compiler happy
         JsonArray& _lanes = root["l"];
@@ -449,7 +449,7 @@ bool PWDProtocol::receiveCommand( PWDHeat* heat )
       } else {
         SerialUSB.println("invalid command");
         // send invalid command message
-        sendAck( 0, STATUS_INVALIDCOMMAND );
+        sendAck( theirId, STATUS_INVALIDCOMMAND );
         return false;
       }
     } else {

@@ -26,12 +26,18 @@ function init (ctx) {
   // secure all routes except /ping and /login
   server.use(jwt(jwtConfig).unless({
     path: [
-      '/ping',
-      '/user/login'
+      /ping/ig,
+      /display/ig,
+      /race\/leaderboard/ig,
+      /race\/highscore/ig,
+      /race\/lanes/ig,
+      /heat\/current/ig,
+      /heat\/next/ig,
+      /user\/login/ig
     ]
   }))
 
-  logger.debug(util.inspect(ctx))
+  // logger.debug(util.inspect(ctx))
 
   // configure routes
   require('./routes')({server, plugins, db, serial})
