@@ -27,6 +27,7 @@ function init (ctx) {
   server.use(jwt(jwtConfig).unless({
     path: [
       /ping/ig,
+      /display/ig,
       /race\/leaderboard/ig,
       /race\/highscore/ig,
       /race\/lanes/ig,

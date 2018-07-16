@@ -1,0 +1,202 @@
+<html>
+    <head> 
+	    <link rel="stylesheet" type="text/css" href="test.css" media=screen \>
+    </head>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
+<body ng-app="pwdApp">
+    <script>
+        /**********************************************************************************/
+        /*                              Config                                            */
+        /**********************************************************************************/
+        POLL_TIME = 4000;
+        CURRENT_RACE_URL = "http://144.145.17.18:8080/heat/current";
+        NEXT_RACE_URL = "http://144.145.17.18:8080/heat/next";
+        LEADERS_URL = "http://144.145.17.18:8080/race/leaderboard/2018-Test";
+        HIGHSCORE_URL = "http://144.145.17.18:8080/race/highscore/2018-Test";
+        
+        CURRENT_RACE_URL = "http://146.254.106.46:8080/heat/current";
+        NEXT_RACE_URL = "http://146.254.106.46:8080/heat/next";
+        LEADERS_URL = "http://146.254.106.46:8080/race/leaderboard/2018-Test";
+        HIGHSCORE_URL = "http://146.254.106.46:8080/race/highscore/2018-Test";
+        DUMMY_DATA = false;
+        /**********************************************************************************/
+        /*                              Current Race Logic                                */
+        /**********************************************************************************/
+        function getCurrentRace(restData) {
+            if (DUMMY_DATA)
+                return generateRace();
+            else {
+                var race = [];
+                var lanes = ["Dark Gray", "Turquoise", "Orange", "Bordeaux"];
+                var i;
+                for (i = 0; i < 4; i++) {
+                    race.push({ name: restData.results[i].ow, lane: lanes[i] });
+                }
+                return race;
+            }
+        }
+        
+        var app = angular.module('pwdApp', []);
+        app.controller('getCurrentRace', function ($scope, $http, $interval) {
+
+            $interval(function () {
+                $http.get(CURRENT_RACE_URL).
+                    then(function success(response) {
+                        $scope.currCars = getCurrentRace(response.data);
+
+                    }, function error(response) {
+                        //error handling here
+                        $scope.error = response.statusText;
+                    })
+            }, POLL_TIME);
+        });
+
+        /**********************************************************************************/
+        /*                               Next Race Logic                                  */
+        /**********************************************************************************/
+        function getNextRace(restData) {
+            if (DUMMY_DATA)
+                return generateRace();
+            else {
+                var race = [];
+                var lanes = ["Dark Gray", "Turquoise", "Orange", "Bordeaux"];
+                var i;
+                for (i = 0; i < 4; i++) {
+                    race.push({ name: restData.results[i].ow, lane: lanes[i] });
+                }
+                return race;
+            }
+        }
+
+        app.controller('getNextRace', function ($scope, $http, $interval) {
+
+            $interval(function () {
+                $http.get(NEXT_RACE_URL).
+                    then(function success(response) {
+                        $scope.cars = getNextRace(response.data);
+
+                    }, function error(response) {
+                        //error handling here
+                        $scope.error = response.statusText;
+                    })
+            }, POLL_TIME);
+        });
+        /**********************************************************************************/
+        /*                                  Leaders Logic                                 */
+        /**********************************************************************************/
+        function generateLeaders() {
+            var names = ["John", "Michael", "Tobias", "Rene", "Jessica", "Stan", "Anke", "Gunter", "Jo", "Sasha", "Wladimir"];
+            var carNames = ["Wurst", "Swish", "Blitz", "Maximum Lag", "or 1==1; drop table 'cars';", "Thunder", "Poo", "Nuclear", "Kaese"];
+            var leaders = [];
+            var i;
+            for (i = 0; i < 10; i++) {
+                var rand1 = Math.floor(Math.random() * names.length);
+                var rand2 = Math.floor(Math.random() * carNames.length);
+
+                leaders.push({ name: names[rand1], car: carNames[rand2], points: (Math.floor(Math.random() * 30) + 80) });
+            }
+            leaders.sort(function (a, b) { return (a.points < b.points) ? 1 : ((b.points < a.points) ? -1 : 0); });
+            return leaders;
+        }
+        function getLeaders(restData) {
+            if (DUMMY_DATA) {
+                return generateLeaders();
+            } else {
+                let leaders = [];
+                let lanes = ["Dark Gray", "Turquoise", "Orange", "Bordeaux"];
+                for (let i = 0; i < restData.results.length; i++) {
+                    leaders.push({ name: restData.results[i].ow, cumScore: restData.results[i].cumulatedScore, cumTime: restData.results[i].cumulatedTime });
+                }
+                return leaders;
+            }
+        }
+        
+        app.controller('getLeaders', function ($scope, $http, $interval) {
+
+            $interval(function () {
+                $http.get(LEADERS_URL).
+                    then(function success (response) {
+                        $scope.leaders = getLeaders(response.data);
+                    }, function error(response) {
+                        //error handling here
+                        $scope.error = response.statusText;
+                    })
+            }, POLL_TIME);
+        });
+        /**********************************************************************************/
+        /*                                  Highscore Logic                               */
+        /**********************************************************************************/
+         function generateHighscore() {
+            var names = ["John", "Michael", "Tobias", "Rene", "Jessica", "Stan", "Anke", "Gunter", "Jo", "Sasha", "Wladimir"];
+            var carNames = ["Wurst", "Swish", "Blitz", "Maximum Lag", "or 1==1; drop table 'cars';", "Thunder", "Poo", "Nuclear", "Kaese"];
+            var leaders = [];
+            var i;
+            for (i = 0; i < 10; i++) {
+                var rand1 = Math.floor(Math.random() * names.length);
+                var rand2 = Math.floor(Math.random() * carNames.length);
+
+                leaders.push({ name: names[rand1], car: carNames[rand2], points: (Math.floor(Math.random() * 30) + 80) });
+            }
+            leaders.sort(function (a, b) { return (a.points < b.points) ? 1 : ((b.points < a.points) ? -1 : 0); });
+            return leaders;
+        }
+        function getHighscore(restData) {
+            if (DUMMY_DATA) {
+                return generateLeaders();
+            } else {
+                let highscore = [];
+                let lanes = ["Dark Gray", "Turquoise", "Orange", "Bordeaux"];
+                for (let i = 0; i < restData.results.length; i++) {
+                    highscore.push({ rank: restData.results[i].rank, name: restData.results[i].ow, time: restData.results[i].t, heat: restData.results[i].heat });
+                }
+                return highscore;
+            }           
+        }
+        
+        app.controller('getHighscore', function ($scope, $http, $interval) {
+
+            $interval(function () {
+                $http.get(LEADERS_URL).
+                    then(function success (response) {
+                        $scope.highscore = getHighscore(response.data);
+                    }, function error(response) {
+                        //error handling here
+                        $scope.error = response.statusText;
+                    })
+            }, POLL_TIME);
+        });
+
+    </script>
+    <div id="dvBanner">
+	    <h1>SRS Pinewood Derby 2018</h1>
+    </div>
+    <div ng-controller="getCurrentRace" id="dvCurrentRace">
+	    <h2 align="center">Curent Race</h2>
+	    <table>
+		    <tr><th>Pos.</th><th>Owner Name</th><th>Lane</th></tr>
+		    <tr ng-repeat="x in currCars"><td> {{ $index + 1 }} </td> <td> {{ x.name }} </td> <td> {{ x.lane }} </td></tr>
+	    </table>
+    </div>
+    <div ng-controller="getNextRace" id="dvNextRace">
+	    <h2 align="center">Next Race</h2>
+	    <table>
+		    <tr><th>Pos.</th><th>Owner Name</th><th>Lane</th></tr>
+		    <tr ng-repeat="x in cars"><td> {{ $index + 1 }} </td> <td> {{ x.name }} </td> <td> {{ x.lane }} </td></tr>
+	    </table>
+    </div>
+    <div ng-controller="getLeaders" id="dvLeaderBoard">
+	    <h2 align="center">Leader Board</h2>
+	    <table>
+		    <tr><th>Pos.</th><th>Owner Name</th><th>Cumulated Time</th><th>Cumulated Score</th></tr>
+		    <tr ng-repeat="x in leaders"><td> {{ $index + 1 }} </td> <td> {{ x.name }} </td> <td> {{ x.cumTime }} </td><td> {{ x.cumScore }} </td></tr>
+	    </table>
+    </div>
+    <div ng-controller="getHighscore" id="dvFastestTime">
+	    <h2 align="center">Fastest Time</h2>
+         <table>
+		    <tr><th>Rank</th><th>Owner Name</th><th>Time</th><th>Heat</th></tr>
+		    <tr ng-repeat="x in leaders"><td> {{ x.rank }} </td> <td> {{ x.name }} </td> <td> {{ x.time }} </td><td> {{ x.heat }} </td></tr>
+	    </table>
+    </div>
+</body>
+</html>
