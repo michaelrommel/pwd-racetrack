@@ -239,7 +239,7 @@ async function initHeat (req, res, next) {
       } else if (err.id === 'noresetheat') {
         logger.error('%s::initHeat: serial module returned heat not be resetted', MODULE_ID)
       }
-      return next(new httpErr.InternalServer('Could not initialize heat'))
+      return next(new httpErr.InternalServerError('Could not initialize heat'))
     }
   } catch (err) {
     if (err) {
@@ -249,7 +249,7 @@ async function initHeat (req, res, next) {
         heatUtils.initializeHeats(raceId, heatNumber)
         res.send(503, 'heat re-initialized, please retry')
       } catch (err) {
-        return next(new httpErr.InternalServer('Could not re-initialize heat'))
+        return next(new httpErr.InternalServerError('Could not re-initialize heat'))
       }
     }
   }

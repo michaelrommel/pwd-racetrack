@@ -26,12 +26,12 @@ function init (ctx) {
   // secure all routes except /ping and /login
   server.use(jwt(jwtConfig).unless({
     path: [
-      '/ping',
-      '/race/leaderboard',
-      '/race/highscore',
-      '/heat/current',
-      '/heat/next',
-      '/user/login'
+      /ping/ig,
+      /race\/leaderboard/ig,
+      /race\/highscore/ig,
+      /heat\/current/ig,
+      /heat\/next/ig,
+      /user\/login/ig
     ]
   }))
 

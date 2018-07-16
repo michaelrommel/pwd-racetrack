@@ -156,18 +156,18 @@ function getLeaderboard (req, res, next) {
 
   if (req.params === undefined ||
       req.params.id === undefined) {
-    logger.error('%s::getLeaderboard: Received incomplete get leaderboard request', MODULE_ID)
-    return next(new httpErr.BadRequestError('Incomplete get leader board request.'))
+    logger.error('%s::getLeaderboard: received incomplete get leaderboard request', MODULE_ID)
+    return next(new httpErr.BadRequestError('incomplete get leader board request.'))
   }
 
   leaderboardDb.get(req.params.id, function (err, leaderboard) {
     if (err) {
       if (err.notFound) {
         logger.error('%s::getLeaderboard: could not find leaderboard for race %s', MODULE_ID, req.params.id)
-        return next(new httpErr.BadRequestError('Incorrect get leader board request.'))
+        return next(new httpErr.InternalServerError('could not find leaderboard.'))
       }
-      logger.error('%s::getLeaderboard: Error retrieving leaderboard for race %s from db', MODULE_ID, req.params.id)
-      return next(new httpErr.BadRequestError('Unable to process get leaderboard request.'))
+      logger.error('%s::getLeaderboard: error retrieving leaderboard for race %s from db', MODULE_ID, req.params.id)
+      return next(new httpErr.InternalServerError('Unable to process get leaderboard request.'))
     }
     // sort the whole leaderboard
     let top = Object.values(leaderboard)
