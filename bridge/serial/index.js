@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 
 const MODULE_ID = 'serial'
 const logger = require('../utils/logger')
@@ -163,19 +163,6 @@ var sortByTimeAsc = function (a, b) {
   return 0
 }
 
-// function for sorting lanes by time descending
-// -----------------
-// params
-//
-var sortByTimeDesc = function (a, b) {
-  if ((a.t < b.t) || (b.t === undefined)) {
-    return 1
-  } else if ((a.t > b.t) || (a.t === undefined)) {
-    return -1
-  }
-  return 0
-}
-
 // function for updating the race leaderboard
 // -----------------
 // param: a heat with racers that need to be updated
@@ -199,17 +186,15 @@ var updateLeaderboard = async function (heat) {
       let rfid = heat.results[i].rf
       // get the car's startnumber
       let startNumber = 0
-      for (let s = 0; s < Object.keys(confAndCars.cars).length; s++) {
-        if (confAndCars.cars[s] === rfid) {
-          // we found the startnumber
-          startNumber = s
-        }
-      }
-      if (startNumber === 0) {
+      let index = Object.keys(confAndCars.cars).findIndex(key => confAndCars.cars[key] === rfid)
+      if (index === -1) {
         // we strangely did not find this rfid in this race
         logger.error('%s::updateLeaderboard: could not find car %s in race %s', MODULE_ID, rfid, raceId)
         // we skip this car and continue with the rest
         continue
+      } else {
+        // we got the index, now get the key
+        startNumber = Object.keys(confAndCars.cars)[index]
       }
       let cumulatedScore = 0
       let cumulatedTime = 0
@@ -256,69 +241,69 @@ var updateLeaderboard = async function (heat) {
 }
 
 // function for updating the race highscore
-// -----------------
-// params
-//
-var updateHighscore = function (heatId, lanes) {
-  logger.debug('Getting current highscore from database')
-  highscoreDb.get(raceId, function (err, value) {
+var updateHighscore = async function (heatId, lanes) {
+  logger.debug('%s::updateHighscore: Getting current highscore from database', MODULE_ID)
+
+  let highscore
+  let heatKey = raceId + '-' + ('0' + heatId).slice(-2)
+
+  try {
+    highscore = await highscoreDb.get(raceId)
+  } catch (err) {
     if (err) {
-      // error handling
-      if (err.notFound) { // key not found, most likely the first heat, building mock highscore to compare against
-        value = []
-      }
-    } else {
-      logger.error('Could not retrieve highscore information from database')
-      throw err
-    }
-
-    if (value.length < NUM_HIGHSCORE_ENTRIES) { // if highscore does not exist yet or has less than 20 entries we need some dummy entries to compare against
-      let startingElement = value.length
-      for (let i = startingElement; i < startingElement + 4; i++) {
-        value[i] = {}
-        value[i].rank = i + 1
-        value[i].t = 999999
-        value[i].rf = ''
-        value[i].heat = -1
+      if (!err.notFound) {
+        logger.error('%s::updateHighscore: Could not retrieve highscore for race %s from database', MODULE_ID, raceId)
+        return
       }
     }
+  }
 
-    let highscore = value
-    logger.debug('Iterating through current highscore to see if there is a new one')
-    for (let i = 0; i < lanes.length; i++) {
-      for (let k = 0; k < highscore.length; k++) {
-        let laneInserted = false
-        if (lanes[i].t < highscore[k].t) {
-          logger.info('Found new highscore: Heat - %i, Racer - %s, Time - %ims, Rank - %i', heatId, lanes[i].ow, lanes[i].t, k + 1)
-          lanes[i].heat = raceId + '-' + ('0' + heatId).splice(-2)
-          lanes[i].rank = k + 1
-          highscore.splice(k, 0, lanes[i])
-          laneInserted = true
-        }
-        if (laneInserted === true) {
-          break
-        }
+  if (highscore === undefined || highscore.length === 0) {
+    // here is a dummy, in case we have not yet initialised the highscore for this race
+    highscore = [{'rank': 1, 't': 999999, 'rf': '', 'heat': -1}]
+  }
+
+  logger.debug('%s::updateHighscore: iterating through current highscore to see if there is a new one', MODULE_ID)
+  // iterate over each car
+  for (let i = 0; i < lanes.length; i++) {
+    // iterate over the complete highscore array, length is for each iteration of i possible bigger
+    for (let k = 0; k < highscore.length; k++) {
+      // if there was no car on this lane or only a progress message came in
+      if (lanes[i].t === undefined ||
+         ((lanes[i].t === highscore[k].t) &&
+          (lanes[i].ow === highscore[k].ow) &&
+          (heatKey === highscore[i].heat))) {
+        // skip already known cars from this heat
+        break
+      }
+      // we arrive here only, if there is a defined item in lanes
+      if (lanes[i].t < highscore[k].t) {
+        logger.info('%s::updateHighscore: found new highscore: Heat - %i, Racer - %s, Time - %ims, Rank - %i', MODULE_ID,
+          heatId, lanes[i].ow, lanes[i].t, k + 1)
+        lanes[i].heat = heatKey
+        lanes[i].rank = k + 1
+        highscore.splice(k, 0, lanes[i])
+        break
       }
     }
+  }
 
-    logger.debug('Reapplying ranking to highscore')
-    highscore = highscore.sort(sortByTimeDesc)
-    for (var j = 0; j < highscore.length; j++) {
-      highscore[j].rank = j + 1
+  logger.debug('%s::updateHighscore: renumbering entries in highscore', MODULE_ID)
+  highscore.sort(sortByTimeAsc)
+  for (var j = 0; j < highscore.length; j++) {
+    highscore[j].rank = j + 1
+    logger.debug('%s::updateHighscore: entry: %d - %s', MODULE_ID, j, JSON.stringify(highscore[j]))
+  }
+  // let cleanHighscore = highscore.filter(entry => entry.t !== 999999)
+  highscore = highscore.slice(0, NUM_HIGHSCORE_ENTRIES)
 
-      logger.debug(JSON.stringify(highscore[j]))
-      if (highscore[j].t === 999999) { // remove dummy entries
-
-      }
-    }
-
-    highscore = highscore.slice(NUM_HIGHSCORE_ENTRIES)
-
-    logger.debug('Saving highscore information to database')
-    highscoreDb.put(raceId, highscore)
-    logger.debug('Successfully saved highscore information to database')
-    logger.debug('Closing database')
-  })
+  logger.debug('%s::updateHighscore: saving highscore information to database', MODULE_ID)
+  try {
+    await highscoreDb.put(raceId, highscore)
+    logger.debug('%s::updateHighscore: successfully saved highscore information to database', MODULE_ID)
+  } catch (err) {
+    logger.error('%s::updateHighscore: error saving highscore, err: %s', MODULE_ID, err)
+  }
 }
 
 // function for acknowledging messages from race track
@@ -512,7 +497,7 @@ var updateHeat = async function (heatId, heatStatus, lanes) {
     logger.debug('%s::updateHeat: Update leaderboard with new data', MODULE_ID)
     updateLeaderboard(heat)
     // logger.debug('%s::updateHeat: Update highscore with new data', MODULE_ID)
-    // updateHighscore(heatId, lanes)
+    updateHighscore(heatId, lanesSorted)
   } catch (err) {
     logger.error('%s::updateHeat: error saving heat %s', MODULE_ID, heatKey)
   }
@@ -664,12 +649,13 @@ function startSerialReader () {
   port.on('readable', function () {
     // get all data that is available from the serial port
     let allSerialData = port.read().toString('utf8')
-    logger.info('%s::eventListener: got serial data: %s', MODULE_ID, allSerialData.replace(/\n/g, '\\n'))
+    logger.debug('%s::eventListener: got serial data: %s', MODULE_ID,
+      allSerialData.replace(/\n/g, '\\n').replace(/\r/g, '\\r'))
 
     // take only the first portion up to the first newline
     let jsonData = ''
     if (allSerialData.indexOf('\n') === -1) {
-      logger.info('%s::eventListener: Got only partial message, buffering', MODULE_ID)
+      logger.debug('%s::eventListener: got only partial message, buffering', MODULE_ID)
       inputMsgBuffer += allSerialData
       // break, if we got only a partial JSON string
       return
@@ -682,12 +668,12 @@ function startSerialReader () {
 
     // get the data as an object
     let data
-    logger.debug('%s::eventListener: Constructed JSON string: %s', MODULE_ID, jsonData)
+    logger.info('%s::eventListener: received JSON string: %s', MODULE_ID, jsonData)
     try {
-      logger.debug('%s::eventListener: Parsing data to JSON object', MODULE_ID)
+      logger.debug('%s::eventListener: parsing data to JSON object', MODULE_ID)
       data = JSON.parse(jsonData)
     } catch (err) {
-      logger.error('%s::eventListener: Error parsing input data to JSON obj: %s', MODULE_ID, err.message)
+      logger.error('%s::eventListener: error parsing input data to JSON obj: %s', MODULE_ID, err.message)
       // error acknowledgement
       ack(0, false)
       return

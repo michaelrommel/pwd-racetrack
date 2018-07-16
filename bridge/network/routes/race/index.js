@@ -12,7 +12,6 @@ var checkpointDb
 
 function listRaces (req, res, next) {
   logger.info('%s::listRaces: request received', MODULE_ID)
-
   let races = []
   raceDb.createReadStream()
     .on('data', function (data) {
@@ -34,16 +33,13 @@ function listRaces (req, res, next) {
 
 async function getRace (req, res, next) {
   logger.info('%s::getRace: request received', MODULE_ID)
-
   if (req.params === undefined ||
       req.params.id === undefined
   ) {
     logger.error('%s::getRace: No raceId provided', MODULE_ID)
     return next(new httpErr.BadRequestError('No raceId provided'))
   }
-
   let raceId = req.params.id
-  // initialize the heats
   try {
     var race = await raceDb.get(raceId)
     res.send(200, race)
@@ -51,7 +47,6 @@ async function getRace (req, res, next) {
     return next()
   } catch (err) {
     if (race === undefined) {
-      // we did not find the race
       logger.error('%s::GetRace: could not find race in database: %s', MODULE_ID, err)
     }
     return next(new httpErr.InternalServerError('Could not find race'))
@@ -60,16 +55,13 @@ async function getRace (req, res, next) {
 
 async function initRace (req, res, next) {
   logger.info('%s::intRace: request received', MODULE_ID)
-
   if (req.params === undefined ||
       req.params.id === undefined
   ) {
-    logger.error('%s::intRace: no raceId provided', MODULE_ID)
+    logger.error('%s::initRace: no raceId provided', MODULE_ID)
     return next(new httpErr.BadRequestError('no raceId provided'))
   }
-
   let raceId = req.params.id
-  // initialize the heats
   try {
     var race = await raceDb.get(raceId)
 
@@ -90,7 +82,6 @@ async function initRace (req, res, next) {
     return next()
   } catch (err) {
     if (race === undefined) {
-      // we did not find the race
       logger.error('%s::intRace: could not find race in database: %s', MODULE_ID, err)
     }
     return next(new httpErr.InternalServerError('Could not find race'))
@@ -98,15 +89,17 @@ async function initRace (req, res, next) {
 }
 
 async function createRace (req, res, next) {
-  logger.info('%s: request received', MODULE_ID)
+  logger.info('%s::createRace: request received', MODULE_ID)
 
   if (req.params === undefined ||
       req.params.id === undefined ||
       req.body.description === undefined ||
       req.body.lanes === undefined ||
+      req.body.startAt === undefined ||
+      req.body.finalists === undefined ||
       req.body.cars === undefined ||
       Object.keys(req.body.cars).length < 15) {
-    logger.error('%s: Received incomplete create race information', MODULE_ID)
+    logger.error('%s::createRace: Received incomplete create race information', MODULE_ID)
     return next(new httpErr.BadRequestError('Incomplete create race information.'))
   }
 
@@ -116,9 +109,9 @@ async function createRace (req, res, next) {
   race['description'] = req.body.description
   race['lanes'] = req.body.lanes
   race['cars'] = req.body.cars
-  race['heatsQuali'] = countCars
-  race['heatsFinals'] = 14
-  race['finalCarCount'] = 7
+  race['heats'] = countCars
+  race['startAt'] = req.body.startAt
+  race['finalists'] = req.body.finalists
 
   try {
     await raceDb.put(raceId, race)
@@ -126,18 +119,18 @@ async function createRace (req, res, next) {
       await heatUtils.initializeHeats(raceId, 'all')
     } catch (err) {
       if (err.id === 'heaterror') {
-        logger.error('%s: Unable to insert heat %s into heat database', MODULE_ID, err.msg)
+        logger.error('%s::createRace: Unable to insert heat %s into heat database', MODULE_ID, err.msg)
         return next(new httpErr.InternalServerError('Could not insert heat'))
       } else if (err.id === 'raceconfigerror') {
-        logger.error('%s: Unable to retrieve race configuration %s from raceconfig database', MODULE_ID, err.msg)
+        logger.error('%s::createRace: Unable to retrieve race configuration %s from raceconfig database', MODULE_ID, err.msg)
         return next(new httpErr.InternalServerError('Could not get reaceconfig'))
       }
     }
     res.send(201, race)
-    logger.info('%s: response sent', MODULE_ID)
+    logger.info('%s::createRace: response sent', MODULE_ID)
     return next()
   } catch (err) {
-    logger.error('%s: Unable to insert race information into database', MODULE_ID)
+    logger.error('%s::createRace: Unable to insert race information into database', MODULE_ID)
     return next(new httpErr.InternalServerError('Could not create race'))
   }
 }
@@ -185,36 +178,36 @@ function getLeaderboard (req, res, next) {
   })
 }
 
-function getHighscores (req, res, next) {
-  logger.info('%s: request received', MODULE_ID)
+async function getHighscore (req, res, next) {
+  logger.info('%s::getHighscore: request received', MODULE_ID)
 
   if (req.params === undefined ||
       req.params.id === undefined) {
-    logger.error('%s: Received incomplete get highscore request', MODULE_ID)
-    return next(new httpErr.BadRequestError('Incomplete get highscore request.'))
+    logger.error('%s::getHighscore: received incomplete get highscore request', MODULE_ID)
+    return next(new httpErr.BadRequestError('incomplete get highscore request.'))
   }
 
-  highscoreDb.get(req.params.id, function (err, value) {
-    if (err) {
-      if (err.notFound) {
-        logger.error('%s: Received incorrect get highscore request', MODULE_ID)
-        return next(new httpErr.BadRequestError('Incorrect get highscore request.'))
-      }
-      logger.error('%s: Error retrieving highscore from database', MODULE_ID)
-      return next(new httpErr.BadRequestError('Unable to process get highscore request.'))
+  let highscore
+  try {
+    highscore = await highscoreDb.get(req.params.id)
+  } catch (err) {
+    if (err.notFound) {
+      logger.error('%s::getHighscore: could not find highscore for race %d', MODULE_ID, req.params.id)
+      return next(new httpErr.InternalServer('could not find highscore'))
     }
-
-    res.send(value)
-    logger.info('%s: response sent', MODULE_ID)
-    return next()
-  })
+    logger.error('%s::getHighscore: error retrieving highscore from database', MODULE_ID)
+    return next(new httpErr.InternalServer('error retrieving highscore from database'))
+  }
+  res.send(highscore)
+  logger.info('%s::getHighscore: response sent', MODULE_ID)
+  return next()
 }
 
 module.exports = (server, db, ser) => {
   serial = ser
   raceDb = db.race
   leaderboardDb = db.leaderboard
-  highscoreDb = db.highscoreDb
+  highscoreDb = db.highscore
   checkpointDb = db.checkpoint
   heatUtils.setContext(db)
   server.get('/race', listRaces)
@@ -222,5 +215,5 @@ module.exports = (server, db, ser) => {
   server.post('/race/:id', createRace)
   server.post('/race/init/:id', initRace)
   server.get('/race/leaderboard/:id', getLeaderboard)
-  server.get('/race/highscores/:id', getHighscores)
+  server.get('/race/highscore/:id', getHighscore)
 }

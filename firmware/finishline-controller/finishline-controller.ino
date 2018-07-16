@@ -402,9 +402,9 @@ void setup() {
 
   // visually signal that SerialUSB should be ready now
   Util::blink( FAST );
-  Serial.print( F("\n\nPinewood Derby Finishline Version ") );
-  Serial.println( FINISHLINE_VERSION );
-  Serial.println();
+  Serial.print( F("{\"name\": \"Pinewood Derby Finishline\", \"version\": \"") );
+  Serial.print( FINISHLINE_VERSION );
+  Serial.println( F("\"}") );
   Util::ShowMemory( SerialUSB, &_end, sbrk(0) );
   //SerialUSB.println( F("Finished setup()") );
 

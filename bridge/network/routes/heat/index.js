@@ -35,7 +35,7 @@ function getAllHeats (req, res, next) {
   let heats = []
   heatDb.createReadStream()
     .on('data', function (data) {
-      logger.debug('%s: Received data: %s', MODULE_ID, data)
+      logger.debug('%s: Received data: %s', MODULE_ID, JSON.stringify(data))
       let heat = {}
       heat[data.key] = data.value
       heats.push(heat)

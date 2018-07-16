@@ -25,9 +25,10 @@ async function initializeHeats (raceId, heatSpec) {
   try {
     race = await raceDb.get(raceId)
     let countLanes = race.lanes
-    let heatsQuali = race.heatsQuali
+    let heatCount = race.heats
+    let startsAt = race.startsAt
     let raceCars = race.cars
-    let raceConfigKey = '' + countLanes + '-' + heatsQuali
+    let raceConfigKey = '' + countLanes + '-' + heatCount
     let raceConfig
     let heatConfigList
     let lowerBound
@@ -39,15 +40,15 @@ async function initializeHeats (raceId, heatSpec) {
       if (typeof heatSpec === 'number') {
         // set the bounds of the loop so that only one heat is initialized
         lowerBound = heatSpec
-        upperBound = heatSpec + 1
+        upperBound = heatSpec
       } else {
-        // 'all' was specified
-        lowerBound = 0
-        upperBound = heatsQuali
+        // presumably 'all' was specified, heatnumbers start at 1
+        lowerBound = startsAt
+        upperBound = heatCount
       }
 
       // iterate through configuration of heats in race config
-      for (var i = lowerBound; i < upperBound; i++) {
+      for (var i = lowerBound; i <= upperBound; i++) {
         let heat = {}
         let heatId = i
         let heatConfig = heatConfigList[i]
@@ -109,21 +110,21 @@ async function getRaceConfigAndCars (raceId) {
   try {
     race = await raceDb.get(raceId)
     let countLanes = race.lanes
-    let heatsQuali = race.heatsQuali
-    let raceConfigKey = '' + countLanes + '-' + heatsQuali
+    let heats = race.heats
+    let raceConfigKey = '' + countLanes + '-' + heats
     let raceConfig
     try {
       raceConfig = await raceConfigDb.get(raceConfigKey)
       return {'raceconfig': raceConfig, 'cars': race.cars}
     } catch (err) {
       // we could not find a suitable race configuration in the database
-      logger.error('%s::getRaceConfig: no suitable race configuration %s found', MODULE_ID, raceConfigKey)
-      logger.error('%s::getRaceConfig: error was: %s', MODULE_ID, err)
+      logger.error('%s::getRaceConfigAndCars: no suitable race configuration %s found', MODULE_ID, raceConfigKey)
+      logger.error('%s::getRaceConfigAndCars: error was: %s', MODULE_ID, err)
       throw new UserException('raceconfigerror', raceConfigKey)
     }
   } catch (err) {
     // could not find race
-    logger.error('%s::getRaceConfig: could not find race %s', MODULE_ID, raceId)
+    logger.error('%s::getRaceConfigAndCars: could not find race %s', MODULE_ID, raceId)
     throw new UserException('raceerror', raceId)
   }
 }
