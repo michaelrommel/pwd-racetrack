@@ -29,6 +29,7 @@ function init (ctx) {
       /ping/ig,
       /race\/leaderboard/ig,
       /race\/highscore/ig,
+      /race\/lanes/ig,
       /heat\/current/ig,
       /heat\/next/ig,
       /user\/login/ig

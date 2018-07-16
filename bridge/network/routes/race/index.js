@@ -5,6 +5,7 @@ const heatUtils = require('../heat/heatUtils')
 
 var serial
 
+var laneDb
 var raceDb
 var leaderboardDb
 var highscoreDb
@@ -193,19 +194,45 @@ async function getHighscore (req, res, next) {
   } catch (err) {
     if (err.notFound) {
       logger.error('%s::getHighscore: could not find highscore for race %d', MODULE_ID, req.params.id)
-      return next(new httpErr.InternalServer('could not find highscore'))
+      return next(new httpErr.InternalServerError('could not find highscore'))
     }
     logger.error('%s::getHighscore: error retrieving highscore from database', MODULE_ID)
-    return next(new httpErr.InternalServer('error retrieving highscore from database'))
+    return next(new httpErr.InternalServerError('error retrieving highscore from database'))
   }
   res.send(highscore)
   logger.info('%s::getHighscore: response sent', MODULE_ID)
   return next()
 }
 
+function getLaneStatus (req, res, next) {
+  logger.info('%s: request received', MODULE_ID)
+
+  if (
+    req.params === undefined ||
+    req.params.id === undefined
+  ) {
+    logger.error('%s: Received incomplete get car information', MODULE_ID)
+    return next(new httpErr.BadRequestError('Incomplete get car information.'))
+  } else {
+    laneDb.get(req.params.id, function (err, value) {
+      if (err) {
+        if (err.notFound) {
+          logger.error('%s: Could not find specified raceId', MODULE_ID)
+          return next(new httpErr.BadRequestError('Could not retrieve lane information.'))
+        }
+      }
+      res.send(value)
+      logger.info('%s: response sent', MODULE_ID)
+      return next()
+    })
+  }
+}
+
+
 module.exports = (server, db, ser) => {
   serial = ser
   raceDb = db.race
+  laneDb = db.lane
   leaderboardDb = db.leaderboard
   highscoreDb = db.highscore
   checkpointDb = db.checkpoint
@@ -216,4 +243,5 @@ module.exports = (server, db, ser) => {
   server.post('/race/init/:id', initRace)
   server.get('/race/leaderboard/:id', getLeaderboard)
   server.get('/race/highscore/:id', getHighscore)
+  server.get('/race/lanes/:id', getLaneStatus)
 }

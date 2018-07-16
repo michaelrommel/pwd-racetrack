@@ -101,7 +101,7 @@ async function createHeat (req, res, next) {
 function getCurrentHeat (req, res, next) {
   logger.info('%s: request received', MODULE_ID)
 
-  heatDb.getValueStream()
+  heatDb.createValueStream()
     .on('data', function (data) {
       logger.debug('Received data: %s', data)
       if (data.status === 'current' || data.status === 'running') {
@@ -123,7 +123,7 @@ function getCurrentHeat (req, res, next) {
 function getNextHeat (req, res, next) {
   logger.info('%s: request received', MODULE_ID)
 
-  heatDb.getValueStream()
+  heatDb.createValueStream()
     .on('data', function (data) {
       logger.debug('Received data: %s', data)
       if (data.status === 'next') {
