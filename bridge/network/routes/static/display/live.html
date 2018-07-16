@@ -2,22 +2,25 @@
     <head> 
 	    <link rel="stylesheet" type="text/css" href="test.css" media=screen \>
     </head>
-<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
+<script src="angular.min.js"></script>
 <body ng-app="pwdApp">
     <script>
         /**********************************************************************************/
         /*                              Config                                            */
         /**********************************************************************************/
         POLL_TIME = 4000;
-        CURRENT_RACE_URL = "http://144.145.17.18:8080/heat/current";
-        NEXT_RACE_URL = "http://144.145.17.18:8080/heat/next";
-        LEADERS_URL = "http://144.145.17.18:8080/race/leaderboard/2018-Test";
-        HIGHSCORE_URL = "http://144.145.17.18:8080/race/highscore/2018-Test";
+        CURRENT_RACE_URL = "/heat/current";
+        NEXT_RACE_URL = "/heat/next";
+        LEADERS_URL = "/race/leaderboard/2018-Test";
+        HIGHSCORE_URL = "/race/highscore/2018-Test";
         
+        /*
         CURRENT_RACE_URL = "http://146.254.106.46:8080/heat/current";
         NEXT_RACE_URL = "http://146.254.106.46:8080/heat/next";
         LEADERS_URL = "http://146.254.106.46:8080/race/leaderboard/2018-Test";
         HIGHSCORE_URL = "http://146.254.106.46:8080/race/highscore/2018-Test";
+        */
+        
         DUMMY_DATA = false;
         /**********************************************************************************/
         /*                              Current Race Logic                                */
@@ -104,8 +107,8 @@
             } else {
                 let leaders = [];
                 let lanes = ["Dark Gray", "Turquoise", "Orange", "Bordeaux"];
-                for (let i = 0; i < restData.results.length; i++) {
-                    leaders.push({ name: restData.results[i].ow, cumScore: restData.results[i].cumulatedScore, cumTime: restData.results[i].cumulatedTime });
+                for (let i = 0; i < (restData.length < 20 ? restData.length : 20); i++) {
+                    leaders.push({ name: restData[i].ow, cumScore: restData[i].cumulatedScore, cumTime: restData[i].cumulatedTime });
                 }
                 return leaders;
             }
@@ -146,8 +149,8 @@
             } else {
                 let highscore = [];
                 let lanes = ["Dark Gray", "Turquoise", "Orange", "Bordeaux"];
-                for (let i = 0; i < restData.results.length; i++) {
-                    highscore.push({ rank: restData.results[i].rank, name: restData.results[i].ow, time: restData.results[i].t, heat: restData.results[i].heat });
+                for (let i = 0; i < (restData.length < 3 ? restData.length : 3); i++) {
+                    highscore.push({ rank: restData[i].rank, name: restData[i].ow, time: restData[i].t, heat: restData[i].heat });
                 }
                 return highscore;
             }           
@@ -156,7 +159,7 @@
         app.controller('getHighscore', function ($scope, $http, $interval) {
 
             $interval(function () {
-                $http.get(LEADERS_URL).
+                $http.get(HIGHSCORE_URL).
                     then(function success (response) {
                         $scope.highscore = getHighscore(response.data);
                     }, function error(response) {
@@ -195,7 +198,7 @@
 	    <h2 align="center">Fastest Time</h2>
          <table>
 		    <tr><th>Rank</th><th>Owner Name</th><th>Time</th><th>Heat</th></tr>
-		    <tr ng-repeat="x in leaders"><td> {{ x.rank }} </td> <td> {{ x.name }} </td> <td> {{ x.time }} </td><td> {{ x.heat }} </td></tr>
+		    <tr ng-repeat="x in highscore"><td> {{ x.rank }} </td> <td> {{ x.name }} </td> <td> {{ x.time }} </td><td> {{ x.heat }} </td></tr>
 	    </table>
     </div>
 </body>
