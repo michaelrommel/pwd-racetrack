@@ -101,13 +101,12 @@ async function createHeat (req, res, next) {
 function getCurrentHeat (req, res, next) {
   logger.info('%s: request received', MODULE_ID)
 
+  let current = {}
+
   heatDb.createValueStream()
     .on('data', function (data) {
-      logger.debug('Received data: %s', data)
       if (data.status === 'current' || data.status === 'running') {
-        res.send(data)
-        logger.info('%s: response sent', MODULE_ID)
-        return next()
+        current = {...data}
       }
     })
     .on('error', function (err) {
@@ -115,21 +114,26 @@ function getCurrentHeat (req, res, next) {
       return next(new httpErr.InternalServerError('Error retrieving heat information'))
     })
     .on('end', function () {
-      logger.error('Did not find current heat')
-      return next(new httpErr.InternalServerError('Could not find current heat'))
+      if (current.length === 0) {
+        logger.error('Did not find current heat')
+        return next(new httpErr.InternalServerError('Could not find current heat'))
+      } else {
+        res.send(current)
+        logger.info('%s: response sent', MODULE_ID)
+        return next()
+      }
     })
 }
 
 function getNextHeat (req, res, next) {
   logger.info('%s: request received', MODULE_ID)
 
+  let next = {}
+
   heatDb.createValueStream()
     .on('data', function (data) {
-      logger.debug('Received data: %s', data)
       if (data.status === 'next') {
-        res.send(data)
-        logger.info('%s: response sent', MODULE_ID)
-        return next()
+        next = {...data}
       }
     })
     .on('error', function (err) {
@@ -137,8 +141,14 @@ function getNextHeat (req, res, next) {
       return next(new httpErr.InternalServerError('Error retrieving heat information'))
     })
     .on('end', function () {
-      logger.error('Did not find next heat')
-      return next(new httpErr.InternalServerError('Could not find next heat'))
+      if (next.length === 0) {
+        logger.error('Did not find current heat')
+        return next(new httpErr.InternalServerError('Could not find current heat'))
+      } else {
+        res.send(next)
+        logger.info('%s: response sent', MODULE_ID)
+        return next()
+      }
     })
 }
 
