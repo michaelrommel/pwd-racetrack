@@ -10,15 +10,8 @@ var heatDb
 function getHeat (req, res, next) {
   logger.info('%s: request received', MODULE_ID)
 
-<<<<<<< HEAD
-
-  if ( req.params === undefined ||
-       req.params.id === undefined ) {
-
-=======
   if (req.params === undefined ||
     req.params.id === undefined) {
->>>>>>> 157a6ea4b66b88fe60993f3c196c1b27bb3c78d7
     logger.error('Received incomplete get heat information')
     return next(new httpErr.BadRequestError('Incomplete get heat information'))
   }
@@ -161,16 +154,9 @@ function getNextHeat (req, res, next) {
 
 function markCurrentHeat (req, res, next) {
   logger.info('%s: request received', MODULE_ID)
-<<<<<<< HEAD
-  
-  if (req.params === undefined ||
-      req.params.id === undefined) {
-          
-=======
 
   if (req.params === undefined ||
     req.params.id === undefined) {
->>>>>>> 157a6ea4b66b88fe60993f3c196c1b27bb3c78d7
     logger.error('Received incomplete put heat information')
     return next(new httpErr.BadRequestError('Incomplete mark current heat information'))
   }
