@@ -8,11 +8,14 @@
         /**********************************************************************************/
         /*                              Config                                            */
         /**********************************************************************************/
+
+        RACE_ID = ''
+
         POLL_TIME = 4000;
         CURRENT_RACE_URL = "/heat/current";
         NEXT_RACE_URL = "/heat/next";
-        LEADERS_URL = "/race/leaderboard/2018-Test";
-        HIGHSCORE_URL = "/race/highscore/2018-Test";
+        LEADERS_URL = "/race/leaderboard/";
+        HIGHSCORE_URL = "/race/highscore/";
         
         /*
         CURRENT_RACE_URL = "http://146.254.106.46:8080/heat/current";
@@ -117,7 +120,7 @@
         app.controller('getLeaders', function ($scope, $http, $interval) {
 
             $interval(function () {
-                $http.get(LEADERS_URL).
+                $http.get(LEADERS_URL + RACE_ID).
                     then(function success (response) {
                         $scope.leaders = getLeaders(response.data);
                     }, function error(response) {
@@ -159,7 +162,7 @@
         app.controller('getHighscore', function ($scope, $http, $interval) {
 
             $interval(function () {
-                $http.get(HIGHSCORE_URL).
+                $http.get(HIGHSCORE_URL + RACE_ID).
                     then(function success (response) {
                         $scope.highscore = getHighscore(response.data);
                     }, function error(response) {
@@ -168,6 +171,48 @@
                     })
             }, POLL_TIME);
         });
+
+
+        /**********************************************************************************/
+        /*                                  RaceId Logic                                  */
+        /**********************************************************************************/
+         function generateHighscore() {
+            var names = ["John", "Michael", "Tobias", "Rene", "Jessica", "Stan", "Anke", "Gunter", "Jo", "Sasha", "Wladimir"];
+            var carNames = ["Wurst", "Swish", "Blitz", "Maximum Lag", "or 1==1; drop table 'cars';", "Thunder", "Poo", "Nuclear", "Kaese"];
+            var leaders = [];
+            var i;
+            for (i = 0; i < 10; i++) {
+                var rand1 = Math.floor(Math.random() * names.length);
+                var rand2 = Math.floor(Math.random() * carNames.length);
+
+                leaders.push({ name: names[rand1], car: carNames[rand2], points: (Math.floor(Math.random() * 30) + 80) });
+            }
+            leaders.sort(function (a, b) { return (a.points < b.points) ? 1 : ((b.points < a.points) ? -1 : 0); });
+            return leaders;
+        }
+        function getHighscore(restData) {
+            if (DUMMY_DATA) {
+                return generateLeaders();
+            } else {
+                let highscore = [];
+                let lanes = ["Dark Gray", "Turquoise", "Orange", "Bordeaux"];
+                for (let i = 0; i < (restData.length < 3 ? restData.length : 3); i++) {
+                    highscore.push({ rank: restData[i].rank, name: restData[i].ow, time: restData[i].t, heat: restData[i].heat });
+                }
+                return highscore;
+            }           
+        }
+        
+        app.controller('inputRaceId', function ($scope) {
+		$scope.raceId = RACE_ID;
+
+		$scope.updateRaceId = function() {
+			RACE_ID = $scope.inputRaceId;
+			$scope.raceId = RACE_ID;
+		}
+
+        });
+
 
     </script>
     <div id="dvBanner">
@@ -201,5 +246,11 @@
 		    <tr ng-repeat="x in highscore"><td> {{ x.rank }} </td> <td> {{ x.name }} </td> <td> {{ x.time }} </td><td> {{ x.heat }} </td></tr>
 	    </table>
     </div>
+    <div ng-controller="inputRaceId" id="dvInputRaceId">
+	    <h2 align="left">Race "{{ raceId }}"</h2>
+	    <label>Input Race ID: <input type="text" name="inputRaceId" ng-model="inputRaceId">
+		    <button ng-click=updateRaceId()>Update</md-button>
+	    </label>
+    </div>
 </body>
-</html>
+d</html>
