@@ -26,7 +26,7 @@ async function initializeHeats (raceId, heatSpec) {
     race = await raceDb.get(raceId)
     let countLanes = race.lanes
     let heatCount = race.heats
-    let startsAt = race.startsAt
+    let startAt = race.startAt
     let raceCars = race.cars
     let raceConfigKey = '' + countLanes + '-' + heatCount
     let raceConfig
@@ -43,7 +43,7 @@ async function initializeHeats (raceId, heatSpec) {
         upperBound = heatSpec
       } else {
         // presumably 'all' was specified, heatnumbers start at 1
-        lowerBound = startsAt
+        lowerBound = startAt
         upperBound = heatCount
       }
 
