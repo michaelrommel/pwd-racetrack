@@ -37,7 +37,7 @@ MONITOR_CMD = PICOCOM
 #MONITOR_PORT = /dev/cu.usbmodemFA2321
 # Due in Racetrack
 #MONITOR_PORT = /dev/cu.usbmodemFA2441
-MONITOR_PORT = /dev/cu.usbmodemFA2311
+MONITOR_PORT = /dev/cu.usbmodemFA2321
 #MONITOR_PORT = /dev/cu.usbmodem5D11
 MONITOR_BAUDRATE = -b 57600
 #MONITOR_BAUDRATE = -b 9600

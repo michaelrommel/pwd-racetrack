@@ -40,6 +40,7 @@
 - PUT /heat/go/:id - start this heat
 
 - GET /track/highscores - get the overall highscores
+- GET /track/lanes - get the current lane status
 
 - POST /user/:id - create a new user
 - POST /user/login - login as a user get JWT token

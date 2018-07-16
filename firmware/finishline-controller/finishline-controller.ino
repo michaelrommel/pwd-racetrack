@@ -402,9 +402,9 @@ void setup() {
 
   // visually signal that SerialUSB should be ready now
   Util::blink( FAST );
-  Serial.print( F("\n\nPinewood Derby Finishline Version ") );
-  Serial.println( FINISHLINE_VERSION );
-  Serial.println();
+  Serial.print( F("{\"name\": \"Pinewood Derby Finishline\", \"version\": \"") );
+  Serial.print( FINISHLINE_VERSION );
+  Serial.println( F("\"}") );
   Util::ShowMemory( SerialUSB, &_end, sbrk(0) );
   //SerialUSB.println( F("Finished setup()") );
 
@@ -480,11 +480,11 @@ void loop() {
               combr.sendCarDetection( detectlane, setupHeat.lane[detectlane]->rfid );
               compi.sendCarDetection( detectlane, setupHeat.lane[detectlane]->rfid );
               // renew watchdog
-              emitterWatchdog = millis() + random(3000, 8000);
+              emitterWatchdog = millis() + random(30000, 60000);
             }
           } else {
             // shall now set the watchdog
-            emitterWatchdog = millis() + random(1000, 4000);
+            emitterWatchdog = millis() + random(4000, 8000);
           } 
         } else {
           // production code
