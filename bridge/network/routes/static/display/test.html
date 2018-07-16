@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head> 
+	<link rel="stylesheet" type="text/css" href="test.css" media=screen \>
+</head>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
+<script>
+    POLL_TIME = 4000;
+    CURRENT_RACE_URL = "./rest.txt";
+    DUMMY_DATA = false;
+
+
+    function generateRace()
+    {
+        var names = [ "John", "Michael", "Tobias", "Rene", "Jessica", "Stan", "Anke", "Gunter", "Jo", "Sasha", "Wladimir"];
+        var carNames = [ "Wurst", "Swish", "Blitz", "Maximum Lag", "or 1==1; drop table 'cars';", "Thunder", "Poo", "Nuclear", "Kaese"];
+        var race = [];
+	    var i;
+	    for (i = 0; i < 4; i++) {
+    	    var rand1 = Math.floor(Math.random() * names.length);
+            var rand2 = Math.floor(Math.random() * carNames.length);
+            race.push({name: names[rand1], car: carNames[rand2]});
+        }
+	    return race;
+    }
+
+    function generateLeaders()
+    {
+        var names = [ "John", "Michael", "Tobias", "Rene", "Jessica", "Stan", "Anke", "Gunter", "Jo", "Sasha", "Wladimir"];
+        var carNames = [ "Wurst", "Swish", "Blitz", "Maximum Lag", "or 1==1; drop table 'cars';", "Thunder", "Poo", "Nuclear", "Kaese"];
+        var leaders = [];
+	    var i;
+	    for (i = 0; i < 10; i++) {
+    	    var rand1 = Math.floor(Math.random() * names.length);
+            var rand2 = Math.floor(Math.random() * carNames.length);
+	
+            leaders.push({name: names[rand1], car: carNames[rand2], points: (Math.floor(Math.random() * 30)+80)});
+        }
+        leaders.sort(function(a,b) {return (a.points < b.points) ? 1 : ((b.points < a.points) ? -1 : 0);} );	
+        return leaders;
+    }
+
+    function getCurrentRace (restData)
+    {
+        if (DUMMY_DATA)
+            return generateRace();
+        else {
+            var race = [];
+            var lanes = ["Dark Gray", "Turquoise", "Orange", "Bordeaux"];
+            var i;
+            for (i = 0; i < 4; i++) {
+                race.push({ name: restData.results[i].ow, lane: lanes[i] });
+            }
+            return race;
+        }
+    }
+
+    function getNextRace()
+    {
+        return generateRace();
+    }
+
+    function getLeaders()
+    {
+	    return generateLeaders();
+    }
+
+</script>
+<body ng-app="pwdApp">
+<div id="dvBanner">
+	<h1>SRS Pinewood Derby 2018</h1>
+</div>
+<div ng-controller="getCurrentRace" id="dvCurrentRace">
+	<h2 align="center">Curent Race</h2>
+	<table>
+		<tr><th>Pos.</th><th>Owner Name</th><th>Lane</th></tr>
+		<tr ng-repeat="x in currCars"><td> {{ $index + 1 }} </td> <td> {{ x.name }} </td> <td> {{ x.lane }} </td></tr>
+	</table>
+</div>
+<div ng-controller="getLeaders" id="dvLeaderBoard">
+	<h2 align="center">Leader Board</h2>
+	<table>
+		<tr><th>Pos.</th><th>Owner Name</th><th>Car Name</th><th>Points</th></tr>
+		<tr ng-repeat="x in leaders"><td> {{ $index + 1 }} </td> <td> {{ x.name }} </td> <td> {{ x.car }} </td><td> {{ x.points }} </td></tr>
+	</table>
+
+</div>
+<div ng-controller="getNextRace" id="dvNextRace">
+	<h2 align="center">Next Race</h2>
+	<table>
+		<tr><th>Pos.</th><th>Owner Name</th><th>Car Name</th></tr>
+		<tr ng-repeat="x in cars"><td> {{ $index + 1 }} </td> <td> {{ x.name }} </td> <td> {{ x.car }} </td></tr>
+	</table>
+</div>
+<div ng-controller="getTopTime" id="dvFastestTime">
+	<h2 align="center">Fastest Time</h2>
+    <h3 align="center">Message from spring.io, id is {{greeting.id}}; content is {{greeting.content}}</h3>
+</div>
+
+<script>
+var app = angular.module('pwdApp', []);
+app.controller('getCurrentRace', function($scope, $http, $interval) {
+	
+	$interval(function () {
+			$scope.currCars = getCurrentRace();
+			$http.get(CURRENT_RACE_URL).
+                then(function success(response) {
+                    $scope.currCars = getCurrentRace(response.data);
+                }, function error(response) {
+                    //error handling here
+                    $scope.error = response.statusText;
+                })
+	}, POLL_TIME);
+});
+app.controller('getNextRace', function($scope, $interval) {
+	
+	$scope.cars = getNextRace();
+	$interval(function () {
+	    $scope.cars = getNextRace();
+	}, POLL_TIME);
+});
+app.controller('getLeaders', function($scope, $interval) {
+	
+	$scope.leaders = getLeaders();
+	$interval(function () {
+		$scope.leaders = getLeaders();
+	}, POLL_TIME);
+});
+app.controller('getTopTime', function ($scope, $http, $interval) {
+    $interval(function () {
+        $http.get('http://rest-service.guides.spring.io/greeting').
+            then(function (response) {
+                $scope.greeting = response.data;
+            })
+    }, POLL_TIME);
+});
+</script>
+
+</body>
+</html>

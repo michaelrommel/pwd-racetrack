@@ -1,0 +1,1 @@
+{"heat":7,"status":"finished","results":[{"rf":"044E57A22D4D","ow":"Peter Venkman","mn":201807181,"sn":14,"t":5455,"score":1},{"rf":"045657A22D4D","ow":"Ray Stantz","mn":201807181,"sn":28,"t":3440,"score":8},{"rf":"04E556A22D4D","ow":"Egon Spengler","mn":201807181,"sn":9,"t":3729,"score":2},{"rf":"047756A22D4D","ow":"Winston Zeddemore","mn":201807181,"sn":22,"t":3671,"score":4}]}
