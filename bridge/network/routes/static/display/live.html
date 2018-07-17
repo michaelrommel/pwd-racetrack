@@ -1,15 +1,23 @@
 <html>
   <head> 
     <link rel="stylesheet" type="text/css" href="live.css" media=screen \>
+    <link rel = "stylesheet" href = "https://ajax.googleapis.com/ajax/libs/angular_material/1.1.4/angular-material.min.css">
+
+         <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.7/angular.js"></script>
+         <script src="https://ajax.googleapis.com/ajax/libs/angular_material/1.1.9/angular-material.min.js"></script>
+         <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.7/angular-aria.js"></script>
+      <script src = "https://ajax.googleapis.com/ajax/libs/angularjs/1.6.7/angular-animate.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/1.1.3/hammer.min.js"></script>
+         
   </head>
-  <script src="angular.min.js"></script>
+  
   <body ng-app="pwdApp">
     <script>
       /**********************************************************************************/
       /*                              Config                                            */
       /**********************************************************************************/
 
-      RACE_ID = '';
+      RACE_ID = '2018-Race';
       POLL_TIME = 4000;
       CURRENT_RACE_URL = "/heat/current";
       NEXT_RACE_URL = "/heat/next";
@@ -23,7 +31,7 @@
       HIGHSCORE_URL = "http://146.254.106.46:8080/race/highscore/2018-Test";
       */
       
-      var app = angular.module('pwdApp', []);
+      var app = angular.module('pwdApp', ['ngMaterial']);
 
       /**********************************************************************************/
       /*                              Current Race Logic                                */
@@ -133,12 +141,32 @@
       /**********************************************************************************/
       /*                                  RaceId Logic                                  */
       /**********************************************************************************/
-      app.controller('inputRaceId', function ($scope) {
+      app.controller('inputRaceId', function ($scope, $mdDialog) {
         $scope.raceId = RACE_ID;
 
         $scope.updateRaceId = function() {
           RACE_ID = $scope.inputRaceId;
           $scope.raceId = RACE_ID;
+        }
+        
+        $scope.showPrompt = function(ev) {
+             // Appending dialog to document.body to cover sidenav in docs app
+        var confirm = $mdDialog.prompt()
+          .title('Setting Race ID')
+          .textContent('Set the new Race ID')
+          .placeholder('Race ID')
+          .ariaLabel('Race ID')
+          .initialValue($scope.raceId)
+          .targetEvent(ev)
+          .required(true)
+          .ok('Update')
+          .cancel('Cancel');
+       
+        $mdDialog.show(confirm).then(function(result) {
+          RACE_ID = result;
+          $scope.raceId = result;
+        }, function() {
+        });
         }
       });
     </script>
@@ -175,10 +203,7 @@
 	    </table>
     </div>
     <div ng-controller="inputRaceId" id="dvInputRaceId">
-	    <h2 align="left">RaceID: {{ raceId }}</h2>
-	    <label>RaceID: <input type="text" name="inputRaceId" ng-model="inputRaceId">
-		    <button ng-click=updateRaceId()>Update</md-button>
-	    </label>
+	    <button type="button" class="md-primary md-raised" ng-click="showPrompt($event)">Race ID: {{ raceId }}</button>
     </div>
   </body>
 </html>
