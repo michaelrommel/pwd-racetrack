@@ -99,54 +99,66 @@ async function createHeat (req, res, next) {
 }
 
 function getCurrentHeat (req, res, next) {
-  logger.info('%s: request received', MODULE_ID)
+  logger.info('%s::getCurrentHeat: request received', MODULE_ID)
+
+  if (req.params === undefined ||
+    req.params.id === undefined) {
+    logger.error('%s::getCurrentHeat: missing race id', MODULE_ID)
+    return next(new httpErr.BadRequestError('missing race id'))
+  }
 
   let currentHeat = {}
 
-  heatDb.createValueStream()
+  heatDb.createReadStream()
     .on('data', function (data) {
-      if (data.status === 'current' || data.status === 'running') {
-        currentHeat = {...data}
+      if (data.key.match(/req.params.id/) && (data.value.status === 'current' || data.value.status === 'running')) {
+        currentHeat = {...data.value}
       }
     })
     .on('error', function (err) {
-      logger.error('Error getting heats: %s', err)
+      logger.error('%s::getCurrentHeat: Error getting heats: %s', MODULE_ID, err)
       return next(new httpErr.InternalServerError('Error retrieving heat information'))
     })
     .on('end', function () {
       if (currentHeat.length === 0) {
-        logger.error('Did not find current heat')
+        logger.error('%s::getCurrentHeat: Did not find current heat', MODULE_ID)
         return next(new httpErr.InternalServerError('Could not find current heat'))
       } else {
         res.send(currentHeat)
-        logger.info('%s: response sent', MODULE_ID)
+        logger.info('%s::getCurrentHeat: response sent', MODULE_ID)
         return next()
       }
     })
 }
 
 function getNextHeat (req, res, next) {
-  logger.info('%s: request received', MODULE_ID)
+  logger.info('%s::getNextHeat: request received', MODULE_ID)
+
+  if (req.params === undefined ||
+    req.params.id === undefined) {
+    logger.error('%s::getNextHeat: missing race id', MODULE_ID)
+    return next(new httpErr.BadRequestError('missing race id'))
+  }
 
   let nextHeat = {}
 
-  heatDb.createValueStream()
+  heatDb.createReadStream()
     .on('data', function (data) {
-      if (data.status === 'next') {
-        nextHeat = {...data}
+      if (data.key.match(/req.params.id/) && data.value.status === 'next') {
+        nextHeat = {...data.value}
       }
     })
     .on('error', function (err) {
-      logger.error('Error getting heats: %s', err)
+      logger.error('%s::getNextHeat: Error getting heats: %s', MODULE_ID, err)
       return next(new httpErr.InternalServerError('Error retrieving heat information'))
     })
     .on('end', function () {
       if (nextHeat.length === 0) {
-        logger.error('Did not find current heat')
+        logger.error('%s::getNextHeat: Did not find current heat', MODULE_ID)
         return next(new httpErr.InternalServerError('Could not find current heat'))
       } else {
         res.send(nextHeat)
-        logger.info('%s: response sent', MODULE_ID)
+        logger.info('%s::getNextHeat: response sent', MODULE_ID)
         return next()
       }
     })
@@ -287,8 +299,8 @@ module.exports = (server, db, serial) => {
   server.get('/heat/', getAllHeats)
   server.get('/heat/:id', getHeat)
   server.post('/heat/:id', createHeat)
-  server.get('/heat/current', getCurrentHeat)
-  server.get('/heat/next', getNextHeat)
+  server.get('/heat/current/:id', getCurrentHeat)
+  server.get('/heat/next/:id', getNextHeat)
   server.put('/heat/current/:id', markCurrentHeat)
   server.put('/heat/next/:id', markNextHeat)
   server.put('/heat/init/:id', initHeat)
