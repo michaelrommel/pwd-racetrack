@@ -25,10 +25,11 @@ async function initializeHeats (raceId, heatSpec) {
   try {
     race = await raceDb.get(raceId)
     let countLanes = race.lanes
-    let heatCount = race.heats
+    let countCars = race.countCars
+    let heatCount
     let startAt = race.startAt
     let raceCars = race.cars
-    let raceConfigKey = '' + countLanes + '-' + heatCount
+    let raceConfigKey = '' + countLanes + '-' + countCars
     let raceConfig
     let heatConfigList
     let lowerBound
@@ -37,6 +38,8 @@ async function initializeHeats (raceId, heatSpec) {
       raceConfig = await raceConfigDb.get(raceConfigKey)
       heatConfigList = raceConfig.heats
 
+      heatCount = Object.keys(raceConfig.heats).length
+
       if (typeof heatSpec === 'number') {
         // set the bounds of the loop so that only one heat is initialized
         lowerBound = heatSpec
@@ -44,7 +47,7 @@ async function initializeHeats (raceId, heatSpec) {
       } else {
         // presumably 'all' was specified, heatnumbers start at 1
         lowerBound = startAt
-        upperBound = heatCount
+        upperBound = startAt + heatCount
       }
 
       // iterate through configuration of heats in race config
