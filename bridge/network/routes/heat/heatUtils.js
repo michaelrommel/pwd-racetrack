@@ -83,7 +83,7 @@ async function initializeHeats (raceId, heatSpec) {
           heat.results.push(result)
         }
 
-        let finalHeatNumber = heatId + offset
+        let finalHeatNumber = heatId + offset - 1
 
         // put all information about all cars in this heat into the heatDb
         let heatKey = raceId + '-' + ('0' + finalHeatNumber).slice(-2)
