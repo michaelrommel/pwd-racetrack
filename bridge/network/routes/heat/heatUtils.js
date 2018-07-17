@@ -52,11 +52,13 @@ async function initializeHeats (raceId, heatSpec) {
       // iterate through configuration of heats in race config
       for (var i = lowerBound; i < upperBound; i++) {
         let heat = {}
-        let heatId = i
+        let finalHeatNumber = i + offset - 1
         let heatConfig = heatConfigList[i]
-        heat.heat = i
+
+        heat.heat = finalHeatNumber
         heat.status = ''
         heat.results = []
+
         // iterate through lane/car config in individual heat config
         for (var l = 0; l < heatConfig.length; l++) {
           // get the startnumber of the car in this lane
@@ -82,8 +84,6 @@ async function initializeHeats (raceId, heatSpec) {
           result.score = 0
           heat.results.push(result)
         }
-
-        let finalHeatNumber = heatId + offset - 1
 
         // put all information about all cars in this heat into the heatDb
         let heatKey = raceId + '-' + ('0' + finalHeatNumber).slice(-2)
