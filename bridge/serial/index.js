@@ -537,13 +537,13 @@ var carDetected = function (heatId, msgState, lanes) {
       if (lane.rf) {
         if (msgState === ST_HEAT_UNKWN) {
           logger.info('%s::carDetected: car during unititialized heat in lane %i', MODULE_ID, i)
-          lane.state = 'unknown'
+          lane.status = 'unknown'
         } else if (msgState === ST_COR_LANE) {
           logger.info('%s::carDetected: car %s set in correct lane', MODULE_ID, lane.rf)
-          lane.state = 'correct'
+          lane.status = 'correct'
         } else if (msgState === ST_WRO_LANE) {
           logger.info('%s::carDetected: car %s set in wrong lane', MODULE_ID, lane.rf)
-          lane.state = 'wrong'
+          lane.status = 'wrong'
         }
         // using a reference to one property of the lanes object is okay here
         dto.lanes[i] = lane
@@ -577,7 +577,7 @@ var heatSetupComplete = function (heatId, lanes) {
   for (var i = 0; i < lanes.length; i++) {
     let lane = lanes[i]
     lane.lane = i
-    lane.state = 'ok'
+    lane.status = 'ok'
     dto.lanes[i] = lane
   }
 
