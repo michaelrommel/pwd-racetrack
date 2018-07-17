@@ -32,8 +32,65 @@ function listRaces (req, res, next) {
     })
 }
 
+async function getRace (req, res, next) {
+  logger.info('%s::getRace: request received', MODULE_ID)
+  if (req.params === undefined ||
+      req.params.id === undefined
+  ) {
+    logger.error('%s::getRace: No raceId provided', MODULE_ID)
+    return next(new httpErr.BadRequestError('No raceId provided'))
+  }
+  let raceId = req.params.id
+  try {
+    var race = await raceDb.get(raceId)
+    res.send(200, race)
+    logger.info('%s::GetRace: response sent', MODULE_ID)
+    return next()
+  } catch (err) {
+    if (race === undefined) {
+      logger.error('%s::GetRace: could not find race in database: %s', MODULE_ID, err)
+    }
+    return next(new httpErr.InternalServerError('Could not find race'))
+  }
+}
+
+async function initRace (req, res, next) {
+  logger.info('%s::intRace: request received', MODULE_ID)
+  if (req.params === undefined ||
+      req.params.id === undefined
+  ) {
+    logger.error('%s::initRace: no raceId provided', MODULE_ID)
+    return next(new httpErr.BadRequestError('no raceId provided'))
+  }
+  let raceId = req.params.id
+  try {
+    var race = await raceDb.get(raceId)
+
+    // save the current active race in case of restarts of the bridge
+    try {
+      await checkpointDb.put('raceId', raceId)
+      logger.debug('%s::initRace: saved raceId %s as checkpoint', MODULE_ID, raceId)
+    } catch (err) {
+      logger.error('%s::initRace: could not save raceId %s as checkpoint', MODULE_ID, raceId)
+    }
+
+    // the serial module deals with all messsages in one heat, this heat must
+    // be initialized
+    serial.initRace(raceId)
+
+    res.send(200, race)
+    logger.info('%s::intRace: response sent', MODULE_ID)
+    return next()
+  } catch (err) {
+    if (race === undefined) {
+      logger.error('%s::intRace: could not find race in database: %s', MODULE_ID, err)
+    }
+    return next(new httpErr.InternalServerError('Could not find race'))
+  }
+}
+
 async function createRace (req, res, next) {
-  logger.info('%s: request received', MODULE_ID)
+  logger.info('%s::createRace: request received', MODULE_ID)
 
   if (req.params === undefined ||
       req.params.id === undefined ||
@@ -78,7 +135,6 @@ async function createRace (req, res, next) {
     return next(new httpErr.InternalServerError('Could not create race'))
   }
 }
-
 
 // function for sorting leaderboard
 var sortByCumScoreAndTime = function (a, b) {
@@ -137,10 +193,10 @@ async function getHighscore (req, res, next) {
     highscore = await highscoreDb.get(req.params.id)
   } catch (err) {
     if (err.notFound) {
-      logger.error('%s::getHighscore: could not find highscore for race %d', MODULE_ID, req.params.id)
+      logger.error('%s::getHighscore: could not find highscore for race %s', MODULE_ID, req.params.id)
       return next(new httpErr.InternalServerError('could not find highscore'))
     }
-    logger.error('%s::getHighscore: error retrieving highscore from database', MODULE_ID)
+    logger.error('%s::getHighscore: error retrieving highscore for race %s from db', MODULE_ID, req.params.id)
     return next(new httpErr.InternalServerError('error retrieving highscore from database'))
   }
   res.send(highscore)
@@ -171,7 +227,6 @@ function getLaneStatus (req, res, next) {
     })
   }
 }
-
 
 module.exports = (server, db, ser) => {
   serial = ser
