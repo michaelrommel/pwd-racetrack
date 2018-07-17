@@ -193,10 +193,10 @@ async function getHighscore (req, res, next) {
     highscore = await highscoreDb.get(req.params.id)
   } catch (err) {
     if (err.notFound) {
-      logger.error('%s::getHighscore: could not find highscore for race %d', MODULE_ID, req.params.id)
+      logger.error('%s::getHighscore: could not find highscore for race %s', MODULE_ID, req.params.id)
       return next(new httpErr.InternalServerError('could not find highscore'))
     }
-    logger.error('%s::getHighscore: error retrieving highscore from database', MODULE_ID)
+    logger.error('%s::getHighscore: error retrieving highscore for race %s from db', MODULE_ID, req.params.id)
     return next(new httpErr.InternalServerError('error retrieving highscore from database'))
   }
   res.send(highscore)
@@ -227,7 +227,6 @@ function getLaneStatus (req, res, next) {
     })
   }
 }
-
 
 module.exports = (server, db, ser) => {
   serial = ser
