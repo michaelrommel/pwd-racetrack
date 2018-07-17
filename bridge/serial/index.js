@@ -1,4 +1,4 @@
-'use strict';
+'use strict'
 
 const MODULE_ID = 'serial'
 const logger = require('../utils/logger')
@@ -227,7 +227,7 @@ var updateLeaderboard = async function (heat) {
       leaderboard[rfid] = {...heat.results[i]}
       leaderboard[rfid].cumulatedScore = cumulatedScore
       leaderboard[rfid].cumulatedTime = cumulatedTime
-      delete(leaderboard[rfid].score)
+      delete leaderboard[rfid].score
     }
     // now we updated the whole leaderboard
     try {
@@ -513,7 +513,7 @@ var carDetected = function (heatId, msgState, lanes) {
   // set the overall status to not-okay
   dto.status = 'nok'
   dto.heat = heatId
-  dto.lanes = []
+  dto.lanes = [{}, {}, {}, {}]
 
   logger.debug('%s::carDetected: retrieving lane status information for %s', MODULE_ID, heatId)
   // in the database, there is only one lane entry for the current race
