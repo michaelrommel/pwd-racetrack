@@ -181,6 +181,7 @@ var updateLeaderboard = async function (heat) {
   try {
     // these cars were in to calculate the complete score
     let confAndCars = await heatUtils.getRaceConfigAndCars(raceId)
+    let offset = confAndCars.startAt
     for (let i = 0; i < heat.results.length; i++) {
       // get the car RFID
       let rfid = heat.results[i].rf
@@ -201,13 +202,14 @@ var updateLeaderboard = async function (heat) {
       // get all heats where this car was in, note that heatnumbers start with 1 and we are
       // using object keys here, not array indices
       for (let h = 1; h <= Object.keys(confAndCars.raceconfig.heats).length; h++) {
+	let realHeatNumber = h + offset - 1
         for (let l = 0; l < confAndCars.raceconfig.heats[h].length; l++) {
           if (confAndCars.raceconfig.heats[h][l] === startNumber) {
             // we found a heat
             // heatNumber = h
             // laneNumber = l
             // get the score for that heat
-            let otherHeatKey = raceId + '-' + ('0' + h).slice(-2)
+            let otherHeatKey = raceId + '-' + ('0' + realHeatNumber).slice(-2)
             try {
               let otherHeat = await heatDb.get(otherHeatKey)
               let score = otherHeat.results[l].score

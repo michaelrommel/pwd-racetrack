@@ -108,10 +108,11 @@ function getCurrentHeat (req, res, next) {
   }
 
   let currentHeat = {}
+  var re = new RegExp(req.params.id, 'g')
 
   heatDb.createReadStream()
     .on('data', function (data) {
-      if (data.key.match(/req.params.id/) && (data.value.status === 'current' || data.value.status === 'running')) {
+      if (data.key.match(re) && (data.value.status === 'current' || data.value.status === 'running')) {
         currentHeat = {...data.value}
       }
     })
@@ -141,10 +142,11 @@ function getNextHeat (req, res, next) {
   }
 
   let nextHeat = {}
+  var re = new RegExp(req.params.id, 'g')
 
   heatDb.createReadStream()
     .on('data', function (data) {
-      if (data.key.match(/req.params.id/) && data.value.status === 'next') {
+      if (data.key.match(re) && data.value.status === 'next') {
         nextHeat = {...data.value}
       }
     })

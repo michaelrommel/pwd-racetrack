@@ -114,12 +114,12 @@ async function getRaceConfigAndCars (raceId) {
   try {
     race = await raceDb.get(raceId)
     let countLanes = race.lanes
-    let heats = race.heats
-    let raceConfigKey = '' + countLanes + '-' + heats
+    let countCars = race.countCars
+    let raceConfigKey = '' + countLanes + '-' + countCars
     let raceConfig
     try {
       raceConfig = await raceConfigDb.get(raceConfigKey)
-      return {'raceconfig': raceConfig, 'cars': race.cars}
+      return {'raceconfig': raceConfig, 'cars': race.cars, 'startAt': race.startAt}
     } catch (err) {
       // we could not find a suitable race configuration in the database
       logger.error('%s::getRaceConfigAndCars: no suitable race configuration %s found', MODULE_ID, raceConfigKey)
