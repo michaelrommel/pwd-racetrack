@@ -12,14 +12,14 @@
       RACE_ID = '';
       POLL_TIME = 4000;
       CURRENT_RACE_URL = "/heat/current";
-      CURRENT_RACE_STATUS_URL = "/heat/status/";
+      CURRENT_RACE_STATUS_URL = "/race/lanes/";
       NEXT_RACE_URL = "/heat/next";
       LEADERS_URL = "/race/leaderboard/";
       HIGHSCORE_URL = "/race/highscore/";
       
       /*
-      CURRENT_RACE_URL = "http://146.254.106.46:8080/heat/current";
-      NEXT_RACE_URL = "http://146.254.106.46:8080/heat/next";
+      CURRENT_RACE_URL = "http://146.254.106.46:8080/heat/current/2018-Test";
+      NEXT_RACE_URL = "http://146.254.106.46:8080/heat/next/2018-Test";
       LEADERS_URL = "http://146.254.106.46:8080/race/leaderboard/2018-Test";
       HIGHSCORE_URL = "http://146.254.106.46:8080/race/highscore/2018-Test";
       */
@@ -54,8 +54,8 @@
           $interval(function () {
               $scope.currCars = [];
               $q.all([
-                $http.get(CURRENT_RACE_URL),
-                $http.get(CURRENT_RACE_STATUS_URL)
+                $http.get(CURRENT_RACE_URL + RACE_ID),
+                $http.get(CURRENT_RACE_STATUS_URL + RACE_ID)
               ]).then(function (results) {
                   
                   //$scope.currCars = getCurrentRace(results[0].data);
@@ -82,7 +82,7 @@
       app.controller('getNextRace', function ($scope, $http, $interval) {
 
           $interval(function () {
-              $http.get(NEXT_RACE_URL).
+              $http.get(NEXT_RACE_URL + RACE_ID).
                   then(function success(response) {
                       $scope.cars = getNextRace(response.data);
 
