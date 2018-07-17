@@ -31,7 +31,7 @@
       /**********************************************************************************/
       function getCurrentRace(restData) {
             var race = [];
-            var lanes = ["Dark Gray", "Turquoise", "Orange", "Bordeaux"];
+            var lanes = ["Grey", "Blue", "Orange", "Berry"];
             var i;
             for (i = 0; i < 4; i++) {
                 race.push({ name: restData.results[i].ow, lane: lanes[i], time: restData.results[i].t, score: restData.results[i].score});
@@ -71,7 +71,7 @@
       /**********************************************************************************/
       function getNextRace(restData) {
             var race = [];
-            var lanes = ["Dark Gray", "Turquoise", "Orange", "Bordeaux"];
+            var lanes = ["Grey", "Blue", "Orange", "Berry"];
             var i;
             for (i = 0; i < 4; i++) {
                 race.push({ name: restData.results[i].ow, lane: lanes[i] });

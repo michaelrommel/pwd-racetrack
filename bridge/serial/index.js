@@ -202,7 +202,7 @@ var updateLeaderboard = async function (heat) {
       // get all heats where this car was in, note that heatnumbers start with 1 and we are
       // using object keys here, not array indices
       for (let h = 1; h <= Object.keys(confAndCars.raceconfig.heats).length; h++) {
-	let realHeatNumber = h + offset - 1
+        let realHeatNumber = h + offset - 1
         for (let l = 0; l < confAndCars.raceconfig.heats[h].length; l++) {
           if (confAndCars.raceconfig.heats[h][l] === startNumber) {
             // we found a heat
@@ -490,7 +490,7 @@ var updateHeat = async function (heatId, heatStatus, lanes) {
   } else if (heatStatus === ST_HEAT_FINISHED) {
     // we have received the progess for a finished heat
     logger.info('%s::updateHeat: Received progress of finished heat', MODULE_ID)
-    heat.status = 'finished'
+    heat.status = 'just finished'
   }
 
   logger.debug('%s::updateHeat: Saving updated heat information to database', MODULE_ID)
