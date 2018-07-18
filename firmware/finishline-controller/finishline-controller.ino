@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define FINISHLINE_VERSION "0.1.1"
+#define FINISHLINE_VERSION "0.1.4"
 
 #define TM1637_DATA 24
 #define TM1637_CLOCK 26
@@ -517,7 +517,7 @@ void loop() {
             // startgate will not change the state in this state we will
             // receive detect messages or complete messages from the startgate.
             // res will tell us if we need to emit one to the bridge
-            dumpHeat( &setupHeat );
+            //dumpHeat( &setupHeat );
             // if the status is complete
             if( setupHeat.status == PWDProtocol::STATUS_SETUPCOMPLETE ) {
               // send complete message
@@ -530,6 +530,33 @@ void loop() {
                 if( *setupHeat.lane[i]->rfid != '\0' ) {
                   SerialUSB.print( F("car detected on lane ") );
                   SerialUSB.println( i );
+                  // need to amend information, since we got it "skinny"
+                  // change empty information to dummies to keep the Android
+                  // app happy...
+                  if( strlen( setupHeat.lane[i]->owner ) == 0 ) {
+                    if( strlen( heat.lane[i]->owner ) != 0 ) {
+                      // real heat has valid info
+                      strncpy( setupHeat.lane[i]->owner, heat.lane[i]->owner, 15 );
+                    } else {
+                      strncpy( setupHeat.lane[i]->owner, "dummy\0", 6 );
+                    }
+                  }
+                  if( setupHeat.lane[i]->modelno == 0 ) {
+                    if( heat.lane[i]->modelno != 0 ) {
+                      // real heat has valid info
+                      setupHeat.lane[i]->modelno = heat.lane[i]->modelno;
+                    } else {
+                      setupHeat.lane[i]->modelno = 99999;
+                    }
+                  }
+                  if( setupHeat.lane[i]->serno == 0 ) {
+                    if( heat.lane[i]->serno != 0 ) {
+                      // real heat has valid info
+                      setupHeat.lane[i]->serno = heat.lane[i]->serno;
+                    } else {
+                      setupHeat.lane[i]->serno = 999;
+                    }
+                  }
                   combr.sendCarDetection( setupHeat.heatno, i, setupHeat.lane[i], 
                       (setupHeat.status == PWDProtocol::STATUS_WRONGLANE) ? true : false );
                   compi.sendCarDetection( setupHeat.heatno, i, setupHeat.lane[i], 
@@ -564,6 +591,7 @@ void loop() {
               if ( detectlane == 4 ) {
                 // this means, all cars are right on the track
                 SerialUSB.println( "Setup correct" );
+                heat.status = PWDProtocol::STATUS_SETUPCOMPLETE;
                 combr.sendCompleteOrProgress( PWDProtocol::CODE_COMPLETE, &heat );
                 compi.sendCompleteOrProgress( PWDProtocol::CODE_COMPLETE, &heat );
               } else {
@@ -613,8 +641,8 @@ void loop() {
             // in this case a returned true means, that we received the 
             // GATEOPENED response from the startgate indicating that it opened the gate
             unsigned long rtt = millis() - start;
-            SerialUSB.print( "RTT to gate was: " );
-            SerialUSB.println( rtt );
+            //SerialUSB.print( "RTT to gate was: " );
+            //SerialUSB.println( rtt );
             // add the half of the roundtrip time
             start += (rtt >> 1);
           }
@@ -669,8 +697,12 @@ void loop() {
         if( oneMore ) {
           if( finishers == expectedFinishers ) {
             // this means, all cars have finished the heat
-            SerialUSB.println( "Heat ended" );
+            //SerialUSB.println( "Heat ended" );
             heat.status =  PWDProtocol::STATUS_HEATFINISHED;
+            // create the finshed message here, avoid sending intermediate
+            // progress messages because it affects the detection
+            combr.sendCompleteOrProgress( PWDProtocol::CODE_PROGRESS, &heat );
+            compi.sendCompleteOrProgress( PWDProtocol::CODE_PROGRESS, &heat );
             // cancel watchdog
             emitterWatchdog = 0;
             // return to idle state
@@ -682,8 +714,8 @@ void loop() {
 
           }
           // create the car progress message
-          combr.sendCompleteOrProgress( PWDProtocol::CODE_PROGRESS, &heat );
-          compi.sendCompleteOrProgress( PWDProtocol::CODE_PROGRESS, &heat );
+          //combr.sendCompleteOrProgress( PWDProtocol::CODE_PROGRESS, &heat );
+          //compi.sendCompleteOrProgress( PWDProtocol::CODE_PROGRESS, &heat );
         }
         break;
       } // needed to create a scope for oneMore declaration

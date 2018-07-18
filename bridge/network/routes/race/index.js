@@ -98,8 +98,7 @@ async function createRace (req, res, next) {
       req.body.lanes === undefined ||
       req.body.startAt === undefined ||
       req.body.finalists === undefined ||
-      req.body.cars === undefined ||
-      Object.keys(req.body.cars).length < 15) {
+      req.body.cars === undefined) {
     logger.error('%s::createRace: Received incomplete create race information', MODULE_ID)
     return next(new httpErr.BadRequestError('Incomplete create race information.'))
   }
@@ -110,7 +109,7 @@ async function createRace (req, res, next) {
   race['description'] = req.body.description
   race['lanes'] = req.body.lanes
   race['cars'] = req.body.cars
-  race['heats'] = countCars
+  race['countCars'] = countCars
   race['startAt'] = req.body.startAt
   race['finalists'] = req.body.finalists
 

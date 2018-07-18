@@ -11,14 +11,15 @@
 
       RACE_ID = '';
       POLL_TIME = 4000;
-      CURRENT_RACE_URL = "/heat/current";
-      NEXT_RACE_URL = "/heat/next";
+      CURRENT_RACE_URL = "/heat/current/";
+      CURRENT_RACE_STATUS_URL = "/race/lanes/";
+      NEXT_RACE_URL = "/heat/next/";
       LEADERS_URL = "/race/leaderboard/";
       HIGHSCORE_URL = "/race/highscore/";
       
       /*
-      CURRENT_RACE_URL = "http://146.254.106.46:8080/heat/current";
-      NEXT_RACE_URL = "http://146.254.106.46:8080/heat/next";
+      CURRENT_RACE_URL = "http://146.254.106.46:8080/heat/current/2018-Test";
+      NEXT_RACE_URL = "http://146.254.106.46:8080/heat/next/2018-Test";
       LEADERS_URL = "http://146.254.106.46:8080/race/leaderboard/2018-Test";
       HIGHSCORE_URL = "http://146.254.106.46:8080/race/highscore/2018-Test";
       */
@@ -30,34 +31,47 @@
       /**********************************************************************************/
       function getCurrentRace(restData) {
             var race = [];
-            var lanes = ["Dark Gray", "Turquoise", "Orange", "Bordeaux"];
+            var lanes = ["Grey", "Blue", "Orange", "Berry"];
             var i;
             for (i = 0; i < 4; i++) {
-                race.push({ name: restData.results[i].ow, lane: lanes[i] });
+                race.push({ name: restData.results[i].ow, lane: lanes[i], time: restData.results[i].t, score: restData.results[i].score});
             }
             return race;
       }
-      
-      app.controller('getCurrentRace', function ($scope, $http, $interval) {
-
+      function setStatus(race, status) {
+          var i;
+          if (race.length != 4)
+              return race;
+          if (status.lanes.length != 4)
+              for (i = 0; i < 4; i++)
+                  race[i].status = "unknown";
+          else
+              for (i = 0; i < 4; i++)
+                  race[i].status = status.lanes[i].status;
+          return race;
+      }
+      app.controller('getCurrentRace', function ($scope, $q, $http, $interval) {
           $interval(function () {
-              $http.get(CURRENT_RACE_URL).
-                  then(function success(response) {
-                      $scope.currCars = getCurrentRace(response.data);
-
-                  }, function error(response) {
-                      //error handling here
-                      $scope.error = response.statusText;
-                  })
+              $scope.currCars = [];
+              $q.all([
+                $http.get(CURRENT_RACE_URL + RACE_ID),
+                $http.get(CURRENT_RACE_STATUS_URL + RACE_ID)
+              ]).then(function (results) {
+                  
+                  //$scope.currCars = getCurrentRace(results[0].data);
+                  var race = getCurrentRace(results[0].data);
+                  var status = results[1].data;
+                  $scope.currCars = setStatus(race, status);
+                  
+              });
           }, POLL_TIME);
       });
-
       /**********************************************************************************/
       /*                               Next Race Logic                                  */
       /**********************************************************************************/
       function getNextRace(restData) {
             var race = [];
-            var lanes = ["Dark Gray", "Turquoise", "Orange", "Bordeaux"];
+            var lanes = ["Grey", "Blue", "Orange", "Berry"];
             var i;
             for (i = 0; i < 4; i++) {
                 race.push({ name: restData.results[i].ow, lane: lanes[i] });
@@ -68,7 +82,7 @@
       app.controller('getNextRace', function ($scope, $http, $interval) {
 
           $interval(function () {
-              $http.get(NEXT_RACE_URL).
+              $http.get(NEXT_RACE_URL + RACE_ID).
                   then(function success(response) {
                       $scope.cars = getNextRace(response.data);
 
@@ -149,8 +163,8 @@
     <div ng-controller="getCurrentRace" id="dvCurrentRace">
 	    <h2 align="center">Current Race</h2>
 	    <table>
-		    <tr><th>Pos.</th><th>Owner Name</th><th>Lane</th></tr>
-		    <tr ng-repeat="x in currCars"><td> {{ $index + 1 }} </td> <td> {{ x.name }} </td> <td> {{ x.lane }} </td></tr>
+		    <tr><th>Pos.</th><th>Owner Name</th><th>Lane</th><th>Status</th><th>Time</th><th>Score</th></tr>
+		    <tr ng-repeat="x in currCars"><td> {{ $index + 1 }} </td> <td> {{ x.name }} </td> <td> {{ x.lane }} </td><td> {{ x.status }} </td><td> {{ x.time }} </td><td> {{ x.score }} </td></tr>
 	    </table>
     </div>
     <div ng-controller="getNextRace" id="dvNextRace">
