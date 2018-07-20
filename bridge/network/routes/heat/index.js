@@ -205,7 +205,7 @@ function markCurrentHeat (req, res, next) {
             data.value.status = ''
           }
           changed = true
-        } else if (data.value.status === 'last finished') {
+        } else if (data.value.status === 'just finished') {
           // this was the last heat
           data.value.status = 'finished'
           changed = true

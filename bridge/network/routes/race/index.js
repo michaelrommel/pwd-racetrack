@@ -7,6 +7,7 @@ var serial
 
 var laneDb
 var raceDb
+var heatheatheatheat
 var leaderboardDb
 var highscoreDb
 var checkpointDb
@@ -52,6 +53,37 @@ async function getRace (req, res, next) {
     }
     return next(new httpErr.InternalServerError('Could not find race'))
   }
+}
+
+async function getHeatsForRace (req, res, next) {
+  logger.info('%s::getRace: request received', MODULE_ID)
+  if (req.params === undefined ||
+      req.params.id === undefined
+  ) {
+    logger.error('%s::getRace: No raceId provided', MODULE_ID)
+    return next(new httpErr.BadRequestError('No raceId provided'))
+  }
+  let raceId = req.params.id
+  let filter = new RegExp(raceId, 'g')
+  let heats = []
+  heatDb.createReadStream()
+    .on('data', function (data) {
+      //logger.debug('%s::getHeatsForRace: Received data: %s', MODULE_ID, JSON.stringify(data))
+      if (data.key.match(filter)) {
+        let heat = {...data.value}
+        heat['heatkey'] = data.key
+        heats.push(heat)
+      }
+    })
+    .on('error', function (err) {
+      logger.error('%s: Error getting heat: %s', MODULE_ID, err)
+      return next(new httpErr.InternalServerError('Error retrieving heat information'))
+    })
+    .on('end', function () {
+      res.send(200, heats)
+      logger.info('%s: response sent', MODULE_ID)
+      return next()
+    })
 }
 
 async function initRace (req, res, next) {
@@ -230,6 +262,7 @@ function getLaneStatus (req, res, next) {
 module.exports = (server, db, ser) => {
   serial = ser
   raceDb = db.race
+  heatDb = db.heat
   laneDb = db.lane
   leaderboardDb = db.leaderboard
   highscoreDb = db.highscore
@@ -237,6 +270,7 @@ module.exports = (server, db, ser) => {
   heatUtils.setContext(db)
   server.get('/race', listRaces)
   server.get('/race/:id', getRace)
+  server.get('/race/heats/:id', getHeatsForRace)
   server.post('/race/:id', createRace)
   server.post('/race/init/:id', initRace)
   server.get('/race/leaderboard/:id', getLeaderboard)
