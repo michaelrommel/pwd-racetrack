@@ -5,7 +5,7 @@ const config = require('../utils/config')
 const logger = require('../utils/logger')
 const jwt = require('restify-jwt-community')
 
-const util = require('util')
+// const util = require('util')
 
 var restify = require('restify')
 var plugins = require('restify').plugins
