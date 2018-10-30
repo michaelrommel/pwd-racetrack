@@ -7,7 +7,7 @@ var serial
 
 var laneDb
 var raceDb
-var heatheatheatheat
+var heatDb
 var leaderboardDb
 var highscoreDb
 var checkpointDb
@@ -68,7 +68,7 @@ async function getHeatsForRace (req, res, next) {
   let heats = []
   heatDb.createReadStream()
     .on('data', function (data) {
-      //logger.debug('%s::getHeatsForRace: Received data: %s', MODULE_ID, JSON.stringify(data))
+      // logger.debug('%s::getHeatsForRace: Received data: %s', MODULE_ID, JSON.stringify(data))
       if (data.key.match(filter)) {
         let heat = {...data.value}
         heat['heatkey'] = data.key
