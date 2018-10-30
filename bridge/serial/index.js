@@ -100,6 +100,7 @@ var sendMsg = function (msg, msgId) {
     msgQueueItem.msg = msg
     msgQueueItem.msg.id = msgId
     msgQueueItem.state = MSG_STATE_PENDING
+    msgQueueItem.retry = 0
 
     if (msg.c !== MSG_ACK) {
       logger.debug('%s::sendMsg: Pushing message object to message queue', MODULE_ID)
@@ -130,8 +131,10 @@ var checkMsgQueue = function () {
   logger.debug('%s::checkMsgQueue: Checking open message queue for unacknowledged messages', MODULE_ID)
   logger.debug('%s::checkMsgQueue: Number unacknowledged messages: %i', MODULE_ID, msgQueueOpen.length)
   for (var i = 0; i < msgQueueOpen.length; i++) { // looping through open msg queue
-    if (msgQueueOpen[i].state === MSG_STATE_PENDING) { // msg still unacknowledged, resend
+    if (msgQueueOpen[i].state === MSG_STATE_PENDING && msgQueueOpen[i].retry < 3) { // msg still unacknowledged, resend
       logger.debug('%s::checkMsgQueue: Message still unacknowledged, resending it: %s', MODULE_ID, JSON.stringify(msgQueueOpen[i]))
+      msgQueueOpen[i].retry += 1
+      logger.debug('%s::checkMsgQueue: Incrementing retry counter for message: %d', MODULE_ID, msgQueueOpen[i].retry)
       sendMsg(msgQueueOpen[i].msg, msgQueueOpen[i].id)
     } else { // msg already acknowledged, pop from open msg queue
       logger.debug('%s::checkMsgQueue: Message already acknowledged, pushing it to complete queue', MODULE_ID)
