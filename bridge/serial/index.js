@@ -229,7 +229,7 @@ var updateLeaderboard = async function (heat) {
         }
       }
       // we now have iterated over all heats this car was in and can now update the leaderboard
-      leaderboard[rfid] = {...heat.results[i]}
+      leaderboard[rfid] = { ...heat.results[i] }
       leaderboard[rfid].cumulatedScore = cumulatedScore
       leaderboard[rfid].cumulatedTime = cumulatedTime
       delete leaderboard[rfid].score
@@ -266,7 +266,7 @@ var updateHighscore = async function (heatId, lanes) {
 
   if (highscore === undefined || highscore.length === 0) {
     // here is a dummy, in case we have not yet initialised the highscore for this race
-    highscore = [{'rank': 1, 't': 999999, 'rf': '', 'heat': -1}]
+    highscore = [ { 'rank': 1, 't': 999999, 'rf': '', 'heat': -1 } ]
   }
 
   logger.debug('%s::updateHighscore: iterating through current highscore to see if there is a new one', MODULE_ID)
@@ -615,7 +615,6 @@ var laserSetup = function (laserData) {
 }
 
 // this is run at module load time
-
 // select the serial port
 ;(async function () {
   try {

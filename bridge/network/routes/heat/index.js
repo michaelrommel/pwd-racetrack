@@ -89,7 +89,7 @@ async function createHeat (req, res, next) {
   }
   try {
     await heatDb.put(req.params.id, req.body)
-    res.json(201, {'inserted': 1})
+    res.json(201, { 'inserted': 1 })
     logger.info('%s: response sent', MODULE_ID)
     return next()
   } catch (err) {
@@ -116,7 +116,7 @@ function getCurrentHeat (req, res, next) {
         (data.value.status === 'current' ||
         data.value.status === 'running' ||
         data.value.status === 'just finished')) {
-        currentHeat = {...data.value}
+        currentHeat = { ...data.value }
       }
     })
     .on('error', function (err) {
@@ -150,7 +150,7 @@ function getNextHeat (req, res, next) {
   heatDb.createReadStream()
     .on('data', function (data) {
       if (data.key.match(re) && data.value.status === 'next') {
-        nextHeat = {...data.value}
+        nextHeat = { ...data.value }
       }
     })
     .on('error', function (err) {
@@ -237,7 +237,7 @@ function markCurrentHeat (req, res, next) {
         }
       }
       if (found) {
-        res.json(202, {'noOfChanges': noOfChanges})
+        res.json(202, { 'noOfChanges': noOfChanges })
         logger.info('%s::markCurrentHeat: response sent', MODULE_ID)
         return next()
       } else {
@@ -311,7 +311,7 @@ function markNextHeat (req, res, next) {
         }
       }
       if (found) {
-        res.json(202, {'noOfChanges': noOfChanges})
+        res.json(202, { 'noOfChanges': noOfChanges })
         logger.info('%s::markNextHeat: response sent', MODULE_ID)
         return next()
       } else {
@@ -373,7 +373,7 @@ function startHeat (req, res, next) {
   }
   let heatNumber = parseInt(req.params.id.slice(-2))
   serialCom.startHeat(heatNumber)
-  res.send({'heat': heatNumber})
+  res.send({ 'heat': heatNumber })
   logger.info('%s::startHeat: response sent', MODULE_ID)
   return next()
 }

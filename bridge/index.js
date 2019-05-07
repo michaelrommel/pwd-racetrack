@@ -20,12 +20,12 @@ db.checkpoint.get('raceId')
     logger.debug('%s: restored raceId as %s', MODULE_ID, val)
     raceId = val
     // initialize Serial communication
-    serial.init({db, raceId})
+    serial.init({ db, raceId })
   })
   .catch((err) => {
     logger.debug('%s: Could not retrieve raceId, error: %s', MODULE_ID, err)
-    serial.init({db, raceId})
+    serial.init({ db, raceId })
   })
 
 // initialize Network communication
-network.init({db, serial})
+network.init({ db, serial })

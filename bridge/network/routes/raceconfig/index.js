@@ -58,7 +58,7 @@ async function createRaceconfig (req, res, next) {
   }
   try {
     await raceconfigDb.put(req.params.id, req.body)
-    res.json(201, {'inserted': 1})
+    res.json(201, { 'inserted': 1 })
     logger.info('%s: response sent', MODULE_ID)
     return next()
   } catch (err) {

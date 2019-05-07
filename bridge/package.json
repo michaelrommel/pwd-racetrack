@@ -26,23 +26,23 @@
   "author": "Michael Rommel <rommel@layer-7.net>",
   "license": "MIT",
   "dependencies": {
-    "jsonwebtoken": "^8.3.0",
-    "level": "^4.0.0",
+    "jsonwebtoken": "^8.5.1",
+    "level": "^5.0.1",
     "random-number-csprng": "^1.0.2",
-    "restify": "^7.2.1",
-    "restify-errors": "^6.1.1",
-    "restify-jwt-community": "^1.0.7",
-    "serialport": "^6.2.1",
+    "restify": "^8.3.1",
+    "restify-errors": "^7.0.0",
+    "restify-jwt-community": "^1.0.12",
+    "serialport": "^7.1.5",
     "uuid": "^3.3.2",
-    "winston": "^3.0.0"
+    "winston": "^3.2.1"
   },
   "devDependencies": {
-    "chai": "^4.1.2",
+    "chai": "^4.2.0",
     "cross-env": "^5.2.0",
     "dirty-chai": "^2.0.1",
-    "mocha": "^5.2.0",
-    "standard": "^11.0.1",
-    "supertest": "^3.1.0"
+    "mocha": "^6.1.4",
+    "standard": "^12.0.1",
+    "supertest": "^4.0.2"
   },
   "standard": {
     "env": [
