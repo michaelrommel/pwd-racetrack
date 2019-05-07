@@ -59,7 +59,7 @@ async function importCars (req, res, next) {
     }
   }
 
-  res.json(201, {'inserted': inserted})
+  res.json(201, { 'inserted': inserted })
   logger.info('%s: response sent', MODULE_ID)
   return next()
 }

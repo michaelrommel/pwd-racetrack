@@ -184,6 +184,7 @@ var updateLeaderboard = async function (heat) {
   try {
     // these cars were in to calculate the complete score
     let confAndCars = await heatUtils.getRaceConfigAndCars(raceId)
+    let offset = confAndCars.startAt
     for (let i = 0; i < heat.results.length; i++) {
       // get the car RFID
       let rfid = heat.results[i].rf
@@ -204,13 +205,14 @@ var updateLeaderboard = async function (heat) {
       // get all heats where this car was in, note that heatnumbers start with 1 and we are
       // using object keys here, not array indices
       for (let h = 1; h <= Object.keys(confAndCars.raceconfig.heats).length; h++) {
+        let realHeatNumber = h + offset - 1
         for (let l = 0; l < confAndCars.raceconfig.heats[h].length; l++) {
           if (confAndCars.raceconfig.heats[h][l] === startNumber) {
             // we found a heat
             // heatNumber = h
             // laneNumber = l
             // get the score for that heat
-            let otherHeatKey = raceId + '-' + ('0' + h).slice(-2)
+            let otherHeatKey = raceId + '-' + ('0' + realHeatNumber).slice(-2)
             try {
               let otherHeat = await heatDb.get(otherHeatKey)
               let score = otherHeat.results[l].score
@@ -227,7 +229,7 @@ var updateLeaderboard = async function (heat) {
         }
       }
       // we now have iterated over all heats this car was in and can now update the leaderboard
-      leaderboard[rfid] = {...heat.results[i]}
+      leaderboard[rfid] = { ...heat.results[i] }
       leaderboard[rfid].cumulatedScore = cumulatedScore
       leaderboard[rfid].cumulatedTime = cumulatedTime
       delete leaderboard[rfid].score
@@ -264,7 +266,7 @@ var updateHighscore = async function (heatId, lanes) {
 
   if (highscore === undefined || highscore.length === 0) {
     // here is a dummy, in case we have not yet initialised the highscore for this race
-    highscore = [{'rank': 1, 't': 999999, 'rf': '', 'heat': -1}]
+    highscore = [ { 'rank': 1, 't': 999999, 'rf': '', 'heat': -1 } ]
   }
 
   logger.debug('%s::updateHighscore: iterating through current highscore to see if there is a new one', MODULE_ID)
@@ -491,7 +493,7 @@ var updateHeat = async function (heatId, heatStatus, lanes) {
   } else if (heatStatus === ST_HEAT_FINISHED) {
     // we have received the progess for a finished heat
     logger.info('%s::updateHeat: Received progress of finished heat', MODULE_ID)
-    heat.status = 'finished'
+    heat.status = 'just finished'
   }
 
   logger.debug('%s::updateHeat: Saving updated heat information to database', MODULE_ID)
@@ -538,13 +540,13 @@ var carDetected = function (heatId, msgState, lanes) {
       if (lane.rf) {
         if (msgState === ST_HEAT_UNKWN) {
           logger.info('%s::carDetected: car during unititialized heat in lane %i', MODULE_ID, i)
-          lane.state = 'unknown'
+          lane.status = 'unknown'
         } else if (msgState === ST_COR_LANE) {
           logger.info('%s::carDetected: car %s set in correct lane', MODULE_ID, lane.rf)
-          lane.state = 'correct'
+          lane.status = 'correct'
         } else if (msgState === ST_WRO_LANE) {
           logger.info('%s::carDetected: car %s set in wrong lane', MODULE_ID, lane.rf)
-          lane.state = 'wrong'
+          lane.status = 'wrong'
         }
         // using a reference to one property of the lanes object is okay here
         dto.lanes[i] = lane
@@ -578,7 +580,7 @@ var heatSetupComplete = function (heatId, lanes) {
   for (var i = 0; i < lanes.length; i++) {
     let lane = lanes[i]
     lane.lane = i
-    lane.state = 'ok'
+    lane.status = 'ok'
     dto.lanes[i] = lane
   }
 
@@ -613,7 +615,6 @@ var laserSetup = function (laserData) {
 }
 
 // this is run at module load time
-
 // select the serial port
 ;(async function () {
   try {

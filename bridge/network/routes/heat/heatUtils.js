@@ -25,10 +25,11 @@ async function initializeHeats (raceId, heatSpec) {
   try {
     race = await raceDb.get(raceId)
     let countLanes = race.lanes
-    let heatCount = race.heats
-    let startAt = race.startAt
+    let countCars = race.countCars
+    let heatCount
+    let offset = race.startAt
     let raceCars = race.cars
-    let raceConfigKey = '' + countLanes + '-' + heatCount
+    let raceConfigKey = '' + countLanes + '-' + countCars
     let raceConfig
     let heatConfigList
     let lowerBound
@@ -36,6 +37,7 @@ async function initializeHeats (raceId, heatSpec) {
     try {
       raceConfig = await raceConfigDb.get(raceConfigKey)
       heatConfigList = raceConfig.heats
+      heatCount = Object.keys(raceConfig.heats).length
 
       if (typeof heatSpec === 'number') {
         // set the bounds of the loop so that only one heat is initialized
@@ -43,18 +45,20 @@ async function initializeHeats (raceId, heatSpec) {
         upperBound = heatSpec
       } else {
         // presumably 'all' was specified, heatnumbers start at 1
-        lowerBound = startAt
-        upperBound = heatCount
+        lowerBound = 1
+        upperBound = 1 + heatCount
       }
 
       // iterate through configuration of heats in race config
-      for (var i = lowerBound; i <= upperBound; i++) {
+      for (var i = lowerBound; i < upperBound; i++) {
         let heat = {}
-        let heatId = i
+        let finalHeatNumber = i + offset - 1
         let heatConfig = heatConfigList[i]
-        heat.heat = i
+
+        heat.heat = finalHeatNumber
         heat.status = ''
         heat.results = []
+
         // iterate through lane/car config in individual heat config
         for (var l = 0; l < heatConfig.length; l++) {
           // get the startnumber of the car in this lane
@@ -82,7 +86,7 @@ async function initializeHeats (raceId, heatSpec) {
         }
 
         // put all information about all cars in this heat into the heatDb
-        let heatKey = raceId + '-' + ('0' + heatId).slice(-2)
+        let heatKey = raceId + '-' + ('0' + finalHeatNumber).slice(-2)
         try {
           await heatDb.put(heatKey, heat)
         } catch (err) {
@@ -110,12 +114,12 @@ async function getRaceConfigAndCars (raceId) {
   try {
     race = await raceDb.get(raceId)
     let countLanes = race.lanes
-    let heats = race.heats
-    let raceConfigKey = '' + countLanes + '-' + heats
+    let countCars = race.countCars
+    let raceConfigKey = '' + countLanes + '-' + countCars
     let raceConfig
     try {
       raceConfig = await raceConfigDb.get(raceConfigKey)
-      return {'raceconfig': raceConfig, 'cars': race.cars}
+      return { 'raceconfig': raceConfig, 'cars': race.cars, 'startAt': race.startAt }
     } catch (err) {
       // we could not find a suitable race configuration in the database
       logger.error('%s::getRaceConfigAndCars: no suitable race configuration %s found', MODULE_ID, raceConfigKey)

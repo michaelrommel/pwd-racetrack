@@ -9,7 +9,7 @@ function adminAction (req, res, next) {
   // be careful though not to allow permanent changes is user's role is test
   // or maybe make sure you don't grant test role to an end user
   if (!req.user.role === 'admin' && req.user.role !== 'test') {
-    return res.send(new httpErr.ForbiddenError('You don\'t have sufficient priviledges.'))
+    return res.send(new httpErr.ForbiddenError('You don\'t have sufficient privileges.'))
   }
   res.send({ action: 'completed' })
   logger.info('%s: response sent', MODULE_ID)
