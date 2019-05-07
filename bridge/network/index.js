@@ -9,8 +9,13 @@ const util = require('util')
 
 var restify = require('restify')
 var plugins = require('restify').plugins
+var watershed = require('watershed')
 
-var server = restify.createServer()
+var ws = new watershed.Watershed()
+
+var server = restify.createServer({
+  handleUpgrades: true
+})
 
 function init (ctx) {
   var db = ctx.db
@@ -33,14 +38,14 @@ function init (ctx) {
       /race\/lanes/ig,
       /heat\/current/ig,
       /heat\/next/ig,
-      /user\/login/ig
+      /user\/login/ig,
+      /websocket\/attach/ig
     ]
   }))
-
   // logger.debug(util.inspect(ctx))
 
   // configure routes
-  require('./routes')({server, plugins, db, serial})
+  require('./routes')({server, ws, plugins, db, serial})
 
   // start server
   server.listen(config.PORT)
