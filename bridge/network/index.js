@@ -4,13 +4,18 @@ const MODULE_ID = 'network'
 const config = require('../utils/config')
 const logger = require('../utils/logger')
 const jwt = require('restify-jwt-community')
+const fs = require('fs')
 
 // const util = require('util')
 
 var restify = require('restify')
 var plugins = require('restify').plugins
+var options = {
+  certificate: fs.readFileSync('./network/pwd-racetrack.onehc.net.chained.crt.pem'),
+  key: fs.readFileSync('./network/pwd-racetrack.onehc.net.key.pem')
+}
 
-var server = restify.createServer()
+var server = restify.createServer(options)
 
 function init (ctx) {
   var db = ctx.db
