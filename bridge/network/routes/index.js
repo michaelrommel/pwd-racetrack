@@ -8,4 +8,5 @@ module.exports = (ctx) => {
   require('./raceconfig')(ctx.server, ctx.db)
   require('./user')(ctx.server, ctx.db)
   require('./static')(ctx.server, ctx.plugins)
+  require('./websocket')(ctx.server, ctx.ws)
 }
