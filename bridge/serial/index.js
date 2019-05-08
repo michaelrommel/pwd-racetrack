@@ -4,7 +4,7 @@ const MODULE_ID = 'serial'
 const logger = require('../utils/logger')
 const SerialPort = require('serialport')
 const heatUtils = require('../network/routes/heat/heatUtils')
-const wsUtils = require('../network/routes/ws/wsUtils')
+const wsUtils = require('../network/routes/websocket/wsUtils')
 
 const MSG_ACK = 'a'
 const MSG_INIT_HEAT = 'i'
