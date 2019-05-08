@@ -1,17 +1,26 @@
 const MODULE_ID = 'wsUtils'
 const logger = require('../../../utils/logger')
+const watershed = require('watershed')
 
-let shed
+var ws = new watershed.Watershed()
 
-function setContext (wshed) {
-  shed = wshed
+var clients = []
+
+function clientAccept (req, res) {
+  let upgrade = res.claimUpgrade()
+  let clientConn = ws.accept(req, upgrade.socket, upgrade.head)
+  logger.debug('%s::clientAccept: client accepted', MODULE_ID)
+  clients.push(clientConn)
 }
 
 function notify () {
-  shed.send('test')
+  clients.forEach((c) => {
+    logger.debug('%s::notify: client %s notified', MODULE_ID, c)
+    c.send('test')
+  })
 }
 
 module.exports = {
   notify: notify,
-  setContext: setContext
+  clientAccept: clientAccept
 }

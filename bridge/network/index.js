@@ -8,11 +8,8 @@ const fs = require('fs')
 
 // const util = require('util')
 
-var restify = require('restify')
-var plugins = require('restify').plugins
-
-var watershed = require('watershed')
-var ws = new watershed.Watershed()
+const restify = require('restify')
+const plugins = require('restify').plugins
 
 var options = {
   certificate: fs.readFileSync('./network/pwd-racetrack.onehc.net.chained.crt.pem'),
@@ -50,7 +47,7 @@ function init (ctx) {
   // logger.debug(util.inspect(ctx))
 
   // configure routes
-  require('./routes')({server, ws, plugins, db, serial})
+  require('./routes')({ server, plugins, db, serial })
 
   // start server
   server.listen(config.PORT)
