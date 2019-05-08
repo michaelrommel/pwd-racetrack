@@ -10,9 +10,14 @@ const fs = require('fs')
 
 var restify = require('restify')
 var plugins = require('restify').plugins
+
+var watershed = require('watershed')
+var ws = new watershed.Watershed()
+
 var options = {
   certificate: fs.readFileSync('./network/pwd-racetrack.onehc.net.chained.crt.pem'),
-  key: fs.readFileSync('./network/pwd-racetrack.onehc.net.key.pem')
+  key: fs.readFileSync('./network/pwd-racetrack.onehc.net.key.pem'),
+  handleUpgrades: true
 }
 
 var server = restify.createServer(options)
@@ -38,14 +43,14 @@ function init (ctx) {
       /race\/lanes/ig,
       /heat\/current/ig,
       /heat\/next/ig,
-      /user\/login/ig
+      /user\/login/ig,
+      /websocket\/attach/ig
     ]
   }))
-
   // logger.debug(util.inspect(ctx))
 
   // configure routes
-  require('./routes')({ server, plugins, db, serial })
+  require('./routes')({server, ws, plugins, db, serial})
 
   // start server
   server.listen(config.PORT)
