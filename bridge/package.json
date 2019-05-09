@@ -7,7 +7,7 @@
     "lint": "standard",
     "pretest": "standard",
     "test": "cross-env LOG_LEVEL=error mocha --recursive --reporter spec --exit ./test/specs/",
-    "debug": "cross-env LOG_LEVEL=debug authbind --deep node index.js",
+    "debug": "cross-env LOG_LEVEL=debug authbind --deep node --inspect-brk index.js",
     "start": "authbind --deep node index.js",
     "dev": "authbind --deep pm2 start ecosystem.config.js",
     "update_env": "authbind --deep pm2 restart ecosystem.config.js --update-env"
@@ -34,6 +34,7 @@
     "restify-jwt-community": "^1.0.12",
     "serialport": "^7.1.5",
     "uuid": "^3.3.2",
+    "watershed": "^0.4.0",
     "winston": "^3.2.1"
   },
   "devDependencies": {

@@ -8,11 +8,8 @@ const fs = require('fs')
 
 // const util = require('util')
 
-var restify = require('restify')
-var plugins = require('restify').plugins
-
-var watershed = require('watershed')
-var ws = new watershed.Watershed()
+const restify = require('restify')
+const plugins = require('restify').plugins
 
 var options = {
   certificate: fs.readFileSync('./network/pwd-racetrack.onehc.net.chained.crt.pem'),

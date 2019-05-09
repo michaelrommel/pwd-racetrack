@@ -4,7 +4,7 @@ const MODULE_ID = 'serial'
 const logger = require('../utils/logger')
 const SerialPort = require('serialport')
 const heatUtils = require('../network/routes/heat/heatUtils')
-const wsUtils = require('../network/routes/ws/wsUtils')
+const wsUtils = require('../network/routes/websocket/wsUtils')
 
 const MSG_ACK = 'a'
 const MSG_INIT_HEAT = 'i'
@@ -238,7 +238,6 @@ var updateLeaderboard = async function (heat) {
     // now we updated the whole leaderboard
     try {
       await leaderboardDb.put(raceId, leaderboard)
-      logger.debug('Informing websocket clients of change')
       wsUtils.notify()
       return
     } catch (err) {
@@ -310,7 +309,6 @@ var updateHighscore = async function (heatId, lanes) {
   try {
     await highscoreDb.put(raceId, highscore)
     logger.debug('%s::updateHighscore: successfully saved highscore information to database', MODULE_ID)
-    logger.debug('Informing websocket clients of change')
     wsUtils.notify()
   } catch (err) {
     logger.error('%s::updateHighscore: error saving highscore, err: %s', MODULE_ID, err)
@@ -421,7 +419,6 @@ var initLaneStatus = function (heatId) {
   logger.debug('%s::initLaneStatus: Initializing lane status info in database', MODULE_ID)
   saveLaneStatus(dto)
   logger.debug('%s::initLaneStatus: Successfully initialized lane status info for heat %d', MODULE_ID, heatId)
-  logger.debug('Informing websocket clients of change')
   wsUtils.notify()
 }
 
@@ -509,11 +506,9 @@ var updateHeat = async function (heatId, heatStatus, lanes) {
     logger.debug('%s::updateHeat: Successfully saved updated heat information to database', MODULE_ID)
     logger.debug('%s::updateHeat: Update leaderboard with new data', MODULE_ID)
     updateLeaderboard(heat)
-    logger.debug('Informing websocket clients of change')
     wsUtils.notify()
     // logger.debug('%s::updateHeat: Update highscore with new data', MODULE_ID)
     updateHighscore(heatId, lanesSorted)
-    logger.debug('Informing websocket clients of change')
     wsUtils.notify()
   } catch (err) {
     logger.error('%s::updateHeat: error saving heat %s', MODULE_ID, heatKey)
@@ -573,7 +568,6 @@ var carDetected = function (heatId, msgState, lanes) {
     let success = saveLaneStatus(dto)
     if (success) {
       logger.debug('%s::carDetected: Successfully saved lane status information to database', MODULE_ID)
-      logger.debug('Informing websocket clients of change')
       wsUtils.notify()
     }
   })
@@ -600,9 +594,7 @@ var heatSetupComplete = function (heatId, lanes) {
   logger.debug('Saving heat setup complete data to database')
   saveLaneStatus(dto)
   logger.debug('Successfully saved heat setup complete data to database')
-  logger.debug('Informing websocket clients of change')
   wsUtils.notify()
-
 }
 
 // function for pushing lane status to database
