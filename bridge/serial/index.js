@@ -48,7 +48,6 @@ var msgQueueTimer = null
 var msgQueueOpen = []
 var msgQueueComplete = []
 
-var scoreTable = [8, 4, 2, 1]
 
 var heatDb
 var laneDb
@@ -470,6 +469,10 @@ var updateHeat = async function (heatId, heatStatus, lanes) {
   logger.debug('%s::updateheat: Sorting current heat by time', MODULE_ID)
   lanesSorted.sort(sortByTimeAsc)
 
+  let scoreTable = [8, 4, 2, 1]
+  let previousScore = 0
+  let previousTime = 0
+
   // go through the sorted array and calculate the score and add it
   for (let s = 0; s < lanesSorted.length; s++) {
     if (lanesSorted[s].rf !== undefined) {
@@ -481,9 +484,18 @@ var updateHeat = async function (heatId, heatStatus, lanes) {
           // this heat has a car in this heat on it
           if (heat.results[h].rf === lanesSorted[s].rf) {
             // set the score
+            score = scoreTable[s]
+	    if ((previousScore > 0) && (previousTime > 0) && (lanesSorted[s].t === prevoiousTime)) {
+	      // we found two racers with exactly the same time, giving both the same score
+              score = previousScore
+	    }
             heat.results[h].score = scoreTable[s]
             // take over the time
             heat.results[h].t = lanesSorted[s].t
+            
+            // storing current score and time for next comparison
+            previousScore = score
+            previousTime = lanesSorted[s].t
           }
         }
       }
