@@ -485,7 +485,7 @@ var updateHeat = async function (heatId, heatStatus, lanes) {
           if (heat.results[h].rf === lanesSorted[s].rf) {
             // set the score
             score = scoreTable[s]
-	    if ((previousScore > 0) && (previousTime > 0) && (lanesSorted[s].t === prevoiousTime)) {
+	    if ((previousScore > 0) && (previousTime > 0) && (lanesSorted[s].t === previousTime)) {
 	      // we found two racers with exactly the same time, giving both the same score
               score = previousScore
 	    }
