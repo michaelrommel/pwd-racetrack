@@ -2,12 +2,11 @@
   <head> 
     <link rel="stylesheet" type="text/css" href="live.css" media=screen \>
     <link rel = "stylesheet" href = "https://ajax.googleapis.com/ajax/libs/angular_material/1.1.4/angular-material.min.css">
-
-         <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.7/angular.js"></script>
-         <script src="https://ajax.googleapis.com/ajax/libs/angular_material/1.1.9/angular-material.min.js"></script>
-         <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.7/angular-aria.js"></script>
-      <script src = "https://ajax.googleapis.com/ajax/libs/angularjs/1.6.7/angular-animate.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/1.1.3/hammer.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.7/angular.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angular_material/1.1.9/angular-material.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.7/angular-aria.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.7/angular-animate.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/1.1.3/hammer.min.js"></script>
          
   </head>
   
@@ -17,7 +16,7 @@
       /*                              Config                                            */
       /**********************************************************************************/
 
-      RACE_ID = '2018-Race';
+      RACE_ID = '2018-Quali';
       POLL_TIME = 4000;
       CURRENT_RACE_URL = "/heat/current/";
       CURRENT_RACE_STATUS_URL = "/race/lanes/";
@@ -35,6 +34,26 @@
       var app = angular.module('pwdApp', ['ngMaterial']);
 
       /**********************************************************************************/
+      /*                              Websocket Initialisation                          */
+      /**********************************************************************************/
+      var racetrackWebsocket = new WebSocket("wss://pwd-racetrack.onehc.net:443/websocket/attach");
+
+      racetrackWebsocket.onopen = function (event) {
+        console.log("websocket opened");
+        racetrackWebsocket .send("Here's some text that the server is urgently awaiting!"); 
+      };
+
+      racetrackWebsocket.onmessage = function (event) {
+        console.log("ws:", event.data);
+        /* here now do something to refresh the display... */
+      };
+
+      racetrackWebsocket.onclose = function (event) {
+        console.log("websocket closed");
+        racetrackWebsocket.close();
+      };
+
+      /**********************************************************************************/
       /*                              Current Race Logic                                */
       /**********************************************************************************/
       function getCurrentRace(restData) {
@@ -46,50 +65,55 @@
             }
             return race;
       }
+
       function setStatus(race, status) {
-          var i;
-          if (race.length != 4)
-              return race;
-          if (status.lanes.length != 4)
-              for (i = 0; i < 4; i++)
-                  race[i].status = "unknown";
-          else
-              for (i = 0; i < 4; i++)
-                  race[i].status = status.lanes[i].status;
+        var i;
+        if (race.length != 4)
           return race;
+        if (status.lanes.length != 4)
+          for (i = 0; i < 4; i++)
+            race[i].status = "unknown";
+        else
+          for (i = 0; i < 4; i++)
+            race[i].status = status.lanes[i].status;
+        return race;
       }
-      app.controller('getCurrentRace', function ($scope, $q, $http, $interval) {
-          $interval(function () {
-              $scope.currCars = [];
-              $q.all([
-                $http.get(CURRENT_RACE_URL + RACE_ID),
-                $http.get(CURRENT_RACE_STATUS_URL + RACE_ID)
-              ]).then(function (results) {
-                  
-                  //$scope.currCars = getCurrentRace(results[0].data);
-                  var race = getCurrentRace(results[0].data);
-                  var status = results[1].data;
-                  $scope.currCars = setStatus(race, status);
-                  
-              });
-          }, POLL_TIME);
-      });
+
+      function getCurrentRaceData ($scope, $q, $http, $interval) {
+        $scope.currCars = [];
+        $q.all([
+          $http.get(CURRENT_RACE_URL + RACE_ID),
+          $http.get(CURRENT_RACE_STATUS_URL + RACE_ID)
+        ]).then(function (results) {
+          var race = getCurrentRace(results[0].data);
+          var status = results[1].data;
+          $scope.currCars = setStatus(race, status);
+        });
+      };
+
+      app.controller('getCurrentRace', getCurrentRaceData );
+
+
       /**********************************************************************************/
       /*                               Next Race Logic                                  */
       /**********************************************************************************/
       function getNextRace(restData) {
-            var race = [];
-            var lanes = ["Grey", "Blue", "Orange", "Berry"];
-            var i;
-            for (i = 0; i < 4; i++) {
-                race.push({ name: restData.results[i].ow, lane: lanes[i] });
-            }
-            return race;
+        if (Object.keys(restData).length === 0) {
+          // no data received from racetrack
+        } else {
+          var race = [];
+          var lanes = ["Grey", "Blue", "Orange", "Berry"];
+          var i;
+          for (i = 0; i < 4; i++) {
+              race.push({ name: restData.results[i].ow, lane: lanes[i] });
+          }
+          return race;
+        }
       }
 
       app.controller('getNextRace', function ($scope, $http, $interval) {
 
-          $interval(function () {
+          //$interval(function () {
               $http.get(NEXT_RACE_URL + RACE_ID).
                   then(function success(response) {
                       $scope.cars = getNextRace(response.data);
@@ -98,7 +122,7 @@
                       //error handling here
                       $scope.error = response.statusText;
                   })
-          }, POLL_TIME);
+          //}, POLL_TIME);
       });
 
       /**********************************************************************************/
@@ -115,7 +139,7 @@
       
       app.controller('getLeaders', function ($scope, $http, $interval) {
 
-          $interval(function () {
+          //$interval(function () {
               $http.get(LEADERS_URL + RACE_ID).
                   then(function success (response) {
                       $scope.leaders = getLeaders(response.data);
@@ -123,7 +147,7 @@
                       //error handling here
                       $scope.error = response.statusText;
                   })
-          }, POLL_TIME);
+          //}, POLL_TIME);
       });
 
       /**********************************************************************************/
@@ -140,7 +164,7 @@
       
       app.controller('getHighscore', function ($scope, $http, $interval) {
 
-          $interval(function () {
+          //$interval(function () {
               $http.get(HIGHSCORE_URL + RACE_ID).
                   then(function success (response) {
                       $scope.highscore = getHighscore(response.data);
@@ -148,7 +172,7 @@
                       //error handling here
                       $scope.error = response.statusText;
                   })
-          }, POLL_TIME);
+          //}, POLL_TIME);
       });
 
 
@@ -217,7 +241,7 @@
 	    </table>
     </div>
     <div ng-controller="inputRaceId" id="dvInputRaceId">
-	    <button type="button" class="md-primary md-raised" ng-click="showPrompt($event)">Race ID: {{ raceId }}</button>
+	    <md-button type="button" class="md-primary md-raised" ng-click="showPrompt($event)">Race ID: {{ raceId }}</md-button>
     </div>
   </body>
 </html>
