@@ -35,6 +35,7 @@ function init (ctx) {
     path: [
       /ping/ig,
       /display/ig,
+      /favicon.ico/ig,
       /race\/leaderboard/ig,
       /race\/highscore/ig,
       /race\/lanes/ig,
