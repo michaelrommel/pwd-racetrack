@@ -16,6 +16,10 @@ function clientAccept (req, res) {
   clientConn.on('text', (t) => {
     logger.debug('%s::clientAccept: data received: %s', MODULE_ID, t)
   })
+  // an error on a socket has occurred
+  clientConn.on('error', (err) => {
+    logger.debug('%s::clientAccept: error on connection %s: %s', MODULE_ID, clientConn._remote, err.message)
+  })
   // remove ended connections
   clientConn.on('end', (t) => {
     logger.debug('%s::clientAccept: connection closed: %s', MODULE_ID, clientConn._remote)
@@ -30,7 +34,11 @@ function clientAccept (req, res) {
 function notify () {
   clients.forEach((c) => {
     logger.debug('%s::notify: client %s notified', MODULE_ID, c._remote)
-    c.send('test')
+    try {
+      c.send('test')
+    } catch (err) {
+      logger.debug('%s::notify: client %s notification failed', MODULE_ID, c._remote)
+    }
   })
 }
 
