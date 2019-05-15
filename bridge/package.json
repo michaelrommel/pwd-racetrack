@@ -33,6 +33,7 @@
     "restify-errors": "^7.0.0",
     "restify-jwt-community": "^1.0.12",
     "serialport": "^7.1.5",
+    "sodium": "^3.0.2",
     "uuid": "^3.3.2",
     "watershed": "^0.4.0",
     "winston": "^3.2.1"

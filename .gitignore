@@ -44,6 +44,11 @@
 # VIM swapfiles
 .*.swp
 
+# Error logs
+yarn-error.log
+
 # Node module directory
 node_modules/
 bridge/databases/
+bridge/databases_clean/
+bridge/network/pwd-racetrack*.pem

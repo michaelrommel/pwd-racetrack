@@ -19,6 +19,7 @@ var car = level('./databases/car', { valueEncoding: 'json' })
 var lane = level('./databases/lane', { valueEncoding: 'json' })
 var heat = level('./databases/heat', { valueEncoding: 'json' })
 var race = level('./databases/race', { valueEncoding: 'json' })
+var user = level('./databases/user', { valueEncoding: 'json' })
 var raceconfig = level('./databases/raceconfig', { valueEncoding: 'json' })
 var leaderboard = level('./databases/leaderboard', { valueEncoding: 'json' })
 var highscore = level('./databases/highscore', { valueEncoding: 'json' })
@@ -29,6 +30,7 @@ module.exports = {
   lane: lane,
   heat: heat,
   race: race,
+  user: user,
   raceconfig: raceconfig,
   leaderboard: leaderboard,
   highscore: highscore,
