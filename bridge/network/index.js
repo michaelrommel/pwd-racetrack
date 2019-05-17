@@ -13,8 +13,8 @@ const plugins = require('restify').plugins
 const corsplugin = require('restify-cors-middleware')
 
 var options = {
-  certificate: fs.readFileSync('./network/pwd-racetrack.onehc.net.chained.crt.pem'),
-  key: fs.readFileSync('./network/pwd-racetrack.onehc.net.key.pem'),
+  certificate: fs.readFileSync('./network/pwd-racetrack.chained.crt.pem'),
+  key: fs.readFileSync('./network/pwd-racetrack.key.pem'),
   handleUpgrades: true
 }
 
