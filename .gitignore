@@ -31,6 +31,9 @@
 *.out
 *.app
 
+# MacOS indexing files
+*.DS_Store
+
 # Eagle Backup Files
 *.b#?
 *.s#?
