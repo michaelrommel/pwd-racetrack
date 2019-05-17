@@ -10,6 +10,7 @@ const fs = require('fs')
 
 const restify = require('restify')
 const plugins = require('restify').plugins
+const corsplugin = require('restify-cors-middleware')
 
 var options = {
   certificate: fs.readFileSync('./network/pwd-racetrack.onehc.net.chained.crt.pem'),
@@ -19,9 +20,21 @@ var options = {
 
 var server = restify.createServer(options)
 
+const cors = corsplugin({
+  preflightMaxAge: 5,
+  origins: [
+    'http://localhost:3000'
+  ],
+  allowHeaders: ['Authorization'],
+  exposeHeaders: ['Authorization']
+})
+
 function init (ctx) {
   var db = ctx.db
   var serial = ctx.serial
+
+  server.pre(cors.preflight)
+  server.use(cors.actual)
 
   server.use(plugins.bodyParser())
 
