@@ -5,6 +5,7 @@ const config = require('../utils/config')
 const logger = require('../utils/logger')
 const jwt = require('restify-jwt-community')
 const fs = require('fs')
+const nanoid = require('nanoid')
 
 // const util = require('util')
 
@@ -29,18 +30,43 @@ const cors = corsplugin({
   exposeHeaders: ['Authorization']
 })
 
-function init (ctx) {
+async function init (ctx) {
   var db = ctx.db
   var serial = ctx.serial
+
+  var appSettings
 
   server.pre(cors.preflight)
   server.use(cors.actual)
 
   server.use(plugins.bodyParser())
 
+  try {
+    // try to get the basic configuration
+    appSettings = await db.settings.get('settings')
+  } catch (err) {
+    if (err.notFound) {
+      // could not get settings, perhaps a fresh install
+      appSettings = {
+        'appState': 'fresh',
+        'jwtSecret': nanoid(),
+        'rootpwd': false
+      }
+      try {
+        db.settings.put('settings', appSettings)
+        logger.info('%s::init: application settings stored', MODULE_ID)
+      } catch (err) {
+        logger.error('%s::init: could not store application settings!', MODULE_ID)
+        throw (err)
+      }
+    } else {
+      logger.error('%s::init: error while loading app settings!', MODULE_ID)
+    }
+  }
+
   // authorization
   var jwtConfig = {
-    secret: config.JWT_SECRET
+    secret: appSettings.jwtSecret
   }
 
   // secure all routes except /ping and /login

@@ -15,7 +15,7 @@ async function loginUser (req, res, next) {
     req.body.name === undefined ||
     req.body.password === undefined
   ) {
-    return next(new errors.BadRequestError('Incomplete registration information.'))
+    return next(new errors.BadRequestError('Incomplete login information.'))
   } else {
     try {
       const user = await userDb.get(req.body.name)

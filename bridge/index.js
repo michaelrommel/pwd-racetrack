@@ -28,4 +28,9 @@ db.checkpoint.get('raceId')
   })
 
 // initialize Network communication
-network.init({ db, serial })
+try {
+  network.init({ db, serial })
+} catch (err) {
+  logger.error('%s: Could not initialize network, %s!', MODULE_ID, err)
+  process.exitCode = 1
+}
