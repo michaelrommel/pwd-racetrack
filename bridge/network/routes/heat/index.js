@@ -2,6 +2,7 @@ const MODULE_ID = 'heat'
 const logger = require('../../../utils/logger')
 const httpErr = require('restify-errors')
 const heatUtils = require('./heatUtils')
+const wsUtils = require('../websocket/wsUtils')
 
 var serialCom
 
@@ -231,6 +232,14 @@ function markCurrentHeat (req, res, next) {
         for (let i = 0; i < toSave.length; i++) {
           try {
             await heatDb.put(toSave[i].key, toSave[i].value)
+
+            if (toSave[i].value.status === 'current') {
+              logger.info('%s::markCurrentHeat: sending current heat to websocket clients', MODULE_ID)
+              wsData = {}
+              wsData["type"] = "currentheat"
+              wsData["data"] = toSave[i].value
+              wsUtils.notify(wsData)
+            }
           } catch (err) {
             logger.error('%s::markCurrentHeat: error saving back changed heat %s', MODULE_ID, toSave[i].key)
           }
@@ -305,6 +314,15 @@ function markNextHeat (req, res, next) {
         for (let i = 0; i < toSave.length; i++) {
           try {
             await heatDb.put(toSave[i].key, toSave[i].value)
+
+            if (toSave[i].value.status === 'next') {
+              logger.info('%s::markCurrentHeat: sending next heat to websocket clients', MODULE_ID)
+              wsData = {}
+              wsData["type"] = "nextheat"
+              wsData["data"] = toSave[i].value
+              wsUtils.notify(wsData)
+            }
+                  
           } catch (err) {
             logger.error('%s::markNextHeat: error saving back changed heat %s', MODULE_ID, toSave[i].key)
           }

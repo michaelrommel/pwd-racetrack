@@ -236,7 +236,12 @@ var updateLeaderboard = async function (heat) {
     // now we updated the whole leaderboard
     try {
       await leaderboardDb.put(raceId, leaderboard)
-      wsUtils.notify()
+
+      logger.debug('%s::updateLeaderboard: sending leaderboard to websocket clients', MODULE_ID)
+      wsData = {}
+      wsData["type"] = "leaderboard"
+      wsData["data"] = leaderboard
+      wsUtils.notify(wsData)
       return
     } catch (err) {
       logger.error('%s::updateLeaderboard: could not save leaderboard for race %s', MODULE_ID, raceId)
@@ -307,7 +312,12 @@ var updateHighscore = async function (heatId, lanes) {
   try {
     await highscoreDb.put(raceId, highscore)
     logger.debug('%s::updateHighscore: successfully saved highscore information to database', MODULE_ID)
-    wsUtils.notify()
+
+    logger.debug('%s::updateHighscore: sending highscore to websocket clients', MODULE_ID)
+    wsData = {}
+    wsData["type"] = "highscore"
+    wsData["data"] = highscore
+    wsUtils.notify(wsData)
   } catch (err) {
     logger.error('%s::updateHighscore: error saving highscore, err: %s', MODULE_ID, err)
   }
@@ -417,7 +427,6 @@ var initLaneStatus = function (heatId) {
   logger.debug('%s::initLaneStatus: Initializing lane status info in database', MODULE_ID)
   saveLaneStatus(dto)
   logger.debug('%s::initLaneStatus: Successfully initialized lane status info for heat %d', MODULE_ID, heatId)
-  wsUtils.notify()
 }
 
 // function for starting a heat
@@ -517,10 +526,8 @@ var updateHeat = async function (heatId, heatStatus, lanes) {
     logger.debug('%s::updateHeat: Successfully saved updated heat information to database', MODULE_ID)
     logger.debug('%s::updateHeat: Update leaderboard with new data', MODULE_ID)
     updateLeaderboard(heat)
-    wsUtils.notify()
     // logger.debug('%s::updateHeat: Update highscore with new data', MODULE_ID)
     updateHighscore(heatId, lanesSorted)
-    wsUtils.notify()
   } catch (err) {
     logger.error('%s::updateHeat: error saving heat %s', MODULE_ID, heatKey)
   }
@@ -579,7 +586,6 @@ var carDetected = function (heatId, msgState, lanes) {
     let success = saveLaneStatus(dto)
     if (success) {
       logger.debug('%s::carDetected: Successfully saved lane status information to database', MODULE_ID)
-      wsUtils.notify()
     }
   })
 }
@@ -605,7 +611,6 @@ var heatSetupComplete = function (heatId, lanes) {
   logger.debug('Saving heat setup complete data to database')
   saveLaneStatus(dto)
   logger.debug('Successfully saved heat setup complete data to database')
-  wsUtils.notify()
 }
 
 // function for pushing lane status to database
@@ -616,6 +621,13 @@ var saveLaneStatus = async function (laneDto) {
   logger.debug('%s::saveLaneStatus: Pushing lane status to database', MODULE_ID)
   try {
     await laneDb.put(raceId, laneDto)
+
+          
+    logger.debug('%s::saveLaneStatus: sending lane status to websocket clients', MODULE_ID)
+    wsData = {}
+    wsData["type"] = "lanestatus"
+    wsData["data"] = laneDto
+    wsUtils.notify(wsData)
     return true
   } catch (err) {
     logger.error('%s::saveLaneStatus: Unable to save lane status for %s', MODULE_ID, raceId)

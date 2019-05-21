@@ -31,11 +31,11 @@ function clientAccept (req, res) {
   })
 }
 
-function notify () {
+function notify (data) {
   clients.forEach((c) => {
     logger.debug('%s::notify: client %s notified', MODULE_ID, c._remote)
     try {
-      c.send('test')
+      c.send(JSON.stringify(data))
     } catch (err) {
       logger.debug('%s::notify: client %s notification failed', MODULE_ID, c._remote)
     }
