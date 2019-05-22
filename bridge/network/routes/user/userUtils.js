@@ -60,38 +60,60 @@ async function verifyUser (username, password) {
   }
 }
 
+async function modifyUser (username, password, role) {
+  logger.info('%s::modifyUser: request received', MODULE_ID)
+  // create password hash for new user
+  let pass = Buffer.from(password, 'utf8')
+  try {
+    let hash = sodium.crypto_pwhash_str(pass,
+      sodium.crypto_pwhash_OPSLIMIT_INTERACTIVE,
+      sodium.crypto_pwhash_MEMLIMIT_INTERACTIVE)
+    if (Buffer.isBuffer(hash)) {
+      // save the created hash
+      try {
+        userDb.put(
+          username,
+          {
+            'name': username,
+            'role': role,
+            'hash': hash.toString('base64')
+          })
+        logger.info('%s::modifyUser: User %s successfully modified or created.', MODULE_ID, username)
+        return ({ 'username': username, 'role': role })
+      } catch (err) {
+        logger.error('%s::modifyUser: Could not store user %s!', MODULE_ID, username)
+        throw new UserException('storeError', username)
+      }
+    } else {
+      logger.error('%s::modifyUser: Could not create password hash!', MODULE_ID)
+      throw new UserException('passwordHashError', username)
+    }
+  } catch (err) {
+    logger.error('%s::modifyUser: Could not create password hash!', MODULE_ID)
+    throw new UserException('passwordHashError', username)
+  }
+}
+
 async function createUser (username, password, role) {
   logger.info('%s::createUser: request received', MODULE_ID)
   try {
-    const user = await userDb.get(username)
-    logger.warn('%s::createUser: username %s already exists!', MODULE_ID, user)
+    await userDb.get(username)
+    logger.warn('%s::createUser: username %s already exists!', MODULE_ID, username)
     throw new UserException('duplicateUser', username)
   } catch (err) {
     if (err.notFound) {
-      // create password hash for new user
-      let pass = Buffer.from(password, 'utf8')
-      let hash = sodium.crypto_pwhash_str(pass,
-        sodium.crypto_pwhash_OPSLIMIT_INTERACTIVE,
-        sodium.crypto_pwhash_MEMLIMIT_INTERACTIVE)
-      if (Buffer.isBuffer(hash)) {
-        // save the created hash
-        try {
-          userDb.put(
-            username,
-            {
-              'name': username,
-              'role': role,
-              'hash': hash.toString('base64')
-            })
-          logger.info('%s::createUser: User %s successfully created.', MODULE_ID, username)
-          return ({ 'username': username, 'role': role })
-        } catch (err) {
+      try {
+        let user = await modifyUser(username, password, role)
+        return (user)
+      } catch (err) {
+        if (err.id === 'storeError') {
           logger.error('%s::createUser: Could not store user %s!', MODULE_ID, username)
-          throw new UserException('storeError', username)
+        } else if (err.id === 'passwordHashError') {
+          logger.error('%s::createUser: Could not create password hash!', MODULE_ID)
+        } else {
+          logger.error('%s::createUser: error while creating user: %s', MODULE_ID, err)
         }
-      } else {
-        logger.error('%s::createUser: Could not create password hash!', MODULE_ID)
-        throw new UserException('passwordHashError', username)
+        throw (err)
       }
     } else {
       // other unspecified error
@@ -105,5 +127,6 @@ module.exports = {
   setContext: setContext,
   findUser: findUser,
   verifyUser: verifyUser,
+  modifyUser: modifyUser,
   createUser: createUser
 }

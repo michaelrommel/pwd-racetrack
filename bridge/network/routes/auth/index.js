@@ -1,28 +1,19 @@
 const MODULE_ID = 'auth'
 const logger = require('../../../utils/logger')
+const adminUtils = require('../admin/adminUtils')
 const errors = require('restify-errors')
 const passport = require('passport')
 const jwt = require('jsonwebtoken')
 
 let settingsDb
 
-async function getJwtSecret () {
-  try {
-    let appSettings = await settingsDb.get('settings')
-    logger.info('%s::getJwtSecret: application settings retrieved', MODULE_ID)
-    return (appSettings.jwtSecret)
-  } catch (err) {
-    logger.info('%s::getJwtSecret: could not get application settings', MODULE_ID)
-    throw (err)
-  }
-}
-
 async function localLogin (req, res, next) {
   // we are already authenticated here
   logger.info('%s::localLogin: token request received', MODULE_ID)
 
   try {
-    let jwtSecret = await getJwtSecret()
+    let appSettings = await adminUtils.getAppSettings(settingsDb)
+    let jwtSecret = appSettings.jwtSecret
     try {
       // Only include the information you need in the token
       let credentials = {

@@ -1,8 +1,9 @@
 const MODULE_ID = 'admin'
 const logger = require('../../../utils/logger')
+const adminUtils = require('../admin/adminUtils')
 const errors = require('restify-errors')
 
-var settingsDb
+let settingsDb
 
 async function storeAppSettings (req, res, next) {
   logger.info('%s::storeAppSettings: request received', MODULE_ID)
@@ -15,32 +16,38 @@ async function storeAppSettings (req, res, next) {
     return res.send(new errors.ForbiddenError('You don\'t have sufficient privileges.'))
   }
 
-  // check the base properties
+  // check the minumum base properties
   if (
     req.body === undefined ||
-    req.body.appState === undefined ||
-    req.body.jwtSecret === undefined ||
-    req.body.rootpwd === undefined
+    req.body.appState === undefined
   ) {
     logger.error('%s::storeAppSettings: received incomplete app settings', MODULE_ID)
     return next(new errors.BadRequestError('Incomplete app settings.'))
   }
 
   try {
-    await settingsDb.put('settings', req.body)
-    res.json(201, { 'inserted': 1 })
-    logger.info('%s::storeAppSettings: response sent', MODULE_ID)
-    return next()
+    // make a shallow merge between the supplied parameters and the stored ones
+    let appSettings = Object.assign(await adminUtils.getAppSettings(settingsDb), req.body)
+
+    try {
+      await settingsDb.put('settings', appSettings)
+      res.json(201, { 'inserted': 1 })
+      logger.info('%s::storeAppSettings: settings stored and response sent', MODULE_ID)
+      return next()
+    } catch (err) {
+      logger.error('%s::storeAppSettings: error storing app settings', MODULE_ID)
+      return next(new errors.InternalServerError('app settings could not be saved.'))
+    }
   } catch (err) {
-    logger.error('%s::storeAppSettings: error storing app settings', MODULE_ID)
-    return next(new errors.InternalServerError('App settings could not be saved.'))
+    logger.info('%s::storeAppSettings: could not get application settings', MODULE_ID)
+    throw (err)
   }
 }
 
 async function getInitAppSettings (req, res, next) {
   logger.info('%s::getInitAppSettings: request received', MODULE_ID)
   try {
-    let settings = await settingsDb.get('settings')
+    let settings = await adminUtils.getAppSettings(settingsDb)
     if (settings.appState === 'fresh') {
       res.json(200, settings)
     } else {
