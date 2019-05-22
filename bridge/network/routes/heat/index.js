@@ -94,7 +94,7 @@ async function createHeat (req, res, next) {
     return next()
   } catch (err) {
     logger.error('%s: error creating heat with id: %s', MODULE_ID, req.params.id)
-    return next(new httpErr.InternalServerError('raceconfig could not be savesd'))
+    return next(new httpErr.InternalServerError('raceconfig could not be saved'))
   }
 }
 
