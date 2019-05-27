@@ -34,9 +34,8 @@ async function storeAppSettings (req, res, next) {
       await settingsDb.put('settings', appSettings)
       logger.info('%s::storeAppSettings: settings stored and response sent', MODULE_ID)
       response = { 'success': true, 'msg': 'Application settings stored in db' }
-      let newuser
       try {
-        newuser = await userUtils.modifyUser(
+        await userUtils.modifyUser(
           'root',
           appSettings.rootpwd,
           'admin'
@@ -62,6 +61,10 @@ async function storeAppSettings (req, res, next) {
 
 async function getAppSettings (req, res, next) {
   logger.info('%s::getAppSettings: request received', MODULE_ID)
+  if (!req.user.role === 'admin') {
+    return res.send(new errors.ForbiddenError('You don\'t have sufficient privileges.'))
+  }
+
   try {
     let settings = await adminUtils.getAppSettings(settingsDb)
     res.json(200, settings)

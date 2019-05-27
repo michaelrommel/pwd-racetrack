@@ -75,7 +75,10 @@ async function init (ctx) {
     }
   }
 
-  if (appSettings.githubClientId !== undefined) {
+  if (appSettings.githubClientId !== undefined &&
+    appSettings.githubClientId !== '' &&
+    appSettings.githubClientSecret !== undefined &&
+    appSettings.githubClientSecret !== '') {
     passport.use(new GithubStrategy(
       {
         clientID: appSettings.githubClientId,

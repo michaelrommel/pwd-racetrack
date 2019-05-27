@@ -13,20 +13,20 @@ function UserException (id, msg) {
   this.msg = msg
 }
 
-async function findUser (userId) {
+async function findUser (username) {
   logger.info('%s::findUser: request received', MODULE_ID)
-  if (userId.params === undefined) {
-    logger.error('%s::findUser: No userid provided', MODULE_ID)
+  if (username === undefined) {
+    logger.error('%s::findUser: No username provided', MODULE_ID)
   }
   try {
-    var user = await userDb.get(userId)
-    logger.info('%s::findUser: response sent', MODULE_ID)
+    var user = await userDb.get(username)
+    logger.info('%s::findUser: sending response', MODULE_ID)
     return (user)
   } catch (err) {
     if (err.notFound) {
-      logger.error('%s::findUser: could not find userid %s in database', MODULE_ID, userId)
+      logger.error('%s::findUser: could not find username %s in database', MODULE_ID, username)
     } else {
-      logger.error('%s::findUser: error looking up userid %s: %s', MODULE_ID, userId, err)
+      logger.error('%s::findUser: error looking up username %s: %s', MODULE_ID, username, err)
     }
     throw (err)
   }
@@ -36,7 +36,7 @@ async function verifyUser (username, password) {
   logger.info('%s::verifyUser: request received', MODULE_ID)
   try {
     const user = await userDb.get(username)
-    logger.info('%s::verifyUser: Username %s found!', MODULE_ID, user.name)
+    logger.info('%s::verifyUser: Username %s found!', MODULE_ID, user.username)
     // verify password hash for the user
     let pass = Buffer.from(password, 'utf8')
     let hash = Buffer.from(user.hash, 'base64')
@@ -74,7 +74,7 @@ async function modifyUser (username, password, role) {
         userDb.put(
           username,
           {
-            'name': username,
+            'username': username,
             'role': role,
             'hash': hash.toString('base64')
           })

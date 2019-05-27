@@ -17,7 +17,7 @@ async function localLogin (req, res, next) {
     try {
       // Only include the information you need in the token
       let credentials = {
-        name: req.user.name,
+        username: req.user.username,
         role: req.user.role
       }
       credentials['token'] = jwt.sign(credentials, jwtSecret)
