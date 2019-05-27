@@ -44,6 +44,19 @@ async function storeAppSettings (req, res, next) {
   }
 }
 
+async function getAppSettings (req, res, next) {
+  logger.info('%s::getAppSettings: request received', MODULE_ID)
+  try {
+    let settings = await adminUtils.getAppSettings(settingsDb)
+    res.json(200, settings)
+    logger.info('%s::getAppSettings: response sent', MODULE_ID)
+    return next()
+  } catch (err) {
+    logger.error('%s::getAppSettings: error getting app settings', MODULE_ID)
+    return next(new errors.InternalServerError('App settings could not be retrieved.'))
+  }
+}
+
 async function getInitAppSettings (req, res, next) {
   logger.info('%s::getInitAppSettings: request received', MODULE_ID)
   try {
@@ -67,5 +80,6 @@ async function getInitAppSettings (req, res, next) {
 module.exports = (server, db) => {
   settingsDb = db.settings
   server.post('/admin/settings', storeAppSettings)
+  server.get('/admin/settings', getAppSettings)
   server.get('/admin/init', getInitAppSettings)
 }
