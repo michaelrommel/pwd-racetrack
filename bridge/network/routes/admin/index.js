@@ -1,6 +1,7 @@
 const MODULE_ID = 'admin'
 const logger = require('../../../utils/logger')
 const adminUtils = require('../admin/adminUtils')
+const userUtils = require('../user/userUtils')
 const errors = require('restify-errors')
 
 let settingsDb
@@ -28,11 +29,26 @@ async function storeAppSettings (req, res, next) {
   try {
     // make a shallow merge between the supplied parameters and the stored ones
     let appSettings = Object.assign(await adminUtils.getAppSettings(settingsDb), req.body)
-
+    let response
     try {
       await settingsDb.put('settings', appSettings)
-      res.json(201, { 'inserted': 1 })
       logger.info('%s::storeAppSettings: settings stored and response sent', MODULE_ID)
+      response = { 'success': true, 'msg': 'Application settings stored in db' }
+      let newuser
+      try {
+        newuser = await userUtils.modifyUser(
+          'root',
+          appSettings.rootpwd,
+          'admin'
+        )
+        logger.info('%s::storeAppSettings: update of root user credentials successful', MODULE_ID)
+        response.msg = response.msg + ', and root credentials updated.'
+        res.json(201, response)
+      } catch (err) {
+        logger.error('%s::storeAppSettings: root user credential updates failed!', MODULE_ID)
+        response.msg = response.msg + ', but root credentials could not be updated!'
+        res.json(500, response)
+      }
       return next()
     } catch (err) {
       logger.error('%s::storeAppSettings: error storing app settings', MODULE_ID)

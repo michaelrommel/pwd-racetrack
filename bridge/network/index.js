@@ -60,7 +60,7 @@ async function init (ctx) {
         logger.info('%s::init: fresh application settings stored', MODULE_ID)
         // try to create a root user
         try {
-          await userUtils.createUser('root', appSettings.rootpwd, 'admin')
+          await userUtils.modifyUser('root', appSettings.rootpwd, 'admin')
           logger.info('%s::init: preliminary root user created', MODULE_ID)
         } catch (err) {
           logger.error('%s::init: preliminary root user could not be created', MODULE_ID)
