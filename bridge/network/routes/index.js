@@ -1,5 +1,6 @@
 module.exports = (ctx) => {
-  require('./admin')(ctx.server)
+  require('./admin')(ctx.server, ctx.db)
+  require('./auth')(ctx.server, ctx.db)
   require('./car')(ctx.server, ctx.db)
   require('./heat')(ctx.server, ctx.db, ctx.serial)
   require('./ping')(ctx.server)

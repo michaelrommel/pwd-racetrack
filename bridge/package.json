@@ -28,6 +28,10 @@
   "dependencies": {
     "jsonwebtoken": "^8.5.1",
     "level": "^5.0.1",
+    "nanoid": "^2.0.2",
+    "passport": "^0.4.0",
+    "passport-github": "^1.1.0",
+    "passport-local": "^1.0.0",
     "random-number-csprng": "^1.0.2",
     "restify": "^8.3.1",
     "restify-cors-middleware": "^1.1.1",
