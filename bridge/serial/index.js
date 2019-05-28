@@ -621,12 +621,10 @@ var saveLaneStatus = async function (laneDto) {
   logger.debug('%s::saveLaneStatus: Pushing lane status to database', MODULE_ID)
   try {
     await laneDb.put(raceId, laneDto)
-
-          
     logger.debug('%s::saveLaneStatus: sending lane status to websocket clients', MODULE_ID)
-    wsData = {}
-    wsData["type"] = "lanestatus"
-    wsData["data"] = laneDto
+    let wsData = {}
+    wsData['type'] = 'lanestatus'
+    wsData['data'] = laneDto
     wsUtils.notify(wsData)
     return true
   } catch (err) {
