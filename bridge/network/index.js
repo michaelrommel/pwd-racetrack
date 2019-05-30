@@ -134,6 +134,7 @@ async function init (ctx) {
       /ping/ig,
       /display/ig,
       /favicon.ico/ig,
+      /race\/current/ig,
       /race\/leaderboard/ig,
       /race\/highscore/ig,
       /race\/lanes/ig,

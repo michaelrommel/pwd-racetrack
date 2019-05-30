@@ -2,6 +2,7 @@ const MODULE_ID = 'race'
 const logger = require('../../../utils/logger')
 const httpErr = require('restify-errors')
 const heatUtils = require('../heat/heatUtils')
+const raceUtils = require('../race/raceUtils')
 
 var serial
 
@@ -31,6 +32,13 @@ function listRaces (req, res, next) {
       logger.info('%s::listRaces: response sent', MODULE_ID)
       return next()
     })
+}
+
+function getCurrentRace (req, res, next) {
+  logger.info('%s::getCurrentRace: request received', MODULE_ID)
+  res.send(200, { 'raceId': serial.getRaceId() })
+  logger.info('%s::GetCurrentRace: response sent', MODULE_ID)
+  return next()
 }
 
 async function getRace (req, res, next) {
@@ -173,26 +181,6 @@ async function createRace (req, res, next) {
   }
 }
 
-// function for sorting leaderboard
-var sortByCumScoreAndTime = function (a, b) {
-  if ((a.cumulatedScore < b.cumulatedScore) ||
-      (b.cumulatedScore === undefined)) {
-    return 1
-  } else if ((a.cumulatedScore > b.cumulatedScore) ||
-             (a.cumulatedScore === undefined)) {
-    return -1
-  }
-  // now we have to sort by ascending cumulated time
-  if ((a.cumulatedTime < b.cumulatedTime) ||
-      (b.cumulatedTime === undefined)) {
-    return -1
-  } else if ((a.cumulatedTime > b.cumulatedTime) ||
-             (a.cumulatedTime === undefined)) {
-    return 1
-  }
-  return 0
-}
-
 function getLeaderboard (req, res, next) {
   logger.info('%s::getLeaderboard: request received', MODULE_ID)
 
@@ -208,7 +196,7 @@ function getLeaderboard (req, res, next) {
       if (err.notFound) {
         logger.error('%s::getLeaderboard: could not find leaderboard for race %s',
           MODULE_ID, req.params.id)
-        return next(new httpErr.InternalServerError('could not find leaderboard.'))
+        return next(new httpErr.NotFoundError('could not find leaderboard.'))
       }
       logger.error('%s::getLeaderboard: error retrieving leaderboard for race %s ' +
         'from db', MODULE_ID, req.params.id)
@@ -217,7 +205,7 @@ function getLeaderboard (req, res, next) {
     }
     // sort the whole leaderboard
     let top = Object.values(leaderboard)
-    top.sort(sortByCumScoreAndTime)
+    top.sort(raceUtils.sortByCumScoreAndTime)
     res.send(top)
     logger.info('%s: response sent', MODULE_ID)
     return next()
@@ -288,6 +276,7 @@ module.exports = (server, db, ser) => {
   checkpointDb = db.checkpoint
   heatUtils.setContext(db)
   server.get('/race', listRaces)
+  server.get('/race/current', getCurrentRace)
   server.get('/race/:id', getRace)
   server.get('/race/heats/:id', getHeatsForRace)
   server.post('/race/:id', createRace)

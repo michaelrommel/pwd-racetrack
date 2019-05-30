@@ -262,7 +262,7 @@ function markNextHeat (req, res, next) {
   if (req.params === undefined ||
     req.params.id === undefined) {
     logger.error('%s::markNextHeat: Received incomplete put heat information', MODULE_ID)
-    return next(new httpErr.BadRequestError('Incomplete mark current heat information'))
+    return next(new httpErr.BadRequestError('Incomplete mark next heat information'))
   }
 
   var heatKey = req.params.id

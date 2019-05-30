@@ -4,6 +4,7 @@ const MODULE_ID = 'serial'
 const logger = require('../utils/logger')
 const SerialPort = require('serialport')
 const heatUtils = require('../network/routes/heat/heatUtils')
+const raceUtils = require('../network/routes/race/raceUtils')
 const wsUtils = require('../network/routes/websocket/wsUtils')
 
 const MSG_ACK = 'a'
@@ -74,6 +75,12 @@ function init (ctx) {
 function initRace (id) {
   raceId = id
   logger.debug('%s::initRace: initialized global raceID to %s', MODULE_ID, id)
+}
+
+// sets the global variable
+function getRaceId () {
+  logger.debug('%s::initRace: getting global raceID', MODULE_ID)
+  return raceId
 }
 
 function UserException (id, msg) {
@@ -237,10 +244,14 @@ var updateLeaderboard = async function (heat) {
     try {
       await leaderboardDb.put(raceId, leaderboard)
 
+      logger.debug('%s::updateLeaderboard: sorting leaderboard', MODULE_ID)
+      let top = Object.values(leaderboard)
+      top.sort(raceUtils.sortByCumScoreAndTime)
+      let wsData = {}
+      wsData['type'] = 'leaderboard'
+      wsData['raceId'] = raceId
+      wsData['data'] = top
       logger.debug('%s::updateLeaderboard: sending leaderboard to websocket clients', MODULE_ID)
-      wsData = {}
-      wsData["type"] = "leaderboard"
-      wsData["data"] = leaderboard
       wsUtils.notify(wsData)
       return
     } catch (err) {
@@ -314,9 +325,10 @@ var updateHighscore = async function (heatId, lanes) {
     logger.debug('%s::updateHighscore: successfully saved highscore information to database', MODULE_ID)
 
     logger.debug('%s::updateHighscore: sending highscore to websocket clients', MODULE_ID)
-    wsData = {}
-    wsData["type"] = "highscore"
-    wsData["data"] = highscore
+    let wsData = {}
+    wsData['type'] = 'highscore'
+    wsData['raceId'] = raceId
+    wsData['data'] = highscore
     wsUtils.notify(wsData)
   } catch (err) {
     logger.error('%s::updateHighscore: error saving highscore, err: %s', MODULE_ID, err)
@@ -624,6 +636,7 @@ var saveLaneStatus = async function (laneDto) {
     logger.debug('%s::saveLaneStatus: sending lane status to websocket clients', MODULE_ID)
     let wsData = {}
     wsData['type'] = 'lanestatus'
+    wsData['raceId'] = raceId
     wsData['data'] = laneDto
     wsUtils.notify(wsData)
     return true
@@ -772,6 +785,7 @@ function startSerialReader () {
 
 module.exports = {
   init: init,
+  getRaceId: getRaceId,
   initRace: initRace,
   initHeat: initHeat,
   startHeat: startHeat,
