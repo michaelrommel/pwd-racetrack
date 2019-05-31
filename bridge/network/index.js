@@ -131,9 +131,10 @@ async function init (ctx) {
   // secure all routes except /ping and /login
   server.use(jwt(jwtConfig).unless({
     path: [
+      /favicon.ico/ig,
       /ping/ig,
       /display/ig,
-      /favicon.ico/ig,
+      /manager/ig,
       /race\/current/ig,
       /race\/leaderboard/ig,
       /race\/highscore/ig,

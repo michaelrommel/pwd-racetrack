@@ -247,12 +247,13 @@ var updateLeaderboard = async function (heat) {
       logger.debug('%s::updateLeaderboard: sorting leaderboard', MODULE_ID)
       let top = Object.values(leaderboard)
       top.sort(raceUtils.sortByCumScoreAndTime)
-      let wsData = {}
-      wsData['type'] = 'leaderboard'
-      wsData['raceId'] = raceId
-      wsData['data'] = top
-      logger.debug('%s::updateLeaderboard: sending leaderboard to websocket clients', MODULE_ID)
+      let wsData = {
+        'type': 'leaderboard',
+        'raceId': raceId,
+        'data': top
+      }
       wsUtils.notify(wsData)
+      logger.debug('%s::updateLeaderboard: sent leaderboard to websocket clients', MODULE_ID)
       return
     } catch (err) {
       logger.error('%s::updateLeaderboard: could not save leaderboard for race %s', MODULE_ID, raceId)
@@ -323,13 +324,13 @@ var updateHighscore = async function (heatId, lanes) {
   try {
     await highscoreDb.put(raceId, highscore)
     logger.debug('%s::updateHighscore: successfully saved highscore information to database', MODULE_ID)
-
-    logger.debug('%s::updateHighscore: sending highscore to websocket clients', MODULE_ID)
-    let wsData = {}
-    wsData['type'] = 'highscore'
-    wsData['raceId'] = raceId
-    wsData['data'] = highscore
+    let wsData = {
+      'type': 'highscore',
+      'raceId': raceId,
+      'data': highscore
+    }
     wsUtils.notify(wsData)
+    logger.debug('%s::updateHighscore: sent highscore to websocket clients', MODULE_ID)
   } catch (err) {
     logger.error('%s::updateHighscore: error saving highscore, err: %s', MODULE_ID, err)
   }
@@ -397,7 +398,7 @@ var initHeat = async function (heatId) {
     // reset the lane status
     initLaneStatus(heatId)
     // reset heat status
-    heat.status = 'current'
+    heat.status = 'initializing'
     // reset the score information of eventually previous heat runs
     for (let i = 0; i < heat.results.length; i++) {
       heat.results[i].score = 0
@@ -406,6 +407,7 @@ var initHeat = async function (heatId) {
     try {
       await heatDb.put(heatKey, heat)
       logger.debug('%s::initHeat: resetted score and time of heat %s', MODULE_ID, heatKey)
+      return heat
     } catch (err) {
       logger.errorr('%s::initHeat: could not put back resetted heat %s', MODULE_ID, heatKey)
       throw new UserException('noresetheat', 'could not save resetted heat')
@@ -431,9 +433,13 @@ var initLaneStatus = function (heatId) {
   for (var i = 0; i < 4; i++) {
     dto.lanes[i] = {}
   }
+  dto.lanes[0].lane = 0
   dto.lanes[0].status = 'unknown'
+  dto.lanes[1].lane = 1
   dto.lanes[1].status = 'unknown'
+  dto.lanes[2].lane = 2
   dto.lanes[2].status = 'unknown'
+  dto.lanes[3].lane = 3
   dto.lanes[3].status = 'unknown'
 
   logger.debug('%s::initLaneStatus: Initializing lane status info in database', MODULE_ID)
@@ -509,7 +515,7 @@ var updateHeat = async function (heatId, heatStatus, lanes) {
               // we found two racers with exactly the same time, giving both the same score
               score = previousScore
             }
-            heat.results[h].score = scoreTable[s]
+            heat.results[h].score = score
             // take over the time
             heat.results[h].t = lanesSorted[s].t
 
@@ -536,9 +542,16 @@ var updateHeat = async function (heatId, heatStatus, lanes) {
   try {
     await heatDb.put(heatKey, heat)
     logger.debug('%s::updateHeat: Successfully saved updated heat information to database', MODULE_ID)
+    let wsData = {
+      'type': 'currentheat',
+      'raceId': raceId,
+      'data': heat
+    }
+    wsUtils.notify(wsData)
+    logger.debug('%s::updateHeat: sent updated heat info to websocket clients', MODULE_ID)
     logger.debug('%s::updateHeat: Update leaderboard with new data', MODULE_ID)
     updateLeaderboard(heat)
-    // logger.debug('%s::updateHeat: Update highscore with new data', MODULE_ID)
+    logger.debug('%s::updateHeat: Update highscore with new data', MODULE_ID)
     updateHighscore(heatId, lanesSorted)
   } catch (err) {
     logger.error('%s::updateHeat: error saving heat %s', MODULE_ID, heatKey)
@@ -609,7 +622,7 @@ var carDetected = function (heatId, msgState, lanes) {
 var heatSetupComplete = function (heatId, lanes) {
   logger.info('Processing heat setup complete message')
   let dto = {}
-  dto.status = 'ok'
+  dto.status = 'complete'
   dto.heat = heatId
   dto.lanes = []
 
@@ -633,12 +646,13 @@ var saveLaneStatus = async function (laneDto) {
   logger.debug('%s::saveLaneStatus: Pushing lane status to database', MODULE_ID)
   try {
     await laneDb.put(raceId, laneDto)
-    logger.debug('%s::saveLaneStatus: sending lane status to websocket clients', MODULE_ID)
-    let wsData = {}
-    wsData['type'] = 'lanestatus'
-    wsData['raceId'] = raceId
-    wsData['data'] = laneDto
+    let wsData = {
+      'type': 'lanestatus',
+      'raceId': raceId,
+      'data': laneDto
+    }
     wsUtils.notify(wsData)
+    logger.debug('%s::saveLaneStatus: sent lane status to websocket clients', MODULE_ID)
     return true
   } catch (err) {
     logger.error('%s::saveLaneStatus: Unable to save lane status for %s', MODULE_ID, raceId)

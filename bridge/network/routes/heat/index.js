@@ -115,6 +115,8 @@ function getCurrentHeat (req, res, next) {
     .on('data', function (data) {
       if (data.key.match(re) &&
         (data.value.status === 'current' ||
+        data.value.status === 'initializing' ||
+        data.value.status === 'complete' ||
         data.value.status === 'running' ||
         data.value.status === 'just finished')) {
         currentHeat = { ...data.value }
@@ -235,9 +237,11 @@ function markCurrentHeat (req, res, next) {
 
             if (toSave[i].value.status === 'current') {
               logger.info('%s::markCurrentHeat: sending current heat to websocket clients', MODULE_ID)
-              wsData = {}
-              wsData["type"] = "currentheat"
-              wsData["data"] = toSave[i].value
+              let wsData = {
+                'type': 'currentheat',
+                'raceId': raceId,
+                'data': toSave[i].value
+              }
               wsUtils.notify(wsData)
             }
           } catch (err) {
@@ -317,12 +321,13 @@ function markNextHeat (req, res, next) {
 
             if (toSave[i].value.status === 'next') {
               logger.info('%s::markCurrentHeat: sending next heat to websocket clients', MODULE_ID)
-              wsData = {}
-              wsData["type"] = "nextheat"
-              wsData["data"] = toSave[i].value
+              let wsData = {
+                'type': 'nextheat',
+                'raceId': raceId,
+                'data': toSave[i].value
+              }
               wsUtils.notify(wsData)
             }
-                  
           } catch (err) {
             logger.error('%s::markNextHeat: error saving back changed heat %s', MODULE_ID, toSave[i].key)
           }
@@ -354,8 +359,15 @@ async function initHeat (req, res, next) {
   try {
     heat = await heatDb.get(req.params.id)
     try {
-      serialCom.initHeat(heat.heat)
+      heat = await serialCom.initHeat(heat.heat)
       logger.info('%s::initHeat: Successfully initialized specified heat %s', MODULE_ID, req.params.id)
+      let wsData = {
+        'type': 'currentheat',
+        'raceId': raceId,
+        'data': heat
+      }
+      wsUtils.notify(wsData)
+      logger.info('%s::markCurrentHeat: sent current heat to websocket clients', MODULE_ID)
       res.send(202, heat)
       logger.info('%s::initHeat: response sent', MODULE_ID)
       return next()
@@ -381,7 +393,7 @@ async function initHeat (req, res, next) {
   }
 }
 
-function startHeat (req, res, next) {
+async function startHeat (req, res, next) {
   logger.info('%s::startHeat: request received', MODULE_ID)
 
   if (req.params === undefined ||
@@ -389,11 +401,39 @@ function startHeat (req, res, next) {
     logger.error('%s::startHeat: incomplete start heat information', MODULE_ID)
     return next(new httpErr.BadRequestError('Incomplete start heat information'))
   }
-  let heatNumber = parseInt(req.params.id.slice(-2))
-  serialCom.startHeat(heatNumber)
-  res.send({ 'heat': heatNumber })
-  logger.info('%s::startHeat: response sent', MODULE_ID)
-  return next()
+
+  try {
+    let heat = await heatDb.get(req.params.id)
+    heat.status = 'running'
+    try {
+      await heatDb.put(req.params.id, heat)
+      logger.debug('%s::startHeat: updated heat in db', MODULE_ID)
+
+      let heatNumber = parseInt(req.params.id.slice(-2))
+      let raceId = req.params.id.slice(0, -3)
+      serialCom.startHeat(heatNumber)
+
+      let wsData = {
+        'type': 'currentheat',
+        'raceId': raceId,
+        'data': heat
+      }
+      wsUtils.notify(wsData)
+      logger.debug('%s::startHeat: sent updated heat info to websocket clients', MODULE_ID)
+
+      res.send(heat)
+      logger.info('%s::startHeat: response sent', MODULE_ID)
+      return next()
+    } catch (err) {
+      logger.error('Could not update specified heat')
+      return next(new httpErr.BadRequestError('Could not update heat information'))
+    }
+  } catch (err) {
+    if (err.notFound) {
+      logger.error('Could not find specified heat')
+      return next(new httpErr.BadRequestError('Could not retrieve heat information'))
+    }
+  }
 }
 
 module.exports = (server, db, serial) => {

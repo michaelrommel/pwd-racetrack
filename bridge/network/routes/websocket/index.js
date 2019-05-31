@@ -10,7 +10,7 @@ function attachWS (req, res, next) {
   }
 
   wsUtils.clientAccept(req, res)
-  wsUtils.notify()
+  wsUtils.notify('Connection to server established.')
 
   next(false)
 }
