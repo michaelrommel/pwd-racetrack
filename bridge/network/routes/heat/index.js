@@ -172,94 +172,6 @@ function getNextHeat (req, res, next) {
     })
 }
 
-function markCurrentHeat (req, res, next) {
-  logger.info('%s::markCurrentHeat: request received', MODULE_ID)
-
-  if (req.params === undefined ||
-    req.params.id === undefined) {
-    logger.error('%s::markCurrentHeat: Received incomplete put heat information', MODULE_ID)
-    return next(new httpErr.BadRequestError('Incomplete mark current heat information'))
-  }
-
-  var heatKey = req.params.id
-  var raceId = heatKey.slice(0, -3)
-  var re = new RegExp(raceId, 'g')
-  let noOfChanges = 0
-  let found = false
-  var toSave = []
-
-  heatDb.createReadStream()
-    .on('data', function (data) {
-      let changed = false
-      if (data.key.match(re)) {
-        // we now got a heat from the current race
-        if (data.value.status === 'current') {
-          // we have another possibly stale mark
-          let oldFinished = false
-          for (let i = 0; i < data.value.results.length; i++) {
-            if (data.value.results[i].t !== undefined &&
-              data.value.results[i].t > 0) {
-              oldFinished = true
-            }
-          }
-          if (oldFinished) {
-            data.value.status = 'finished'
-          } else {
-            data.value.status = ''
-          }
-          changed = true
-        } else if (data.value.status === 'just finished') {
-          // this was the last heat
-          data.value.status = 'finished'
-          changed = true
-        }
-        if (data.key === heatKey) {
-          // this shall explicitly be set
-          data.value.status = 'current'
-          changed = true
-          found = true
-        }
-        if (changed) {
-          toSave.push(data)
-          noOfChanges = noOfChanges + 1
-        }
-      }
-    })
-    .on('error', function (err) {
-      logger.error('%s::markCurrentHeat: Error getting heats: %s', MODULE_ID, err)
-      return next(new httpErr.InternalServerError('Error retrieving heat information'))
-    })
-    .on('end', async function () {
-      if (noOfChanges > 0) {
-        for (let i = 0; i < toSave.length; i++) {
-          try {
-            await heatDb.put(toSave[i].key, toSave[i].value)
-
-            if (toSave[i].value.status === 'current') {
-              logger.info('%s::markCurrentHeat: sending current heat to websocket clients', MODULE_ID)
-              let wsData = {
-                'type': 'currentheat',
-                'raceId': raceId,
-                'data': toSave[i].value
-              }
-              wsUtils.notify(wsData)
-            }
-          } catch (err) {
-            logger.error('%s::markCurrentHeat: error saving back changed heat %s', MODULE_ID, toSave[i].key)
-          }
-        }
-      }
-      if (found) {
-        res.json(202, { 'noOfChanges': noOfChanges })
-        logger.info('%s::markCurrentHeat: response sent', MODULE_ID)
-        return next()
-      } else {
-        logger.error('%s::markCurrentHeat: Did not find heat to be marked: %s', MODULE_ID, heatKey)
-        return next(new httpErr.InternalServerError('Could not mark current heat'))
-      }
-    })
-}
-
 function markNextHeat (req, res, next) {
   logger.info('%s::markNextHeat: request received', MODULE_ID)
 
@@ -283,6 +195,10 @@ function markNextHeat (req, res, next) {
         // we now got a heat from the current race
         if (data.value.status === 'next') {
           // we have another possibly stale mark
+          // in this case it might be, that someone marked an already
+          // finished heat as to be re-run, thus removing the finished
+          // status and then later changed their mind. So we reset
+          // it to finished, if we see finishing times in the entry
           let oldFinished = false
           for (let i = 0; i < data.value.results.length; i++) {
             if (data.value.results[i].t !== undefined &&
@@ -353,44 +269,117 @@ async function initHeat (req, res, next) {
     return next(new httpErr.BadRequestError('Incomplete init heat information'))
   }
 
-  let raceId = req.params.id.slice(0, -3)
+  let heatKey = req.params.id
+  let raceId = heatKey.slice(0, -3)
   let heatNumber = parseInt(req.params.id.slice(-2))
+  let re = new RegExp(raceId, 'g')
+  let noOfChanges = 0
+  let found = false
+  let toSave = []
   let heat
-  try {
-    heat = await heatDb.get(req.params.id)
-    try {
-      heat = await serialCom.initHeat(heat.heat)
-      logger.info('%s::initHeat: Successfully initialized specified heat %s', MODULE_ID, req.params.id)
-      let wsData = {
-        'type': 'currentheat',
-        'raceId': raceId,
-        'data': heat
+
+  heatDb.createReadStream()
+    .on('data', function (data) {
+      let changed = false
+      if (data.key.match(re)) {
+        // we now got a heat from the current race
+        // check it the heat status is one of the value
+        // indicating that it was initialized but had
+        // seemingly not been started
+        if (data.value.status === 'current' ||
+          data.value.status === 'initializing' ||
+          data.value.status === 'complete'
+        ) {
+          // we have another possibly stale mark
+          // could be that an already finished heat had
+          // possibly accidentally been re-initialized again
+          let oldFinished = false
+          for (let i = 0; i < data.value.results.length; i++) {
+            if (data.value.results[i].t !== undefined &&
+              data.value.results[i].t > 0) {
+              oldFinished = true
+            }
+          }
+          // at least one lane had a finishing time, therefore
+          // mark it as finished
+          if (oldFinished) {
+            data.value.status = 'finished'
+          } else {
+            data.value.status = ''
+          }
+          changed = true
+        } else if (data.value.status === 'just finished') {
+          // this was the last heat
+          data.value.status = 'finished'
+          changed = true
+        }
+        if (data.key === heatKey) {
+          // this shall explicitly be set
+          data.value.status = 'initializing'
+          changed = true
+          found = true
+        }
+        if (changed) {
+          toSave.push(data)
+          noOfChanges = noOfChanges + 1
+        }
       }
-      wsUtils.notify(wsData)
-      logger.info('%s::markCurrentHeat: sent current heat to websocket clients', MODULE_ID)
-      res.send(202, heat)
-      logger.info('%s::initHeat: response sent', MODULE_ID)
-      return next()
-    } catch (err) {
-      if (err.id === 'noheat') {
-        logger.error('%s::initHeat: serial module returned heat not found', MODULE_ID)
-      } else if (err.id === 'noresetheat') {
-        logger.error('%s::initHeat: serial module returned heat not be resetted', MODULE_ID)
+    })
+    .on('error', function (err) {
+      logger.error('%s::initHeat: Error getting heat to initialize: %s', MODULE_ID, err)
+      return next(new httpErr.InternalServerError('Error retrieving heat information'))
+    })
+    .on('end', async function () {
+      if (noOfChanges > 0) {
+        for (let i = 0; i < toSave.length; i++) {
+          try {
+            await heatDb.put(toSave[i].key, toSave[i].value)
+            logger.info('%s::initHeat: saved changed heat %s back to database', MODULE_ID, toSave[i].key)
+
+            if (toSave[i].value.status === 'initializing') {
+              try {
+                // send update of the current heat to the websocket clients first
+                // otherwise they may reject lane status messages for heats not yet
+                // initialized
+                let wsData = {
+                  'type': 'currentheat',
+                  'raceId': raceId,
+                  'data': toSave[i].value
+                }
+                wsUtils.notify(wsData)
+                logger.info('%s::initHeat: sent current heat to websocket clients', MODULE_ID)
+                // this is the heat we want to initialize, remember it and send it back in the end
+                heat = await serialCom.initHeat(toSave[i].value.heat)
+                logger.info('%s::initHeat: Successfully initialized specified heat %s', MODULE_ID, req.params.id)
+              } catch (err) {
+                if (err.id === 'noheat') {
+                  logger.error('%s::initHeat: serial module returned heat not found', MODULE_ID)
+                } else if (err.id === 'noresetheat') {
+                  logger.error('%s::initHeat: serial module returned heat not be resetted', MODULE_ID)
+                }
+                return next(new httpErr.InternalServerError('Could not initialize heat'))
+              }
+            }
+          } catch (err) {
+            logger.error('%s::initHeat: error saving back changed heat %s', MODULE_ID, toSave[i].key)
+          }
+        }
       }
-      return next(new httpErr.InternalServerError('Could not initialize heat'))
-    }
-  } catch (err) {
-    if (err) {
-      logger.error('%s::initHeat: Could not find specified heat %s', MODULE_ID, req.params.id)
-      // somehow the heat is missing, try to reconstruct it from the race config
-      try {
-        heatUtils.initializeHeats(raceId, heatNumber)
-        res.send(503, 'heat re-initialized, please retry')
-      } catch (err) {
-        return next(new httpErr.InternalServerError('Could not re-initialize heat'))
+      if (found) {
+        res.send(202, heat)
+        logger.info('%s::initHeat: response sent', MODULE_ID)
+        return next()
+      } else {
+        // somehow the heat is missing, try to reconstruct it from the race config
+        logger.error('%s::markCurrentHeat: Did not find heat to be marked: %s', MODULE_ID, heatKey)
+        try {
+          heatUtils.initializeHeats(raceId, heatNumber)
+          return next(new httpErr.ServiceUnavailableError('heat re-initialized, please retry'))
+        } catch (err) {
+          return next(new httpErr.InternalServerError('Could not re-initialize heat'))
+        }
       }
-    }
-  }
+    })
 }
 
 async function startHeat (req, res, next) {
@@ -443,10 +432,9 @@ module.exports = (server, db, serial) => {
   server.get('/heat/', getAllHeats)
   server.get('/heat/:id', getHeat)
   server.post('/heat/:id', createHeat)
-  server.get('/heat/current/:id', getCurrentHeat)
   server.get('/heat/next/:id', getNextHeat)
-  server.put('/heat/current/:id', markCurrentHeat)
   server.put('/heat/next/:id', markNextHeat)
+  server.get('/heat/current/:id', getCurrentHeat)
   server.put('/heat/init/:id', initHeat)
   server.put('/heat/go/:id', startHeat)
 }
