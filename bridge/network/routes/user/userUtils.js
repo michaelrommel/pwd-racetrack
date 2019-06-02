@@ -60,8 +60,8 @@ async function verifyUser (username, password) {
   }
 }
 
-async function modifyUser (username, password, role) {
-  logger.info('%s::modifyUser: request received', MODULE_ID)
+async function updateUser (username, password, role) {
+  logger.info('%s::updateUser: request received', MODULE_ID)
   // create password hash for new user
   let pass = Buffer.from(password, 'utf8')
   try {
@@ -71,25 +71,25 @@ async function modifyUser (username, password, role) {
     if (Buffer.isBuffer(hash)) {
       // save the created hash
       try {
-        userDb.put(
+        await userDb.put(
           username,
           {
             'username': username,
             'role': role,
             'hash': hash.toString('base64')
           })
-        logger.info('%s::modifyUser: User %s successfully modified or created.', MODULE_ID, username)
+        logger.info('%s::updateUser: User %s successfully updated or created.', MODULE_ID, username)
         return ({ 'username': username, 'role': role })
       } catch (err) {
-        logger.error('%s::modifyUser: Could not store user %s!', MODULE_ID, username)
+        logger.error('%s::updateUser: Could not store user %s!', MODULE_ID, username)
         throw new UserException('storeError', username)
       }
     } else {
-      logger.error('%s::modifyUser: Could not create password hash!', MODULE_ID)
+      logger.error('%s::updateUser: Could not create password hash!', MODULE_ID)
       throw new UserException('passwordHashError', username)
     }
   } catch (err) {
-    logger.error('%s::modifyUser: Could not create password hash!', MODULE_ID)
+    logger.error('%s::updateUser: Could not create password hash!', MODULE_ID)
     throw new UserException('passwordHashError', username)
   }
 }
@@ -103,7 +103,7 @@ async function createUser (username, password, role) {
   } catch (err) {
     if (err.notFound) {
       try {
-        let user = await modifyUser(username, password, role)
+        let user = await updateUser(username, password, role)
         return (user)
       } catch (err) {
         if (err.id === 'storeError') {
@@ -127,6 +127,6 @@ module.exports = {
   setContext: setContext,
   findUser: findUser,
   verifyUser: verifyUser,
-  modifyUser: modifyUser,
+  updateUser: updateUser,
   createUser: createUser
 }
