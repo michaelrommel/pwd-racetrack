@@ -35,7 +35,7 @@ async function storeAppSettings (req, res, next) {
       logger.info('%s::storeAppSettings: settings stored and response sent', MODULE_ID)
       response = { 'success': true, 'msg': 'Application settings stored in db' }
       try {
-        await userUtils.modifyUser(
+        await userUtils.updateUser(
           'root',
           appSettings.rootpwd,
           'admin'
@@ -44,7 +44,8 @@ async function storeAppSettings (req, res, next) {
         response.msg = response.msg + ', and root credentials updated.'
         res.json(201, response)
       } catch (err) {
-        logger.error('%s::storeAppSettings: root user credential updates failed!', MODULE_ID)
+        logger.error('%s::storeAppSettings: root user credential updates failed: %s',
+          MODULE_ID, err)
         response.msg = response.msg + ', but root credentials could not be updated!'
         res.json(500, response)
       }
