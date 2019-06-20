@@ -1,52 +1,78 @@
 const MODULE_ID = 'wsUtils'
 const logger = require('../../../utils/logger')
-const watershed = require('watershed')
-
-var ws = new watershed.Watershed()
+const Websocket = require('ws')
 
 var clients = []
+var ws
 
-function clientAccept (req, res) {
-  let upgrade = res.claimUpgrade()
-  let clientConn = ws.accept(req, upgrade.socket, upgrade.head)
-  logger.debug('%s::clientAccept: client accepted: %s', MODULE_ID, clientConn._remote)
-  //
-  // store watershed connection into an array of clients
-  clients.push(clientConn)
+function init (server) {
+  ws = new Websocket.Server({ 'noServer': true })
 
-  // set up functions for incoming data
-  clientConn.on('text', (t) => {
-    logger.debug('%s::clientAccept: data received: %s', MODULE_ID, t)
-  })
+  ws.on('connection', (clientConn, req) => {
+    // we got a new connection
+    logger.debug('%s::clientAccept: client accepted: %s',
+      MODULE_ID, req.connection.remoteAddress)
+    //
+    // store watershed connection into an array of clients
+    clients.push(clientConn)
 
-  // an error on a socket has occurred
-  clientConn.on('error', (err) => {
-    logger.debug('%s::clientAccept: error on connection %s: %s', MODULE_ID, clientConn._remote, err.message)
-  })
+    // set up functions for incoming data
+    clientConn.on('message', (t) => {
+      logger.debug('%s::message: received on connection %s: %s',
+        MODULE_ID,
+        clientConn._socket.remoteAddress + ':' + clientConn._socket.remotePort,
+        t)
+    })
 
-  // remove ended connections
-  clientConn.on('end', (t) => {
-    logger.debug('%s::clientAccept: connection closed: %s', MODULE_ID, clientConn._remote)
-    for (let i = 0; i < clients.length; i++) {
-      if (clients[i] === clientConn) {
-        clients.splice(i, 1)
+    // error handling
+    clientConn.on('error', (err) => {
+      logger.debug('%s::error: error on connection %s: %s',
+        MODULE_ID,
+        clientConn._socket.remoteAddress + ':' + clientConn._socket.remotePort,
+        err)
+    })
+
+    // end of connection
+    clientConn.on('close', () => {
+      logger.debug('%s::error: error on connection %s: %s',
+        MODULE_ID,
+        clientConn._socket.remoteAddress + ':' + clientConn._socket.remotePort)
+      for (let i = 0; i < clients.length; i++) {
+        if (clients[i] === clientConn) {
+          clients.splice(i, 1)
+        }
       }
-    }
+    })
+  })
+}
+
+function handleUpgrade (req, sock, head) {
+  ws.handleUpgrade(req, sock, head, (conn) => {
+    ws.emit('connection', conn, req)
   })
 }
 
 function notify (data) {
   clients.forEach((c) => {
-    logger.debug('%s::notify: client %s notified', MODULE_ID, c._remote)
+    logger.debug('%s::notify: trying client %s',
+      MODULE_ID,
+      c._socket.remoteAddress + ':' + c._socket.remotePort)
     try {
-      c.send(JSON.stringify(data))
+      if (c.readyState === Websocket.OPEN) {
+        c.send(JSON.stringify(data))
+      } else {
+        logger.error('%s::notify: client %s is not ready',
+          MODULE_ID, c._socket.remotePort)
+      }
     } catch (err) {
-      logger.debug('%s::notify: client %s notification failed: %s', MODULE_ID, c._remote, err.message)
+      logger.error('%s::notify: client %s notification failed: %s',
+        MODULE_ID, c._socket.remotePort, err.message)
     }
   })
 }
 
 module.exports = {
-  notify: notify,
-  clientAccept: clientAccept
+  init: init,
+  handleUpgrade: handleUpgrade,
+  notify: notify
 }

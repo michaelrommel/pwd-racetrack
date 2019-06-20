@@ -4,12 +4,11 @@ const httpErr = require('restify-errors')
 const wsUtils = require('./wsUtils')
 
 function attachWS (req, res, next) {
-  if (!res.claimUpgrade) {
-    logger.debug('%s::notify: unable to upgrade connection %s', MODULE_ID, JSON.stringify(res, 2))
-    return next(new httpErr.UpgradeRequiredError('Connection must upgrade to WebSockets'))
-  }
+  let upgradeObject = res.claimUpgrade()
 
-  wsUtils.clientAccept(req, res)
+  logger.info('%s::attachWS: new websocket client', MODULE_ID)
+  wsUtils.handleUpgrade(req, upgradeObject.socket, upgradeObject.head)
+
   wsUtils.notify('Connection to server established.')
 
   next(false)

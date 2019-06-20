@@ -4,6 +4,7 @@ const MODULE_ID = 'network'
 const config = require('../utils/config')
 const logger = require('../utils/logger')
 const userUtils = require('./routes/user/userUtils')
+const wsUtils = require('./routes/websocket/wsUtils')
 
 // const util = require('util')
 
@@ -41,6 +42,7 @@ async function init (ctx) {
   var appSettings
 
   userUtils.setContext(ctx)
+  wsUtils.init(server)
 
   try {
     // try to get the basic configuration
@@ -60,7 +62,7 @@ async function init (ctx) {
         logger.info('%s::init: fresh application settings stored', MODULE_ID)
         // try to create a root user
         try {
-          await userUtils.modifyUser('root', appSettings.rootpwd, 'admin')
+          await userUtils.createUser('root', appSettings.rootpwd, 'admin')
           logger.info('%s::init: preliminary root user created', MODULE_ID)
         } catch (err) {
           logger.error('%s::init: preliminary root user could not be created', MODULE_ID)
