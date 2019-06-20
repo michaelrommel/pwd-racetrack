@@ -73,6 +73,7 @@ const evaluateGenerator = (generator) => {
         // then two cars appear in switched lanes in those races
         // Return: Perfect-N
         return 2
+        process.exit(1)
       }
     }
     // if we end up here

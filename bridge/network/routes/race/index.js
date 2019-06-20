@@ -136,6 +136,7 @@ async function createRace (req, res, next) {
 
   if (req.params === undefined ||
       req.params.id === undefined ||
+      req.body === undefined ||
       req.body.description === undefined ||
       req.body.lanes === undefined ||
       req.body.startAt === undefined ||
@@ -168,7 +169,7 @@ async function createRace (req, res, next) {
       } else if (err.id === 'raceconfigerror') {
         logger.error('%s::createRace: Unable to retrieve race configuration ' +
           '%s from raceconfig database', MODULE_ID, err.msg)
-        return next(new httpErr.InternalServerError('Could not get reaceconfig'))
+        return next(new httpErr.InternalServerError('Could not get raceconfig'))
       }
     }
     res.send(201, race)

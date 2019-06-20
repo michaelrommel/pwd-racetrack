@@ -1,9 +1,8 @@
 const MODULE_ID = 'websocket'
 const logger = require('../../../utils/logger')
-const httpErr = require('restify-errors')
 const wsUtils = require('./wsUtils')
 
-function attachWS (req, res, next) {
+function attach (req, res, next) {
   let upgradeObject = res.claimUpgrade()
 
   logger.info('%s::attachWS: new websocket client', MODULE_ID)
@@ -15,5 +14,5 @@ function attachWS (req, res, next) {
 }
 
 module.exports = (server, websocket) => {
-  server.get('/websocket/attach', attachWS)
+  server.get('/websocket/attach', attach)
 }
