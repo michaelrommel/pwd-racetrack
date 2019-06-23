@@ -22,6 +22,8 @@ async function updateCar (rf, car) {
     return (car)
   } catch (err) {
     logger.error('%s::updateCar: Could not store car %s!', MODULE_ID, rf)
+    logger.error('%s::updateCar: Car was: %s', MODULE_ID, JSON.stringify(car, null, 2))
+    logger.error('%s::updateCar: Error was: %s', MODULE_ID, err)
     throw new UserException('storeError', rf)
   }
 }

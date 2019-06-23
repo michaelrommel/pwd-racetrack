@@ -139,6 +139,8 @@ async function createRace (req, res, next) {
       req.body === undefined ||
       req.body.description === undefined ||
       req.body.lanes === undefined ||
+      req.body.rounds === undefined ||
+      req.body.raceStatus === undefined ||
       req.body.startAt === undefined ||
       req.body.finalists === undefined ||
       req.body.cars === undefined) {
@@ -148,14 +150,9 @@ async function createRace (req, res, next) {
   }
 
   let raceId = req.params.id
+  let race = { ...req.body }
   let countCars = Object.keys(req.body.cars).length
-  let race = {}
-  race['description'] = req.body.description
-  race['lanes'] = req.body.lanes
-  race['cars'] = req.body.cars
   race['countCars'] = countCars
-  race['startAt'] = req.body.startAt
-  race['finalists'] = req.body.finalists
 
   try {
     await raceDb.put(raceId, race)

@@ -1,157 +1,128 @@
-var U1, U2, U3;
-var sdd = 1,
-  spgnum = 0;
-var sWin;
-
-var dd = 1,
-  dpgnum = 0;
-var diag, dWin;
-
-function vdt(obj, lowval, hival) {
-  if (obj.value < lowval || obj.value > hival) console.log("Invalid Value!");
-}
+const MODULE_ID = 'raceconfigUtils'
+const logger = require('../../../utils/logger')
 
 // global vars
 
-var nC, nL, nR, OS, W1, W2, W3, tl, nH, pn, pn2, sums, tng, scoreg, ident;
-W1 = 10;
-W2 = 100;
-W3 = 100;
-var pgnum = 0,
-  dS;
-var today;
+var nC, nL, nR, nH, pn, pn2, sums, tng
+var W1 = 10
+var W2 = 100
+var W3 = 100
 
-function d(m) {
-  console.log(m);
+function d (m) {
+  console.log(m)
 }
 
-function check3(i, j) {
+function check3 (i, j) {
   // Goal: AVOID HAVING CARS IN CONSECUTIVE RACES IN THE SAME LANES
-  var lM = 0;
-  for (l = 0; l < nL; ++l) if (pn[j * nL + l] == pn2[(i - 1) * nL + l]) ++lM;
-  return lM;
+  var lM = 0
+  for (let l = 0; l < nL; ++l) {
+    if (pn[j * nL + l] === pn2[(i - 1) * nL + l]) {
+      ++lM
+    }
+  }
+  return lM
 }
 
-function check2(i, j) {
+function check2 (i, j) {
   // Goal: AVOID HAVING CARS IN CONSECUTIVE RACES
-  var cM = 0;
-  for (l = 0; l < nL; ++l)
-    for (m = 0; m < nL; ++m) if (pn[j * nL + l] == pn2[(i - 1) * nL + m]) ++cM;
-  return cM;
+  var cM = 0
+  for (let l = 0; l < nL; ++l) {
+    for (let m = 0; m < nL; ++m) {
+      if (pn[j * nL + l] === pn2[(i - 1) * nL + m]) {
+        ++cM
+      }
+    }
+  }
+  return cM
 }
 
-function check1(i, j) {
+function check1 (i, j) {
   // Goal: KEEP THE RACE COUNTS EVEN
-  var rC = new make(nC);
-  var car;
+  var rC = new make(nC)
+  var car
 
-  for (l = 0; l < nC; ++l) rC[l] = sums[l];
-
-  for (m = nL * j; m < nL * (j + 1); ++m) {
-    car = pn[m];
-    rC[car - 1]++;
+  for (let l = 0; l < nC; ++l) {
+    rC[l] = sums[l]
   }
 
-  var dev = 0;
-  var tgt = ((i + 1) * nL) / nC;
-  for (l = 0; l < nC; ++l) {
-    dev += (rC[l] - tgt) * (rC[l] - tgt);
+  for (let m = nL * j; m < nL * (j + 1); ++m) {
+    car = pn[m]
+    rC[car - 1]++
   }
-  dev = dev / ((i + 1) * nL);
-  return dev;
+
+  var dev = 0
+  var tgt = ((i + 1) * nL) / nC
+  for (let l = 0; l < nC; ++l) {
+    dev += (rC[l] - tgt) * (rC[l] - tgt)
+  }
+  dev = dev / ((i + 1) * nL)
+  return dev
 }
 
-function rateRace(i, j) {
-  var retVal = 0;
-  if (W1) retVal += W1 * check1(i, j);
+function rateRace (i, j) {
+  var retVal = 0
+  if (W1) retVal += W1 * check1(i, j)
   if (i) {
     // these checks don't make sense for the 1st race (race 0)
-    if (W2) retVal += W2 * check2(i, j);
-    if (W3) retVal += W3 * check3(i, j);
+    if (W2) retVal += W2 * check2(i, j)
+    if (W3) retVal += W3 * check3(i, j)
   }
-  d("raterace: i=" + i + "; j=" + j + "; retVal=" + retVal);
-  return retVal;
+  // d('raterace: i=' + i + '; j=' + j + '; retVal=' + retVal)
+  return retVal
 }
 
-function orderRaces() {
-  if (W1 + W2 + W3 == 0) {
-    for (z = 0; z < nH * nL; ++z) pn2[z] = pn[z];
-    return;
+function orderRaces () {
+  if (W1 + W2 + W3 === 0) {
+    for (let z = 0; z < nH * nL; ++z) {
+      pn2[z] = pn[z]
+    }
+    return
   }
 
-  var i, j, k, l, m;
-  var bR, bRt;
-  var nU = new make(nH);
-  var car;
+  var i, j, k, l, m
+  var bR, bRt
+  var nU = new make(nH)
+  var car
 
-  for (m = 0; m < nC; m++) sums[m] = 0;
-
-  for (m = 0; m < nH; m++) nU[m] = 1;
-
-  var tm0, now;
-  now = new Date();
-  tm0 = now.getTime();
+  for (m = 0; m < nC; m++) sums[m] = 0
+  for (m = 0; m < nH; m++) nU[m] = 1
 
   for (i = 0; i < nH; i++) {
-    if (i == 1) {
-      now = new Date();
-      tm0 = Math.round(((now.getTime() - tm0) * nH) / 1000);
-      if (tm0 > 30)
-        console.log("Estimated time to optimize chart is " + tm0 + " seconds.");
-    }
-    bR = nH - 1;
-    bRt = 10000;
+    bR = nH - 1
+    bRt = 10000
 
-    k = 0;
+    k = 0
     for (j = 0; j < nH; j++) {
       if (nU[j]) {
-        k = rateRace(i, j);
+        k = rateRace(i, j)
         if (k < bRt - 0.000001) {
-          bRt = k;
-          bR = j;
-          d("was better");
+          bRt = k
+          bR = j
+          // d('was better')
         }
       }
     }
-    d("orderRaces: for i=" + i + "; j=" + bR + " was selected");
-    ln = i;
+    // d('orderRaces: for i=' + i + '; j=' + bR + ' was selected')
+    let ln = i
     for (l = 0; l < nL; ++l) {
-      car = pn[nL * bR + l];
-      pn2[nL * i + l] = car;
-      sums[car - 1]++;
-      ln += ", " + car;
+      car = pn[nL * bR + l]
+      pn2[nL * i + l] = car
+      sums[car - 1]++
+      ln += ', ' + car
     }
-    d("Heat " + ln);
-    nU[bR] = 0;
+    // d('Heat ' + ln)
+    nU[bR] = 0
   }
-  return;
 }
 
-function make(num) {
-  var i;
-  //var this = new Array(num);
+function make (num) {
+  var i
+  // var this = new Array(num);
 
-  for (i = 0; i < num + 1; i++) this[i] = 0;
-  return this;
+  for (i = 0; i < num + 1; i++) this[i] = 0
+  return this
 }
-// mc builds array of cell column names
-function mc(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12) {
-  i = 0;
-  //var this = new Array(12);
-  this[i++] = t1;
-  this[i++] = t2;
-  this[i++] = t3;
-  this[i++] = t4;
-  this[i++] = t5;
-  this[i++] = t6;
-  this[i++] = t7;
-  this[i++] = t8;
-  this[i++] = t9;
-  this[i++] = t10;
-  this[i++] = t11;
-  this[i++] = t12;
-  return this;
-}
+
 // ma builds an array from the condition parameters
 // Parameters:
 //  1-elements per generator
@@ -184,11 +155,11 @@ function mc(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12) {
 function ma( ng, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12,
   p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14)
 {
-  d("ma[0] = " + ng);
-  d("ma[1] = " + t1);
-  d("ma[2] = " + t2);
-  d("ma[3] = " + t3);
-  d("ma[4] = " + t4);
+  // d("ma[0] = " + ng);
+  // d("ma[1] = " + t1);
+  // d("ma[2] = " + t2);
+  // d("ma[3] = " + t3);
+  // d("ma[4] = " + t4);
   // TODO: why 12? Probably because of the 12 t parameters
   // Presumably because the numbers for the generators will then
   // start at a fixed position 13 in the tma1 array.
@@ -211,11 +182,11 @@ function ma( ng, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12,
   tma1[i++] = t12;
 
   // log the current array
-  for (j = 0; j <= 13; j++) d("ma[" + j + "] = " + tma1[j]);
+  // for (j = 0; j <= 13; j++) d("ma[" + j + "] = " + tma1[j]);
 
   // the maximum number of rounds that this configuration can produce
   tng = ng;
-  d("tng = " + tng);
+  // d("tng = " + tng);
   tma1[i++] = p0; // T[13]
   tma1[i++] = p1;
   tma1[i++] = p2;
@@ -233,7 +204,7 @@ function ma( ng, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12,
   tma1[i++] = p14;
 
   // log the current full array
-  for (j = 0; j <= 27; j++) d("ma[" + j + "] = " + tma1[j]);
+  // for (j = 0; j <= 27; j++) d("ma[" + j + "] = " + tma1[j]);
 
   // if the number of elements per generator is less than 12
   // with 12 being the maximum I have seen in the charts
@@ -246,7 +217,7 @@ function ma( ng, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12,
     for (j = ng + 1; j <= 12; j++)
       tma1[i++] = -1;
   }
-  for (j = 0; j <= 27; j++) d("ma[" + j + "] = " + tma1[j]);
+  // for (j = 0; j <= 27; j++) d("ma[" + j + "] = " + tma1[j]);
   return tma1;
 }
 
@@ -514,6 +485,12 @@ function createRaceConfig(numL, numC, numR) {
     if (nC == 44 || nC == 46) T = ma(1, 1, 2, 3, 4, 6, 11);
   }
 
+  if (T === undefined) {
+    // no config could be found
+    console.log('No generators available for this choice.')
+    return undefined
+  }
+
   // j is the index into the T array, where the generator digits start
   j = T[0];
   for (i = 0; i <= 14; i++) {
@@ -534,9 +511,7 @@ function createRaceConfig(numL, numC, numR) {
       console.log(
         "No generators available for this choice.  Try adding a car and running a 'bye'."
       );
-      // TODO: this function does not exist
-      dc();
-      return false;
+      return undefined;
     }
   }
 
@@ -544,7 +519,6 @@ function createRaceConfig(numL, numC, numR) {
   var h2h, hP, hC, yI;
   var gS = nL - 1;
 
-  pgnum += 1;
   // generate an array with number of lanes-1 times number of rounds elements
   // Example: 4lanes, 7cars, 2rounds
   // gens = 3 * 2 = 6
@@ -645,30 +619,35 @@ function createRaceConfig(numL, numC, numR) {
   else if (T[nR] == 3)
     mS = "Complementary-Perfect " + nC + "-" + nL + " (" + h2h + ") Chart";
   else mS = "OOPS";
-  d("mS: " + mS);
+  // d("mS: " + mS);
 
-  var config = [];
+  var config = {};
 
-  hC = 1; // keep track of which heat were processing
-  var pI = 0; // point to start of pn array
+  config.description = mS
+  config.heats = {}
 
-  console.log("initial array: ");
-  for (i = 0; i <= pn2.length; i++) {}
+  hC = 1 // keep track of which heat were processing
+  pI = 0 // point to start of pn array
+
+  // console.log("initial array: ");
+  // for (i = 0; i <= pn2.length; i++) {}
 
   for (gL = 0; gL < nH; ++gL) {
-    posb = pI;
-    var heatConf = [];
+    // posb = pI
+    let heatConf = []
     for (cL = 0; cL < nL; ++cL) {
-      console.log("" + cL + " " + pn2[pI]);
-      heatConf.push(pn2[pI++]);
+      // console.log('' + cL + ' ' + pn2[pI])
+      heatConf.push(pn2[pI++])
     }
-    config.push(heatConf);
+    let idx = gL + 1
+    config.heats[idx.toString()] = heatConf
   }
 
-  console.log(config);
-  return config;
+  logger.info('%s::createRaceConfig: config created: %s',
+    MODULE_ID, JSON.stringify(config, null, 0))
+  return config
 }
 
 module.exports = {
   createRaceConfig: createRaceConfig
-};
+}

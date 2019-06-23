@@ -116,7 +116,7 @@ async function createCar (req, res, next) {
     logger.error('%s::createCar: Received incomplete create car information', MODULE_ID)
     return next(new errors.BadRequestError('Incomplete create car information.'))
   } else {
-    carUtils.setContext(ctx)
+    // carUtils.setContext(ctx)
     try {
       let car = await carUtils.createCar(req.params.id, req.body)
       if (car) {
@@ -159,6 +159,7 @@ async function updateCar (req, res, next) {
     logger.error('%s: Received incomplete update car information', MODULE_ID)
     return next(new errors.BadRequestError('Incomplete update car information.'))
   } else {
+    // carUtils.setContext(ctx)
     try {
       let car = await carUtils.updateCar(req.params.id, req.body)
       if (car) {
@@ -188,6 +189,7 @@ function deleteCar (req, res, next) {
     logger.error('%s: Received incomplete delete car information', MODULE_ID)
     return next(new errors.BadRequestError('Incomplete delete car information.'))
   } else {
+    // carUtils.setContext(ctx)
     let key = req.params.id
     carDb.del(key, function (err) {
       if (err) {
@@ -203,6 +205,7 @@ function deleteCar (req, res, next) {
 
 module.exports = (server, db) => {
   ctx = { server, db }
+  carUtils.setContext(ctx)
   carDb = db.car
   server.get('/car', listCars)
   server.post('/car', importCars)
