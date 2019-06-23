@@ -135,7 +135,8 @@ async function getRaceConfigAndCars (raceId) {
     race = await raceDb.get(raceId)
     let countLanes = race.lanes
     let countCars = race.countCars
-    let raceConfigKey = '' + countLanes + '-' + countCars
+    let rounds = race.rounds
+    let raceConfigKey = '' + countCars + '-' + countLanes + '-' + rounds
     let raceConfig
     try {
       raceConfig = await raceConfigDb.get(raceConfigKey)

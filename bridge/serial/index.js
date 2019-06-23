@@ -577,7 +577,7 @@ var carDetected = function (heatId, msgState, lanes) {
     if (err) {
       // if databae does not contain any info for this race, initialize it by cloning empty lanes
       logger.error('%s::carDetected: could not retrieve lane status information for %s', MODULE_ID, heatId)
-      lanesInDb = { ...dto.lanes }
+      lanesInDb = { ...dto }
     }
 
     logger.debug('%s::carDetected: processing track data', MODULE_ID)

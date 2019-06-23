@@ -95,7 +95,7 @@ async function createHeat (req, res, next) {
     return next()
   } catch (err) {
     logger.error('%s: error creating heat with id: %s', MODULE_ID, req.params.id)
-    return next(new httpErr.InternalServerError('raceconfig could not be saved'))
+    return next(new httpErr.InternalServerError('heat could not be saved'))
   }
 }
 
@@ -419,7 +419,7 @@ async function startHeat (req, res, next) {
     }
   } catch (err) {
     if (err.notFound) {
-      logger.error('Could not find specified heat')
+      logger.error('Could not find specified heat: %s', req.params.id)
       return next(new httpErr.BadRequestError('Could not retrieve heat information'))
     }
   }
