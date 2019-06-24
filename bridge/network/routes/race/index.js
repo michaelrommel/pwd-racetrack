@@ -96,7 +96,7 @@ async function getHeatsForRace (req, res, next) {
 }
 
 async function initRace (req, res, next) {
-  logger.info('%s::intRace: request received', MODULE_ID)
+  logger.info('%s::initRace: request received', MODULE_ID)
   if (req.params === undefined ||
       req.params.id === undefined
   ) {
@@ -121,11 +121,11 @@ async function initRace (req, res, next) {
     serial.initRace(raceId)
 
     res.send(200, race)
-    logger.info('%s::intRace: response sent', MODULE_ID)
+    logger.info('%s::initRace: response sent for %s', MODULE_ID, raceId)
     return next()
   } catch (err) {
     if (race === undefined) {
-      logger.error('%s::intRace: could not find race in database: %s', MODULE_ID, err)
+      logger.error('%s::initRace: could not find race in database: %s', MODULE_ID, err)
     }
     return next(new httpErr.InternalServerError('Could not find race'))
   }
