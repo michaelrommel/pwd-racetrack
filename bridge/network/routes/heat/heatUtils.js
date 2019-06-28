@@ -61,6 +61,8 @@ async function initializeHeats (raceId, heatSpec) {
   }
 
   if (raceConfig !== undefined) {
+    delHeatsForRace(raceId)
+    logger.debug('%s::initializeHeats: raceconfig %s loaded', MODULE_ID, raceConfigKey)
     heatConfigList = raceConfig.heats
     heatCount = Object.keys(raceConfig.heats).length
     // we found a race config or could create one
@@ -73,6 +75,7 @@ async function initializeHeats (raceId, heatSpec) {
       lowerBound = 1
       upperBound = 1 + heatCount
     }
+    logger.debug('%s::initializeHeats: generating heats from %s to %s', MODULE_ID, lowerBound, upperBound)
 
     // iterate through configuration of heats in race config
     for (var i = lowerBound; i < upperBound; i++) {
@@ -112,6 +115,8 @@ async function initializeHeats (raceId, heatSpec) {
 
       // put all information about all cars in this heat into the heatDb
       let heatKey = raceId + '-' + ('0' + finalHeatNumber).slice(-2)
+      logger.debug('%s::initializeHeats: heatkey: %s, heat: %s', MODULE_ID,
+        heatKey, JSON.stringify(heat, null, 2))
       try {
         await heatDb.put(heatKey, heat)
       } catch (err) {
@@ -152,6 +157,27 @@ async function getRaceConfigAndCars (raceId) {
     logger.error('%s::getRaceConfigAndCars: could not find race %s', MODULE_ID, raceId)
     throw new UserException('raceerror', raceId)
   }
+}
+
+async function delHeatsForRace (raceId) {
+  logger.info('%s::delHeatsForRace: deleting heats for %s', MODULE_ID, raceId)
+  let filter = new RegExp(raceId, 'g')
+  let heatsToDelete = []
+  heatDb.createReadStream()
+    .on('data', function (data) {
+      if (data.key.match(filter)) {
+        heatsToDelete.push(data.key)
+      }
+    })
+    .on('error', function (err) {
+      logger.error('%s: Error getting heat: %s', MODULE_ID, err)
+    })
+    .on('end', function () {
+      heatsToDelete.map((heatkey) => {
+        heatDb.del(heatkey)
+      })
+      logger.info('%s: deleted heats: %s', MODULE_ID, JSON.stringify(heatsToDelete, null, 0))
+    })
 }
 
 module.exports = {

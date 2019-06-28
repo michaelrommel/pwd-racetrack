@@ -55,3 +55,4 @@ node_modules/
 bridge/databases/
 bridge/databases_clean/
 bridge/network/pwd-racetrack*.pem
+bridge/network/routes/static/manager*
